@@ -1,0 +1,235 @@
+@source "../components";
+
+/* Theme is driven by data-theme on <html> (set before paint, see nuxt.config head script). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+
+/* ------------------------------------------------------------------ */
+/* Brand primitives                                                    */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* AFRIFF navy — 900 is the wordmark colour sampled from the official logo (#0A1042) */
+  --color-navy-50: #eef0fa;
+  --color-navy-100: #dadef3;
+  --color-navy-200: #b4bae6;
+  --color-navy-300: #8791d3;
+  --color-navy-400: #5f69bc;
+  --color-navy-500: #414ba3;
+  --color-navy-600: #2f3785;
+  --color-navy-700: #202766;
+  --color-navy-800: #151b52;
+  --color-navy-900: #0a1042;
+  --color-navy-950: #060a26;
+
+  /* Emblem colours (official logo) — for small accents, not large surfaces */
+  --color-emblem-blue: #0068a6;
+  --color-emblem-sky: #a9def0;
+  --color-emblem-green: #00964b;
+  --color-emblem-yellow: #f5ea02;
+  --color-emblem-red: #eb1c24;
+
+  /* Festival gold */
+  --color-gold-50: #fdf8ec;
+  --color-gold-100: #f9ecc9;
+  --color-gold-200: #f2d88f;
+  --color-gold-300: #e9c262;
+  --color-gold-400: #d9a441;
+  --color-gold-500: #c08a2b;
+  --color-gold-600: #9c6c1f;
+  --color-gold-700: #7a531b;
+  --color-gold-800: #5e401a;
+  --color-gold-900: #3f2b12;
+
+  --radius-card: 1.25rem;
+  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -12px rgb(0 0 0 / 0.45);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Semantic tokens — use these in components, not the raw scales      */
+/* ------------------------------------------------------------------ */
+:root,
+[data-theme="dark"] {
+  --c-canvas: #060a26;
+  --c-surface: #0c1238;
+  --c-raised: #141a48;
+  --c-line: rgb(180 186 230 / 0.14);
+  --c-line-strong: rgb(180 186 230 / 0.28);
+  --c-ink: #f5f3ee;
+  --c-muted: #9ea4c6;
+  --c-subtle: #6c739c;
+
+  --c-accent: #d9a441;
+  --c-accent-hover: #e9c262;
+  --c-on-accent: #1a1305;
+  --c-accent-ink: #e9c262;
+  --c-accent-soft: rgb(217 164 65 / 0.14);
+
+  --c-success: #3cc98b;
+  --c-success-soft: rgb(60 201 139 / 0.14);
+  --c-danger: #f47a6b;
+  --c-danger-soft: rgb(244 122 107 / 0.14);
+  --c-info: #7fb0ff;
+  --c-info-soft: rgb(127 176 255 / 0.14);
+
+  --c-scrim: rgb(6 10 38 / 0.72);
+  --c-chrome: rgb(6 10 38 / 0.82);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --c-canvas: #f6f6f9;
+  --c-surface: #ffffff;
+  --c-raised: #eceef5;
+  --c-line: rgb(10 16 66 / 0.1);
+  --c-line-strong: rgb(10 16 66 / 0.2);
+  --c-ink: #0a1042;
+  --c-muted: #4f5578;
+  --c-subtle: #757b99;
+
+  --c-accent: #d9a441;
+  --c-accent-hover: #c08a2b;
+  --c-on-accent: #0a1042;
+  --c-accent-ink: #7a531b;
+  --c-accent-soft: rgb(217 164 65 / 0.18);
+
+  --c-success: #17875a;
+  --c-success-soft: rgb(23 135 90 / 0.12);
+  --c-danger: #c2412f;
+  --c-danger-soft: rgb(194 65 47 / 0.1);
+  --c-info: #2a62c9;
+  --c-info-soft: rgb(42 98 201 / 0.1);
+
+  --c-scrim: rgb(10 16 66 / 0.45);
+  --c-chrome: rgb(246 246 249 / 0.86);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-subtle: var(--c-subtle);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-on-accent: var(--c-on-accent);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-info: var(--c-info);
+  --color-info-soft: var(--c-info-soft);
+  --color-scrim: var(--c-scrim);
+  --color-chrome: var(--c-chrome);
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* Film-grain overlay used on poster art and hero surfaces */
+@utility grain {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.18;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-kerning: normal;
+    font-optical-sizing: auto;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.025em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--c-accent-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Sheet (native <dialog>) entrance */
+.ui-sheet[open] {
+  animation: sheet-up 280ms var(--ease-out-soft);
+}
+.ui-sheet[open]::backdrop {
+  animation: fade-in 200ms ease-out;
+}
+@media (min-width: 48rem) {
+  .ui-sheet[open] {
+    animation-name: sheet-slide;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(32px);
+    opacity: 0;
+  }
+}
+@keyframes sheet-slide {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+

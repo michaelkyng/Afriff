@@ -1,0 +1,23 @@
+node_modules
+.DS_Store
+*.log
+
+# Generated output in every workspace
+.nuxt
+.output
+.nitro
+.data
+.cache
+dist
+dev-dist
+coverage
+*.tsbuildinfo
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.vercel
+.netlify
+.venv
+__pycache__

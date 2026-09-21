@@ -1,0 +1,31 @@
+{
+  "name": "afriff",
+  "private": true,
+  "type": "module",
+  "description": "AFRIFF deployable apps, shared Nuxt layers and framework-independent packages.",
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "node": ">=22.12",
+    "bun": ">=1.3.14"
+  },
+  "workspaces": [
+    "apps/*",
+    "layers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run dev:pwa",
+    "dev:pwa": "bun run --filter @afriff/pwa dev",
+    "build": "bun run --filter '*' build",
+    "build:pwa": "bun run --filter @afriff/pwa build",
+    "generate": "bun run --filter '*' generate",
+    "generate:pwa": "bun run --filter @afriff/pwa generate",
+    "preview:server": "bun run --filter @afriff/pwa preview",
+    "preview:pwa": "bun run --filter @afriff/pwa preview:pwa",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test packages",
+    "check": "bun run typecheck && bun run test",
+    "brand:assets": "bun run --filter @afriff/ui-kit brand:assets",
+    "postinstall": "bun run --filter '*' postinstall"
+  }
+}

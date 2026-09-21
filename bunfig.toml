@@ -1,0 +1,3 @@
+[install]
+# Match DPfitPWA and keep Nuxt's build dependencies available at the root.
+linker = "hoisted"

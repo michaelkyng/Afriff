@@ -1,0 +1,39 @@
+{
+  "name": "@afriff/pwa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AFRIFF Attendee PWA \u2014 frontend-only, fully local build (mock data).",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "preview:pwa": "nuxt generate && serve .output/public -l 4173 -s",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^1.0.2",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "@vueuse/core": "^15.0.0",
+    "@vueuse/nuxt": "^15.0.0",
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.5.2",
+    "pinia": "^4.0.3",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1",
+    "@afriff/ui-kit": "workspace:*",
+    "@afriff/api": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vue-tsc": "^3.3.11",
+    "serve": "^14.2.4"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@afriff/validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-independent schemas shared by AFRIFF apps and API adapters.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": { "zod": "^4.0.0" },
+  "devDependencies": { "typescript": "~6.0.3" }
+}

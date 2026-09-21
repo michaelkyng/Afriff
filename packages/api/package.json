@@ -1,0 +1,25 @@
+{
+  "name": "@afriff/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared AFRIFF types, programme logic and API adapters.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./format": "./src/format.ts",
+    "./programme": "./src/programme.ts",
+    "./filters": "./src/filters.ts",
+    "./mock": "./src/mock/index.ts",
+    "./mock/db": "./src/mock/db.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@afriff/validation": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}
