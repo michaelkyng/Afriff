@@ -57,8 +57,8 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
       <span v-if="ended" class="text-meta font-medium text-subtle">Screened</span>
       <UiBadge v-else-if="live" tone="accent">Showing now</UiBadge>
       <UiButton v-else-if="item.availability.status === 'sold_out'" size="sm" variant="secondary" disabled>Sold out</UiButton>
-      <UiButton v-else-if="isGala" size="sm" to="/passes">Gala tickets</UiButton>
-      <UiButton v-else size="sm" :to="{ path: '/passes', query: { screening: item.screening.id } }">Tickets</UiButton>
+      <UiButton v-else-if="isGala" size="sm" to="/tickets">Gala tickets</UiButton>
+      <UiButton v-else size="sm" :to="{ path: '/tickets', query: { screening: item.screening.id } }">Tickets</UiButton>
     </div>
   </article>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, ChevronRightIcon, SearchIcon } from 'lucide-vue-next'
 
-/** Desktop top bar: where you are, a global programme search (press "/") and the main action. */
+/** Desktop top bar: location, programme search (press "/") and notifications. */
 const route = useRoute()
 const router = useRouter()
 const crumb = useBreadcrumb()
@@ -12,6 +12,7 @@ const section = computed(() => {
   if (route.path.startsWith('/venues')) return { label: 'Venues', to: '/#venues' }
   if (route.path.startsWith('/styleguide')) return { label: 'Styleguide', to: '/styleguide' }
   if (route.path.startsWith('/signin')) return { label: 'Sign in', to: '/signin' }
+  if (/^\/(cart|checkout|orders)/.test(route.path)) return { label: 'Tickets', to: '/tickets' }
   if (route.path.startsWith('/signup')) return { label: 'Create account', to: '/signup' }
   if (route.path.startsWith('/reset-pin')) return { label: 'Reset PIN', to: '/reset-pin' }
   return null
@@ -97,7 +98,7 @@ function back() {
       </form>
       <div v-else class="ml-auto" />
 
-      <UiButton to="/passes" size="sm">Get passes</UiButton>
+      <AppNotifications />
     </div>
   </header>
 </template>

@@ -5,6 +5,9 @@ import type {
   FestivalEvent,
   Film,
   FilmQuery,
+  CheckoutInput,
+  Order,
+  PaymentInput,
   ProfileInput,
   RequestCodeInput,
   Screening,
@@ -12,6 +15,7 @@ import type {
   Section,
   SetPinInput,
   SignInInput,
+  Ticket,
   TicketProduct,
   User,
   Venue,
@@ -85,7 +89,30 @@ export interface AttendeeApi {
     listEvents(): Promise<FestivalEvent[]>
   }
   catalog: {
+    /** Stock already sold through this API is taken off `remaining`. */
     listProducts(): Promise<TicketProduct[]>
+  }
+
+  /** Buying. Every call needs a signed-in attendee. */
+  orders: {
+    /**
+     * Places an order and takes payment in one step, the way a hosted checkout does.
+     * Throws `ApiError('validation')` for a bad selection, `ApiError('sold_out')`
+     * when stock ran out, and `ApiError('unauthorized')` without a session.
+     */
+    checkout(input: CheckoutInput): Promise<Order>
+    list(): Promise<Order[]>
+    /** Throws `ApiError('not_found')` for an order that is not the attendee's. */
+    get(id: string): Promise<Order>
+    /** Tries payment again on a failed order. */
+    pay(orderId: string, payment: PaymentInput): Promise<Order>
+    /** Stands in for the bank telling us a transfer landed. */
+    confirmTransfer(orderId: string): Promise<Order>
+  }
+
+  tickets: {
+    /** Every admission the attendee holds, earliest first. Shown under My tickets. */
+    list(): Promise<Ticket[]>
   }
 }
 

@@ -84,6 +84,52 @@ export const profileSchema = z.object({
   phone: z.union([phoneSchema, z.literal('')]).optional(),
 })
 
+// ------------------------------------------------------------------ checkout
+
+/** One line of a cart: a product, how many, and whatever choice it needs. */
+export const cartLineSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().int().min(1).max(10),
+  selection: z
+    .object({
+      day: z.iso.date().optional(),
+      screeningId: z.string().optional(),
+      eventId: z.string().optional(),
+    })
+    .optional(),
+})
+
+export const orderContactSchema = z.object({
+  name: nameSchema,
+  email: emailSchema,
+  phone: z.union([phoneSchema, z.literal('')]).optional(),
+})
+
+/**
+ * Card details are checked for shape only; nothing is stored beyond the last four
+ * digits, and no real payment network is involved while the app is local.
+ */
+export const paymentSchema = z.discriminatedUnion('method', [
+  z.object({
+    method: z.literal('card'),
+    cardName: nameSchema,
+    cardNumber: z
+      .string()
+      .trim()
+      .regex(/^[\d ]{13,23}$/, 'Enter the 16 digits on the card.')
+      .refine((value) => value.replace(/\s/g, '').length >= 12, 'Enter the 16 digits on the card.'),
+    expiry: z.string().trim().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Use MM/YY.'),
+    cvv: z.string().trim().regex(/^\d{3,4}$/, 'Three digits on the back of the card.'),
+  }),
+  z.object({ method: z.literal('transfer') }),
+])
+
+export const checkoutSchema = z.object({
+  items: z.array(cartLineSchema).min(1, 'Your cart is empty.').max(20),
+  contact: orderContactSchema,
+  payment: paymentSchema,
+})
+
 export type Genre = z.infer<typeof genreSchema>
 export type FilmQuery = z.infer<typeof filmQuerySchema>
 export type ScreeningQuery = z.infer<typeof screeningQuerySchema>
@@ -93,3 +139,7 @@ export type RequestCodeInput = z.input<typeof requestCodeSchema>
 export type VerifyCodeInput = z.input<typeof verifyCodeSchema>
 export type SetPinInput = z.input<typeof setPinSchema>
 export type ProfileInput = z.input<typeof profileSchema>
+export type CartLineInput = z.input<typeof cartLineSchema>
+export type OrderContactInput = z.input<typeof orderContactSchema>
+export type PaymentInput = z.input<typeof paymentSchema>
+export type CheckoutInput = z.input<typeof checkoutSchema>

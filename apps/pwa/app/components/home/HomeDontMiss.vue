@@ -18,7 +18,7 @@ const icons: Record<EventKind, Component> = {
 
 <template>
   <section v-if="cards.length" aria-labelledby="dontmiss-title">
-    <UiSectionHeader title-id="dontmiss-title" title="Don’t miss" to="/passes" link-label="Tickets" />
+    <UiSectionHeader title-id="dontmiss-title" title="Don’t miss" to="/tickets" link-label="Tickets" />
 
     <UiCarousel v-if="layout === 'carousel'" label="Festival events">
       <li v-for="card in cards" :key="card.key" class="w-72 shrink-0 snap-start">
@@ -36,7 +36,7 @@ const icons: Record<EventKind, Component> = {
 
     <ul v-else class="card divide-y divide-line overflow-hidden">
       <li v-for="card in cards" :key="card.key">
-        <NuxtLink :to="card.price ? '/passes' : '/programme'" class="row-interactive flex items-center gap-3 px-3.5 py-3">
+        <NuxtLink :to="card.price ? '/tickets' : '/programme'" class="row-interactive flex items-center gap-3 px-3.5 py-3">
           <span class="grid size-9 shrink-0 place-items-center rounded-tile border border-line bg-raised text-ink" aria-hidden="true">
             <component :is="icons[card.kind]" class="size-4.5" :stroke-width="1.75" />
           </span>

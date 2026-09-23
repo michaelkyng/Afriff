@@ -18,6 +18,17 @@ useHead({ title: 'Me' })
 
 const { mode } = useTheme()
 const { user, isSignedIn, initials, updateProfile, signOut: endSession } = useAuth()
+const api = useApi()
+
+/** Recent orders, for the account section. Only loaded when signed in. */
+const { data: orders } = useLazyAsyncData('me:orders', () => api.orders.list(), {
+  immediate: false,
+})
+watchEffect(() => {
+  if (isSignedIn.value && !orders.value) refreshNuxtData('me:orders')
+})
+
+const orderTone = { paid: 'success', pending: 'accent', failed: 'danger' } as const
 const prefs = usePrefsStore()
 const pwa = usePWA()
 const online = useOnline()
@@ -167,6 +178,33 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </div>
       <UiButton size="sm" to="/signin">Sign in</UiButton>
     </UiCard>
+
+    <!-- Orders -->
+    <section v-if="isSignedIn" aria-labelledby="orders-title" class="space-y-2">
+      <h2 id="orders-title" class="px-1 text-meta font-semibold text-muted">Orders</h2>
+      <UiCard v-if="orders?.length" :padded="false">
+        <ul class="divide-y divide-line">
+          <li v-for="order in orders.slice(0, 5)" :key="order.id">
+            <NuxtLink :to="`/orders/${order.id}`" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-medium tabular-nums">{{ order.reference }}</span>
+                <span class="block truncate text-meta text-muted tabular-nums">
+                  {{ formatDay(order.placedAt) }} · {{ order.lines.length }}
+                  {{ order.lines.length === 1 ? 'item' : 'items' }}
+                </span>
+              </span>
+              <UiBadge :tone="orderTone[order.status]">{{ order.status }}</UiBadge>
+              <span class="shrink-0 font-medium tabular-nums">{{ formatMoney(order.total) }}</span>
+              <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+            </NuxtLink>
+          </li>
+        </ul>
+      </UiCard>
+      <UiCard v-else class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-meta text-muted">No orders yet.</p>
+        <UiButton size="sm" variant="secondary" to="/tickets">Browse tickets</UiButton>
+      </UiCard>
+    </section>
 
     <!-- Appearance -->
     <section aria-labelledby="appearance-title" class="space-y-2">

@@ -86,6 +86,9 @@ export type {
   VerifyCodeInput,
   SetPinInput,
   ProfileInput,
+  CartLineInput,
+  CheckoutInput,
+  PaymentInput,
 } from '@afriff/validation'
 
 /** Nigerian (NFVCB-style) age classification. */
@@ -231,4 +234,89 @@ export interface VerificationTicket {
   expiresAt: ISODateTime
   /** The name already on the account, when resetting a PIN. Absent when signing up. */
   name?: string
+}
+
+// ------------------------------------------------------------------ orders
+
+export type OrderStatus = 'paid' | 'pending' | 'failed'
+
+export type PaymentMethod = 'card' | 'transfer'
+
+/** What the attendee picked for a product that offers a choice. */
+export interface TicketSelection {
+  /** Day Pass: which day. */
+  day?: ISODate
+  /** Single Screening: which screening. */
+  screeningId?: string
+  /** Masterclass and galas: which event. */
+  eventId?: string
+}
+
+export interface OrderLine {
+  id: string
+  productId: string
+  productName: string
+  kind: ProductKind
+  unitPrice: Money
+  quantity: number
+  selection?: TicketSelection
+  /** What was chosen, ready to show: "Salt Roads" or "Day Pass". */
+  title: string
+  /** Where and when, ready to show: "Tue 3 Nov, 18:30 · Landmark, Cinema 1". */
+  detail?: string
+}
+
+export interface OrderContact {
+  name: string
+  email: string
+  phone?: string
+}
+
+export interface OrderPayment {
+  method: PaymentMethod
+  /** Card payments only. */
+  last4?: string
+  /** Transfer reference the attendee quotes, or the bank's reference for a card. */
+  reference?: string
+  /** Why a payment failed, in words an attendee can act on. */
+  failureReason?: string
+}
+
+export interface Order {
+  id: string
+  /** Short human reference, e.g. AF-7KQ2P. */
+  reference: string
+  status: OrderStatus
+  placedAt: ISODateTime
+  paidAt?: ISODateTime
+  lines: OrderLine[]
+  total: Money
+  contact: OrderContact
+  payment: OrderPayment
+  /** Tickets issued once the order is paid. */
+  ticketIds: string[]
+}
+
+export type TicketStatus = 'valid' | 'used' | 'void'
+
+/**
+ * One admission. Everything needed to show and check it is denormalised here,
+ * so My tickets works offline without the programme loaded.
+ */
+export interface Ticket {
+  id: string
+  /** Printed on the ticket and encoded in its QR code. */
+  code: string
+  orderId: string
+  productId: string
+  productName: string
+  kind: ProductKind
+  status: TicketStatus
+  holderName: string
+  title: string
+  subtitle?: string
+  startsAt?: ISODateTime
+  venueName?: string
+  selection?: TicketSelection
+  issuedAt: ISODateTime
 }

@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { CalendarDaysIcon, HouseIcon, TicketIcon, UserRoundIcon, WalletCardsIcon } from 'lucide-vue-next'
+import { CalendarDaysIcon, HouseIcon, TicketIcon, UserRoundIcon } from 'lucide-vue-next'
 
 export interface NavItem {
   label: string
@@ -12,8 +12,7 @@ export interface NavItem {
 export const primaryNav: NavItem[] = [
   { label: 'Home', to: '/', icon: HouseIcon, exact: true },
   { label: 'Programme', to: '/programme', icon: CalendarDaysIcon },
-  { label: 'Passes', to: '/passes', icon: TicketIcon },
-  { label: 'Wallet', to: '/wallet', icon: WalletCardsIcon },
+  { label: 'Tickets', to: '/tickets', icon: TicketIcon },
   { label: 'Me', to: '/me', icon: UserRoundIcon },
 ]
 

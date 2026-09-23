@@ -6,6 +6,6 @@ export { availabilityOf, buildLookups, buildTimeline, hasEnded, isLive, progress
 /** Where a timeline card links: screenings open the film page; ticketed events go to passes. */
 export function programmeItemLink(item: ProgrammeItem): string | undefined {
   if (item.kind === 'screening') return `/programme/${item.film.slug}`
-  return item.product ? '/passes' : undefined
+  return item.product ? '/tickets' : undefined
 }
 

@@ -1,5 +1,5 @@
 /**
- * Guards the pages that need an account (wallet today, checkout from F4).
+ * Guards the pages that need an account (checkout today).
  * Sends guests to sign in and back to where they were heading.
  */
 export default defineNuxtRouteMiddleware((to) => {

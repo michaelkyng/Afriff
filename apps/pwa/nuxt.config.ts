@@ -53,6 +53,9 @@ export default defineNuxtConfig({
       apiMode: 'mock',
       // Simulated network latency for the mock API, in ms (0 to disable).
       mockLatency: 450,
+      // Reserved for the future Supabase adapter. Public settings reach the browser.
+      supabaseUrl: '',
+      supabasePublishableKey: '',
     },
   },
 

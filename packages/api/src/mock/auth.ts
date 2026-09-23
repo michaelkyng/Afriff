@@ -119,6 +119,11 @@ function fail(issues: { message: string; path: PropertyKey[] }[], fallback: stri
 export interface MockAuth {
   api: AttendeeApi['auth']
   setToken(token: string | null): void
+  /**
+   * The signed-in attendee, for the other mock services to hang their work off.
+   * Throws `ApiError('unauthorized')` when nobody is signed in.
+   */
+  currentUser(): User
 }
 
 /**
@@ -167,6 +172,8 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
     setToken(value) {
       token = value
     },
+
+    currentUser: () => toUser(currentUser()),
 
     api: {
       signIn: (input: SignInInput) =>

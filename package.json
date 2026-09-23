@@ -25,7 +25,20 @@
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test packages",
     "check": "bun run typecheck && bun run test",
+    "supabase": "supabase",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:migration:new": "supabase migration new",
+    "db:reset": "supabase db reset --local",
+    "db:lint": "supabase db lint --local --level warning --fail-on warning",
+    "db:test": "supabase test db",
+    "db:types": "bun scripts/generate-database-types.mjs",
+    "functions:serve": "supabase functions serve",
     "brand:assets": "bun run --filter @afriff/ui-kit brand:assets",
     "postinstall": "bun run --filter '*' postinstall"
+  },
+  "devDependencies": {
+    "supabase": "2.117.0"
   }
 }

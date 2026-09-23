@@ -48,7 +48,7 @@ const labels: Record<EventKind, string> = {
     <div class="flex min-h-14 items-center justify-between gap-3 border-t border-line px-4 py-2.5">
       <span v-if="price" class="font-semibold tabular-nums">{{ price }}</span>
       <span v-else class="text-meta text-muted">{{ access }}</span>
-      <UiButton v-if="price" to="/passes" size="sm">Get tickets</UiButton>
+      <UiButton v-if="price" to="/tickets" size="sm">Get tickets</UiButton>
     </div>
   </article>
 </template>

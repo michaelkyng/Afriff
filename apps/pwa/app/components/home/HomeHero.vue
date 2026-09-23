@@ -107,7 +107,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
         </div>
 
         <div class="mt-7 flex flex-wrap gap-2.5 md:mt-6">
-          <UiButton v-if="phase !== 'after'" to="/passes">Get passes</UiButton>
+          <UiButton v-if="phase !== 'after'" to="/tickets">Get tickets</UiButton>
           <UiButton
             to="/programme"
             variant="ghost"

@@ -1,0 +1,3 @@
+-- Local development data only. Applied after migrations by `supabase db reset`.
+-- Add deterministic INSERT statements after the corresponding tables exist.
+-- Keep schema changes, credentials and real attendee data out of this file.

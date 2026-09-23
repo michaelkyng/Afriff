@@ -16,7 +16,7 @@ The base every later feature builds on.
 
 - Nuxt 4 app in `apps/pwa`, SPA mode (`ssr: false`) so everything runs offline from the browser
 - Design tokens in Tailwind 4 (deep navy + gold, dark-first, with a light theme), Archivo display + Onest UI fonts, bundled locally
-- App shell: phones get a top bar + bottom tab bar (Home · Programme · Passes · Wallet · Me); tablets and laptops get a web-app shell — sidebar (icon rail on tablets, full on laptops) with festival status, theme and account, plus a top bar with breadcrumbs, global search (press `/`) and "Get passes" *(desktop shell added after F2 review)*; offline banner, "update available" and "install app" prompts
+- App shell: phones get a top bar + bottom tab bar (Home · Programme · Tickets · Me); tablets and laptops get a web-app shell — sidebar (icon rail on tablets, full on laptops) with festival status, theme and account, plus a top bar with breadcrumbs, global search (press `/`) and "Get passes" *(desktop shell added after F2 review)*; offline banner, "update available" and "install app" prompts
 - PWA: manifest, icons (placeholder mark — replaced with the official logo in F1), service worker with offline app shell
 - Mock API layer: typed contract (`packages/api/src/contract.ts`), mock adapter with simulated latency, localStorage-backed mock DB with reset
 - Seed data (all fictional): festival edition, venues, programme sections, films, screenings, ticket products
@@ -70,31 +70,36 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 - PINs are stored salted and hashed, refused when they are an obvious guess (repeated or sequential digits), and five wrong ones lock an account for five minutes. A reset clears the lockout and ends the account's other sessions.
 - Accounts, PINs, codes and sessions live in the shared API (`packages/api/src/mock/auth.ts`): `auth.signIn`, `requestCode`, `verifyCode`, `setPin`, `me`, `updateProfile`, `signOut`, plus `setAuthToken` on the adapter, all on the same contract an http adapter will implement
 - Profile on the Me tab: initials avatar, name, email, optional Nigerian phone, inline edit with field-level errors, sign out
-- Guest browsing everywhere; the `auth` middleware guards the wallet today (checkout joins it in F4) and returns you to where you were heading after signing in, sign-up or a reset
+- Guest browsing everywhere; the `auth` middleware guards checkout and returns you to where you were heading after signing in. My tickets asks for a sign-in in place, rather than redirecting, sign-up or a reset
 - Session persisted under `afriff:session`; on start-up the app checks the token still works and signs out quietly if the mock data was reset
 - New `UiInput` in the UI kit (label, hint, error, code style, show/hide toggle for PINs) for this and the F4 checkout forms
 
 **Done when:** a new attendee can create an account, leave, come back and sign in with their PIN. ✔︎
 
-## F4 — Passes & checkout ⬜
+## F4 — Passes & checkout ✅
 
-- Catalogue: Festival Pass, Day Pass, Single Screening, Masterclass, Opening Night, Globe Awards Night
-- Single screening flow: pick screening → quantity → seat category (if applicable)
-- Cart with quantity limits, per-product rules and sold-out states
-- Mock checkout: attendee details, order summary, simulated card/transfer payment (success, failure, pending)
-- Order confirmation screen; order history in Me
+- Catalogue at `/passes`: Festival Pass, Day Pass, Single Screening, Masterclass, Opening Night Gala, Globe Awards Night, with live remaining stock
+- Options sheet per product: which day, which screening (searchable, sold-out ones hidden, seats-left shown), which masterclass, then how many. `/passes?screening=<id>` from a film page opens it on that screening
+- Cart (`/cart`, kept on the device under `afriff:cart`): quantity steppers capped by the per-order limit, remaining stock and seats left; the count shows on the Passes tab and in the desktop top bar
+- Checkout (`/checkout`, sign-in required): contact details prefilled from the account, card or transfer, order summary, field-level errors from the shared schemas
+- Simulated payments, deterministic so every branch can be shown: a card ending **0000** is declined, one ending **0001** stays pending, any other card is paid at once, and a transfer is pending until it is confirmed
+- Order page (`/orders/[id]`): status, what happens next, transfer details with a reference, retry with another card, and the order summary. Order history on Me
+- Tickets are issued when money lands, one per seat, and show up under **My tickets** with their entry code. A failed payment issues none and gives the stock back
+- Shared API: `orders.checkout / list / get / pay / confirmTransfer` and `tickets.list` on the contract, `packages/api/src/mock/orders.ts` behind it, checkout and payment schemas in `@afriff/validation`. Limits and stock are checked per order, not per line, so splitting a product across lines cannot get past the cap
 
-**Done when:** an attendee can buy any product type and see it arrive in the wallet, and a failed payment is handled cleanly.
+**Done when:** an attendee can buy any product type and see it arrive under My tickets, and a failed payment is handled cleanly. ✔︎
 
-## F5 — Wallet & tickets ⬜
+## F5 — Ticket detail 🟡
 
-- My tickets grouped by upcoming / past
-- Ticket detail with QR code (payload shaped like the future signed token), brightness hint, ticket status (valid, used, expired, transferred)
+*The wallet is scrapped. Tickets now live on the **My tickets** tab of `/tickets`, next to the Buy tab (delivered with F4). Payment moves to a real provider later, which will change how a ticket is issued but not what one is.*
+
+- Done with F4: My tickets grouped into passes, coming up and past; each card shows what it admits to, the holder and the entry code; a sign-in prompt in place for guests
+- Ticket detail page with the entry code shown large (payload shaped like the future signed token), brightness hint, and status (valid, used, expired, transferred)
 - Works fully offline once loaded
 - Add to calendar (.ics download)
-- Transfer a ticket to another email (mock)
+- Transfer a ticket to another email
 
-**Done when:** tickets open with airplane mode on, and QR codes render crisply at full brightness.
+**Done when:** tickets open with airplane mode on, and the entry code renders crisply at full brightness.
 
 ## F6 — My Festival ⬜
 

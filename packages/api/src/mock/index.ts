@@ -3,6 +3,7 @@ import type { AttendeeApi } from '../contract'
 import { ApiError } from '../contract'
 import type { FilmQuery, ScreeningQuery } from '../types'
 import { createMockAuth } from './auth'
+import { createMockOrders } from './orders'
 import * as seed from './seed'
 
 export interface MockApiOptions {
@@ -30,6 +31,7 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
   }
 
   const auth = createMockAuth(respond)
+  const shop = createMockOrders(respond, auth.currentUser)
 
   return {
     setAuthToken: auth.setToken,
@@ -85,7 +87,11 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
     },
 
     catalog: {
-      listProducts: () => respond(() => seed.products),
+      listProducts: () => respond(() => shop.products()),
     },
+
+    orders: shop.orders,
+
+    tickets: shop.tickets,
   }
 }

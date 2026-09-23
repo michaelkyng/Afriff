@@ -29,6 +29,13 @@ brand/                   source artwork and asset generator
 Only the attendee PWA is implemented. Admin and scanner can be added under
 `apps/` later. The PWA currently uses local mock data; no backend is required.
 
+Supabase infrastructure lives in `supabase/` (local config, migrations, seeds,
+Edge Functions and database tests). `packages/supabase/` provides the shared typed
+client factory and database types for future API adapters. See the
+[Supabase architecture and setup guide](supabase/README.md) for local commands,
+security boundaries and the integration workflow. Start the optional local stack
+with `bun run db:start` after installing Docker; the app still runs in mock mode.
+
 ## Getting started
 
 Use Node **22.12+** (`nvm use` selects Node 22) and Bun **1.3.14**. From the

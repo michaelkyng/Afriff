@@ -1,6 +1,6 @@
 # AFRIFF Attendee PWA
 
-The attendee-facing app for the Africa International Film Festival: programme, passes, checkout and a ticket wallet that works offline.
+The attendee-facing app for the Africa International Film Festival: programme, tickets, checkout and the tickets an attendee already holds.
 
 **Current phase:** frontend only, fully local. There is no backend — all data comes from a typed mock API that stores what attendees create in the browser. See [`docs/ROADMAP-attendee-fe.md`](../../docs/ROADMAP-attendee-fe.md) for the feature plan.
 
@@ -36,16 +36,20 @@ app/
   spa-loading-template.html  splash shown while JS loads
   assets/css/main.css     imports the shared theme; attendee route transitions
   layouts/default.vue     app shell: phone header + tab bar, or desktop sidebar + top bar; offline banner, PWA prompts
-  pages/                  one folder per tab, plus /programme/[slug] (film), /venues/[slug], /signin, /signup, /reset-pin, /styleguide
+  pages/                  index, /programme (+ [slug]), /tickets (Buy and My tickets), /me, plus /venues/[slug],
+                          /cart, /checkout, /orders/[id], /signin, /signup, /reset-pin, /styleguide
+  (F4 adds /cart, /checkout and /orders/[id])
   components/
     app/                  shell pieces (AppSidebar, AppTopBar, AppHeader, AppTabBar, AppPageHeader, AppPwaPrompts, …)
     auth/                 AuthCodeStep, AuthPinStep — the steps /signup and /reset-pin share
     film/                 FilmPoster, FilmCard, FilmScreeningRow
     programme/            ProgrammeItemCard, ProgrammeDayPicker, ProgrammeFilterSheet, ProgrammeSectionCard
     home/                 Home sections (HomeHero, HomeNowNext, HomeFeatured, HomeDontMiss, HomeVenues, …)
+    pass/                 PassProductCard, PassOptionSheet, CartLineRow, OrderSummary, PaymentFields
+    ticket/               TicketCard
   composables/            useApi, useAuth, usePinSetup, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useTheme, useBreadcrumb
   middleware/auth.ts      sends guests to /signin and back again
-  stores/                 Pinia stores (prefs, session)
+  stores/                 Pinia stores (prefs, session, cart)
   plugins/api.ts          selects and injects the shared API adapter
   plugins/auth.client.ts  restores the saved session into the adapter on start-up
   utils/                  Nuxt auto-import bridges to @afriff/api; attendee navigation
@@ -62,6 +66,7 @@ public/                   attendee robots.txt
 - In mock mode, `@afriff/api/mock` answers from seed files with simulated latency (`NUXT_PUBLIC_MOCK_LATENCY`, default 450 ms), so loading states are real.
 - Anything attendees create (accounts, orders, tickets — from F3 onward) is written through `mockDb` into `localStorage` under `afriff:mockdb:*`.
 - **Accounts (F3):** `auth.signIn` takes an email and a six-digit PIN. Getting a PIN — signing up, or replacing a forgotten one — runs `requestCode` → `verifyCode` → `setPin`. In mock mode `requestCode` returns the code it would have emailed (`devCode`) so the screen can show it, and **any six digits are accepted** while there is no mail integration (`ACCEPT_ANY_CODE` in `mock/auth.ts`). `setPin` returns a token, which the app keeps in the `session` store and hands back to the adapter with `setAuthToken`. PINs are stored salted and hashed, five wrong ones lock an account for five minutes, and a reset ends the account's other sessions.
+- **Buying (F4):** `/tickets` has two tabs, Buy and My tickets (`?view=mine`). The cart lives in the `cart` store on the device; `orders.checkout` takes the items, checks them against the catalogue and the programme, decides the payment outcome and issues tickets. Payment outcomes are deterministic in mock mode: a card ending 0000 is declined, one ending 0001 stays pending, anything else is paid, and a transfer waits for `orders.confirmTransfer`.
 - **Adding an API area:** add the methods to `AttendeeApi`, implement them in the mock adapter, then use them from pages via `useApi()`. When the backend arrives, an `http` adapter implements the same interface and `NUXT_PUBLIC_API_MODE=http` switches over.
 
 All seed data (films, people, prices, venues, dates) is fictional or a placeholder — replace it with official data before any public use.
@@ -74,7 +79,7 @@ All seed data (films, people, prices, venues, dates) is fictional or a placehold
 | 768–1023px (tablets) | Icon-rail sidebar + top bar | One-column pages |
 | ≥ 1024px (laptops) | Full sidebar + top bar | Home becomes a dashboard (feed + side rail); filters open as a right-hand drawer |
 
-The desktop top bar shows breadcrumbs (detail pages set theirs with `usePageCrumb()`), a global programme search (press `/`) and "Get passes". Use `AppPageHeader` for page titles so sizes stay consistent.
+The desktop top bar shows breadcrumbs (detail pages set theirs with `usePageCrumb()`), a global programme search (press `/`) and "Get tickets" (the cart, once it has something in it). Use `AppPageHeader` for page titles so sizes stay consistent.
 
 ## Design system
 
@@ -84,7 +89,7 @@ The desktop top bar shows breadcrumbs (detail pages set theirs with `usePageCrum
 - **Surfaces:** `card` (hairline border, surface, resting shadow), `card-interactive` (hover lift on real pointers, press feedback), `row-interactive` (list rows), `pressable` (small controls). Radii: `rounded-card` 16, `rounded-tile` 12, `rounded-thumb` 8, `rounded-tag` 6; buttons, chips and inputs are pills. Shadows: `shadow-card`, `shadow-hover`, `shadow-pop`.
 - **Motion:** `ease-out` is a strong custom curve and the default for transitions; `ease-drawer` for sheets. Keep UI transitions at 150 to 250 ms, animate transform and opacity, exit faster than enter.
 - **Copy:** no uppercase eyebrow labels above headings (use `UiSectionHeader`'s `meta`), no em or en dashes in visible text, at most one middle dot per line.
-- **Forms:** `UiInput` carries the label, hint and error. Fields use `rounded-tile`; buttons, chips and the search box stay pills.
+- **Forms:** `UiInput` carries the label, hint and error, and `UiStepper` handles quantities. Fields use `rounded-tile`; buttons, chips and the search box stay pills.
 - **Components:** start from `layers/ui-kit/components/ui` at the repository root. Browse them all, including the type scale, at `/styleguide` (linked from Me → Developer).
 - **Brand:** the logo comes from afriff.com — emblem as an image, wordmark traced to SVG so it follows the text colour. Sources, the rebuild script and caveats are in [`brand/README.md`](../../brand/README.md).
 

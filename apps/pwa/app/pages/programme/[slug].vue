@@ -123,7 +123,7 @@ async function shareFilm() {
           </dl>
 
           <div class="mt-6 flex flex-wrap gap-2.5">
-            <UiButton :to="screenings.length ? '#screenings' : '/passes'">
+            <UiButton :to="screenings.length ? '#screenings' : '/tickets'">
               {{ upcomingCount ? `${upcomingCount} ${upcomingCount === 1 ? 'screening' : 'screenings'}` : 'See screenings' }}
             </UiButton>
             <UiButton variant="secondary" @click="shareFilm">
