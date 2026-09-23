@@ -87,6 +87,11 @@ The PWA's utility files re-export helpers for Nuxt auto-imports; URLs stay in th
 app. The mock adapter validates film and screening queries with the shared
 schemas and reports invalid input as `ApiError('validation')`.
 
+The mock adapter keeps what attendees create (accounts and sessions today, orders
+and tickets later) in `localStorage` through its own `mockDb` module; seed data
+stays read-only. Accounts sign in with an email and a six-digit PIN; PINs are
+stored salted and hashed, never in the clear.
+
 Local dependencies use `workspace:*`. Plain packages expose TypeScript source
 for the consumer's bundler to compile, so no separate package build is needed.
 The Nuxt app checks the UI layer; API and validation have independent type checks.

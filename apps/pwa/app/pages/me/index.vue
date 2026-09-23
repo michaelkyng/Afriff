@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import {
+  CheckIcon,
   ChevronRightIcon,
+  LogOutIcon,
   MonitorIcon,
   MoonIcon,
+  PencilIcon,
   RotateCcwIcon,
   SunIcon,
   UserRoundIcon,
 } from 'lucide-vue-next'
+import { isApiError } from '@afriff/api'
 import { mockDb } from '@afriff/api/mock/db'
 import type { ThemeMode } from '~/stores/prefs'
 
 useHead({ title: 'Me' })
 
 const { mode } = useTheme()
+const { user, isSignedIn, initials, updateProfile, signOut: endSession } = useAuth()
 const prefs = usePrefsStore()
 const pwa = usePWA()
 const online = useOnline()
@@ -33,6 +38,43 @@ const clockPresets: { label: string; value: string | null }[] = [
   { label: 'Closing night', value: '2026-11-07T19:00:00+01:00' },
   { label: 'After the festival', value: '2026-11-09T10:00:00+01:00' },
 ]
+
+// ------------------------------------------------------------------ profile
+
+const editing = ref(false)
+const form = reactive({ name: '', phone: '' })
+const formErrors = reactive({ name: '', phone: '' })
+const saving = ref(false)
+
+function startEditing() {
+  form.name = user.value?.name ?? ''
+  form.phone = user.value?.phone ?? ''
+  formErrors.name = ''
+  formErrors.phone = ''
+  editing.value = true
+}
+
+async function saveProfile() {
+  saving.value = true
+  formErrors.name = ''
+  formErrors.phone = ''
+  try {
+    await updateProfile({ name: form.name, phone: form.phone })
+    editing.value = false
+  }
+  catch (error) {
+    const field = isApiError(error) && error.details?.field === 'phone' ? 'phone' : 'name'
+    formErrors[field] = isApiError(error) ? error.message : 'We could not save that. Try again.'
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+async function signOut() {
+  await endSession()
+  await navigateTo('/')
+}
 
 const confirmingReset = ref(false)
 let resetTimer: ReturnType<typeof setTimeout> | undefined
@@ -59,7 +101,63 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
     <AppPageHeader title="Me" />
 
     <!-- Account -->
-    <UiCard class="flex flex-wrap items-center gap-3.5">
+    <UiCard v-if="isSignedIn" :padded="false">
+      <div class="flex flex-wrap items-center gap-3.5 p-4 md:p-5">
+        <div
+          class="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft font-display font-semibold text-accent-ink"
+          aria-hidden="true"
+        >
+          {{ initials }}
+        </div>
+        <div class="min-w-0 flex-1 basis-52">
+          <p class="truncate font-semibold">{{ user?.name }}</p>
+          <p class="truncate text-meta text-muted">{{ user?.email }}</p>
+        </div>
+        <UiButton v-if="!editing" size="sm" variant="secondary" @click="startEditing">
+          <PencilIcon aria-hidden="true" />
+          Edit
+        </UiButton>
+      </div>
+
+      <form v-if="editing" class="space-y-4 border-t border-line p-4 md:p-5" novalidate @submit.prevent="saveProfile">
+        <UiInput v-model="form.name" label="Name" autocomplete="name" :error="formErrors.name" :disabled="saving" />
+        <UiInput
+          v-model="form.phone"
+          label="Phone"
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          placeholder="0803 123 4567"
+          hint="Optional. Used for ticket reminders."
+          :error="formErrors.phone"
+          :disabled="saving"
+        />
+        <div class="flex gap-2">
+          <UiButton type="submit" size="sm" :loading="saving">
+            <CheckIcon aria-hidden="true" />
+            Save
+          </UiButton>
+          <UiButton size="sm" variant="ghost" :disabled="saving" @click="editing = false">Cancel</UiButton>
+        </div>
+      </form>
+
+      <dl v-else-if="user?.phone" class="border-t border-line px-4 py-3 text-meta md:px-5">
+        <div class="flex justify-between gap-4">
+          <dt class="text-muted">Phone</dt>
+          <dd class="tabular-nums">{{ user.phone }}</dd>
+        </div>
+      </dl>
+
+      <div class="flex items-center justify-between gap-4 border-t border-line px-4 py-3 md:px-5">
+        <p class="text-meta text-muted">Signed in on this device</p>
+        <UiButton size="sm" variant="ghost" @click="signOut">
+          <LogOutIcon aria-hidden="true" />
+          Sign out
+        </UiButton>
+      </div>
+    </UiCard>
+
+    <UiCard v-else class="flex flex-wrap items-center gap-3.5">
       <div class="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-raised text-muted" aria-hidden="true">
         <UserRoundIcon class="size-5" />
       </div>
@@ -67,7 +165,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
         <p class="font-semibold">Browsing as a guest</p>
         <p class="text-meta text-muted">Sign in to buy passes and keep your tickets.</p>
       </div>
-      <UiButton size="sm" variant="secondary" disabled>Sign in</UiButton>
+      <UiButton size="sm" to="/signin">Sign in</UiButton>
     </UiCard>
 
     <!-- Appearance -->
@@ -160,10 +258,5 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </UiCard>
     </section>
 
-    <AppPlanned
-      feature="F3"
-      title="Account (mock auth)"
-      :items="['Sign up / sign in with email and a one-time code', 'Profile and order history', 'Sign out']"
-    />
   </div>
 </template>

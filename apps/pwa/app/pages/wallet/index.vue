@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { WalletCardsIcon } from 'lucide-vue-next'
 
+definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Wallet' })
+
 </script>
 
 <template>

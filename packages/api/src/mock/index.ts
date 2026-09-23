@@ -2,6 +2,7 @@ import { filmQuerySchema, screeningQuerySchema } from '@afriff/validation'
 import type { AttendeeApi } from '../contract'
 import { ApiError } from '../contract'
 import type { FilmQuery, ScreeningQuery } from '../types'
+import { createMockAuth } from './auth'
 import * as seed from './seed'
 
 export interface MockApiOptions {
@@ -19,15 +20,22 @@ function normalise(text: string): string {
 }
 
 export function createMockApi(options: MockApiOptions): AttendeeApi {
-  const respond = async <T>(produce: () => T): Promise<T> => {
+  /** Producers may be async: hashing a PIN is, everything else is not. */
+  const respond = async <T>(produce: () => T | Promise<T>): Promise<T> => {
     if (options.latency > 0) {
       const jitter = options.latency * (0.6 + Math.random() * 0.8)
       await new Promise((resolve) => setTimeout(resolve, jitter))
     }
-    return clone(produce())
+    return clone(await produce())
   }
 
+  const auth = createMockAuth(respond)
+
   return {
+    setAuthToken: auth.setToken,
+
+    auth: auth.api,
+
     festival: {
       get: () => respond(() => seed.festival),
     },

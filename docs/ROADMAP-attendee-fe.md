@@ -62,14 +62,19 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 - **Motion:** custom ease-out and drawer curves, 150 to 250 ms for UI, sheets slide fully in on the drawer curve, exits faster than entrances, reduced motion respected.
 - Fixed: "Explore by section" was empty after the monorepo move because `ProgrammeSectionCard` no longer resolved (the file is now `ProgrammeSectionCard.vue`).
 
-## F3 — Account (mock auth) ⬜
+## F3 — Account (mock auth) ✅
 
-- Sign up / sign in with email + one-time code (code is shown on screen in mock mode)
-- Profile: name, phone, email, avatar initials
-- Guest browsing; sign-in required only for checkout and wallet
-- Route guard middleware, session persisted locally, sign out
+- `/signin`: email plus the six-digit PIN the attendee chose. "Forgot your PIN?" goes to `/reset-pin`.
+- `/signup`: email → six-digit code → name and a new PIN. `/reset-pin` is the same code-then-PIN flow without the name, and both share `usePinSetup` with the `AuthCodeStep` / `AuthPinStep` components, so they differ only in wording.
+- No mail integration yet, so **any six-digit code is accepted** (`ACCEPT_ANY_CODE` in `packages/api/src/mock/auth.ts`). Mock mode still shows the code it would have sent, with a "Fill it in" button, so the flow reads like the real one offline. Codes expire after 10 minutes, the ticket they produce is single-use, and "Send again" has a 30-second cooldown.
+- PINs are stored salted and hashed, refused when they are an obvious guess (repeated or sequential digits), and five wrong ones lock an account for five minutes. A reset clears the lockout and ends the account's other sessions.
+- Accounts, PINs, codes and sessions live in the shared API (`packages/api/src/mock/auth.ts`): `auth.signIn`, `requestCode`, `verifyCode`, `setPin`, `me`, `updateProfile`, `signOut`, plus `setAuthToken` on the adapter, all on the same contract an http adapter will implement
+- Profile on the Me tab: initials avatar, name, email, optional Nigerian phone, inline edit with field-level errors, sign out
+- Guest browsing everywhere; the `auth` middleware guards the wallet today (checkout joins it in F4) and returns you to where you were heading after signing in, sign-up or a reset
+- Session persisted under `afriff:session`; on start-up the app checks the token still works and signs out quietly if the mock data was reset
+- New `UiInput` in the UI kit (label, hint, error, code style, show/hide toggle for PINs) for this and the F4 checkout forms
 
-**Done when:** a new attendee can create an account, leave, come back and still be signed in.
+**Done when:** a new attendee can create an account, leave, come back and sign in with their PIN. ✔︎
 
 ## F4 — Passes & checkout ⬜
 

@@ -10,6 +10,7 @@ const route = useRoute()
 const { data: festival } = useFestival()
 const { phase, today, countdown } = useFestivalClock(festival)
 const { mode } = useTheme()
+const { user, isSignedIn, initials } = useAuth()
 const pwa = usePWA()
 
 const nextTheme: Record<ThemeMode, ThemeMode> = { system: 'dark', dark: 'light', light: 'system' }
@@ -108,16 +109,25 @@ const status = computed(() => {
       </button>
 
       <NuxtLink
-        to="/me"
-        title="Account"
+        :to="isSignedIn ? '/me' : '/signin'"
+        :title="isSignedIn ? user?.name : 'Sign in'"
         class="flex items-center gap-3 rounded-tile p-2 transition-colors hover:bg-hover md:justify-center lg:justify-start"
       >
-        <span class="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-raised text-muted" aria-hidden="true">
+        <span
+          v-if="isSignedIn"
+          class="grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-display text-label font-semibold text-accent-ink"
+          aria-hidden="true"
+        >
+          {{ initials }}
+        </span>
+        <span v-else class="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-raised text-muted" aria-hidden="true">
           <UserRoundIcon class="size-4" />
         </span>
         <span class="min-w-0 md:sr-only lg:not-sr-only">
-          <span class="block truncate text-meta font-semibold">Guest</span>
-          <span class="block truncate text-label text-muted">Sign in to buy passes</span>
+          <span class="block truncate text-meta font-semibold">{{ isSignedIn ? user?.name : 'Guest' }}</span>
+          <span class="block truncate text-label text-muted">
+            {{ isSignedIn ? user?.email : 'Sign in to buy passes' }}
+          </span>
         </span>
       </NuxtLink>
     </div>

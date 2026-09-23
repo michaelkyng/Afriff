@@ -1,13 +1,22 @@
 import type {
+  AuthSession,
+  CodeChallenge,
   Festival,
   FestivalEvent,
   Film,
   FilmQuery,
+  ProfileInput,
+  RequestCodeInput,
   Screening,
   ScreeningQuery,
   Section,
+  SetPinInput,
+  SignInInput,
   TicketProduct,
+  User,
   Venue,
+  VerificationTicket,
+  VerifyCodeInput,
 } from './types'
 
 /**
@@ -18,9 +27,51 @@ import type {
  * exists, an `http` adapter implements the same interface and the app switches
  * with `NUXT_PUBLIC_API_MODE=http` — no page or component changes.
  *
- * New areas (auth, orders, tickets, inbox) are added here as their features land.
+ * New areas (orders, tickets, inbox) are added here as their features land.
  */
 export interface AttendeeApi {
+  /**
+   * The session token to send with authenticated calls, or null when signed out.
+   * The app sets this from the persisted session on start-up and after sign-in.
+   */
+  setAuthToken(token: string | null): void
+
+  /**
+   * Signing in takes an email and a six-digit PIN. Getting a PIN in the first
+   * place — signing up, or replacing a forgotten one — goes through an emailed
+   * code: `requestCode` → `verifyCode` → `setPin`.
+   */
+  auth: {
+    /**
+     * Signs an existing account in.
+     * Throws `ApiError('unauthorized')` when the pair does not match, or when
+     * too many wrong PINs have locked the account for a while.
+     */
+    signIn(input: SignInInput): Promise<AuthSession>
+    /**
+     * Sends a one-time code to the email, to sign up or to reset a PIN.
+     * In mock mode the returned challenge carries the code to show on screen.
+     * Throws `ApiError('conflict')` signing up with an email that already has an
+     * account, and `ApiError('not_found')` resetting one that has none.
+     */
+    requestCode(input: RequestCodeInput): Promise<CodeChallenge>
+    /**
+     * Checks the code and returns a short-lived ticket for `setPin`.
+     * Throws `ApiError('unauthorized')` when the code is wrong or expired.
+     */
+    verifyCode(input: VerifyCodeInput): Promise<VerificationTicket>
+    /**
+     * Sets the PIN against a verified email and signs in with it. A sign-up also
+     * needs `name`; a reset ends the account's other sessions.
+     * Throws `ApiError('unauthorized')` when the ticket is spent or expired.
+     */
+    setPin(input: SetPinInput): Promise<AuthSession>
+    /** The signed-in attendee. Throws `ApiError('unauthorized')` without a valid token. */
+    me(): Promise<User>
+    updateProfile(input: ProfileInput): Promise<User>
+    signOut(): Promise<void>
+  }
+
   festival: {
     get(): Promise<Festival>
   }

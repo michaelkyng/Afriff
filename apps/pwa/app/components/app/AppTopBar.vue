@@ -11,6 +11,9 @@ const section = computed(() => {
   if (nav) return { label: nav.label, to: nav.to }
   if (route.path.startsWith('/venues')) return { label: 'Venues', to: '/#venues' }
   if (route.path.startsWith('/styleguide')) return { label: 'Styleguide', to: '/styleguide' }
+  if (route.path.startsWith('/signin')) return { label: 'Sign in', to: '/signin' }
+  if (route.path.startsWith('/signup')) return { label: 'Create account', to: '/signup' }
+  if (route.path.startsWith('/reset-pin')) return { label: 'Reset PIN', to: '/reset-pin' }
   return null
 })
 

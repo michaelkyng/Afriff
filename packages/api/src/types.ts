@@ -1,4 +1,4 @@
-import type { Genre } from '@afriff/validation'
+import type { CodePurpose, Genre } from '@afriff/validation'
 
 /**
  * Shared AFRIFF domain models for apps and API adapters.
@@ -76,7 +76,17 @@ export interface Section {
   hue: number
 }
 
-export type { Genre, FilmQuery, ScreeningQuery } from '@afriff/validation'
+export type {
+  Genre,
+  FilmQuery,
+  ScreeningQuery,
+  CodePurpose,
+  SignInInput,
+  RequestCodeInput,
+  VerifyCodeInput,
+  SetPinInput,
+  ProfileInput,
+} from '@afriff/validation'
 
 /** Nigerian (NFVCB-style) age classification. */
 export type AgeRating = 'G' | 'PG' | '12' | '15' | '18'
@@ -178,4 +188,47 @@ export interface TicketProduct {
   /** Remaining stock. `null` means not limited at product level. */
   remaining: number | null
   badge?: string
+}
+
+// ------------------------------------------------------------------ account
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  phone?: string
+  createdAt: ISODateTime
+}
+
+/** What a sign-in returns: the bearer token for later calls, plus who it belongs to. */
+export interface AuthSession {
+  token: string
+  user: User
+  expiresAt: ISODateTime
+}
+
+/** The result of asking for a one-time code, to sign up or to reset a forgotten PIN. */
+export interface CodeChallenge {
+  email: string
+  purpose: CodePurpose
+  expiresAt: ISODateTime
+  /**
+   * Mock mode only: the code the real service would email. The app shows it on
+   * screen so the flow can be completed offline. The http adapter never sets this.
+   */
+  devCode?: string
+}
+
+/**
+ * Proof that a one-time code was checked. It authorises one call to `setPin`
+ * for that email, and nothing else, so a verified address is never left able to
+ * do more than the flow that verified it.
+ */
+export interface VerificationTicket {
+  token: string
+  email: string
+  purpose: CodePurpose
+  expiresAt: ISODateTime
+  /** The name already on the account, when resetting a PIN. Absent when signing up. */
+  name?: string
 }
