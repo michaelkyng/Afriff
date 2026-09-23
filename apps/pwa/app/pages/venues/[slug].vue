@@ -114,7 +114,7 @@ const totalSeats = computed(() => venue.value?.screens.reduce((sum, s) => sum + 
         />
         <ul v-if="dayItems.length" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <li v-for="item in dayItems" :key="item.id">
-            <ProgrammeItemCard :item="item" :now="now" :to="programmeItemLink(item)" />
+            <ProgrammeItemCard :item="item" :now="now" :to="programmeItemLink(item)" saveable />
           </li>
         </ul>
         <UiEmptyState

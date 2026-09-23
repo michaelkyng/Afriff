@@ -126,6 +126,7 @@ async function shareFilm() {
             <UiButton :to="screenings.length ? '#screenings' : '/tickets'">
               {{ upcomingCount ? `${upcomingCount} ${upcomingCount === 1 ? 'screening' : 'screenings'}` : 'See screenings' }}
             </UiButton>
+            <PlanSaveButton v-if="film" kind="film" :ref-id="film.id" :name="film.title" variant="button" />
             <UiButton variant="secondary" @click="shareFilm">
               <CheckIcon v-if="copied" aria-hidden="true" />
               <Share2Icon v-else aria-hidden="true" />

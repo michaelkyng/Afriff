@@ -138,6 +138,19 @@ export const ticketTransferSchema = z.object({
   name: z.union([nameSchema, z.literal('')]).optional(),
 })
 
+// ------------------------------------------------------------------ my festival
+
+export const savedKindSchema = z.enum(['film', 'screening', 'event'])
+
+/** One thing put aside: which sort of thing, and which one. */
+export const savedItemSchema = z.object({
+  kind: savedKindSchema,
+  refId: z.string().min(1),
+})
+
+/** What a device hands over when its saved list meets an account's. */
+export const savedMergeSchema = z.array(savedItemSchema).max(200)
+
 export type Genre = z.infer<typeof genreSchema>
 export type FilmQuery = z.infer<typeof filmQuerySchema>
 export type ScreeningQuery = z.infer<typeof screeningQuerySchema>
@@ -152,3 +165,4 @@ export type OrderContactInput = z.input<typeof orderContactSchema>
 export type PaymentInput = z.input<typeof paymentSchema>
 export type CheckoutInput = z.input<typeof checkoutSchema>
 export type TicketTransferInput = z.input<typeof ticketTransferSchema>
+export type SavedInput = z.input<typeof savedItemSchema>

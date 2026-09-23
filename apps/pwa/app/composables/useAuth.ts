@@ -53,10 +53,14 @@ export function useAuth() {
   const isSignedIn = computed(() => session.isSignedIn)
   const initials = computed(() => initialsOf(session.user))
 
-  /** Hands a new session to both the adapter and the persisted store. */
+  /**
+   * Hands a new session to both the adapter and the persisted store, then folds
+   * whatever was saved while signed out into the account.
+   */
   function adopt(result: AuthSession) {
     api.setAuthToken(result.token)
     session.signIn(result)
+    usePlanStore().sync()
     return result
   }
 
@@ -94,6 +98,7 @@ export function useAuth() {
     }
     api.setAuthToken(null)
     session.signOut()
+    usePlanStore().clear()
   }
 
   /** Confirms a restored token still works, and clears the session when it does not. */
@@ -102,11 +107,13 @@ export function useAuth() {
     api.setAuthToken(session.token)
     try {
       session.setUser(await api.auth.me())
+      await usePlanStore().sync()
     }
     catch (error) {
       if (isApiError(error) && error.code === 'unauthorized') {
         api.setAuthToken(null)
         session.signOut()
+        usePlanStore().clear()
       }
     }
   }

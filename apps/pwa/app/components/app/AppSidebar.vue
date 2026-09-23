@@ -12,6 +12,7 @@ const { phase, today, countdown } = useFestivalClock(festival)
 const { mode } = useTheme()
 const { user, isSignedIn, initials } = useAuth()
 const pwa = usePWA()
+const plan = usePlanStore()
 
 const nextTheme: Record<ThemeMode, ThemeMode> = { system: 'dark', dark: 'light', light: 'system' }
 const themeMeta = computed(() => ({
@@ -67,6 +68,32 @@ const status = computed(() => {
               aria-hidden="true"
             />
             <span class="md:sr-only lg:not-sr-only">{{ item.label }}</span>
+          </NuxtLink>
+        </li>
+      </ul>
+
+      <ul class="mt-1 space-y-1 border-t border-line pt-1">
+        <li v-for="item in secondaryNav" :key="item.to">
+          <NuxtLink
+            :to="item.to"
+            :title="item.label"
+            :aria-current="isNavActive(item, route.path) ? 'page' : undefined"
+            class="flex h-10 items-center gap-3 rounded-tile px-3 font-medium transition-colors md:justify-center lg:justify-start"
+            :class="
+              isNavActive(item, route.path) ? 'bg-accent-soft text-accent-ink' : 'text-muted hover:bg-hover hover:text-ink'
+            "
+          >
+            <component
+              :is="item.icon"
+              class="size-5 shrink-0"
+              :stroke-width="isNavActive(item, route.path) ? 2.25 : 1.75"
+              aria-hidden="true"
+            />
+            <span class="md:sr-only lg:not-sr-only">{{ item.label }}</span>
+            <span
+              v-if="plan.count"
+              class="ml-auto hidden text-meta text-muted tabular-nums lg:inline"
+            >{{ plan.count }}</span>
           </NuxtLink>
         </li>
       </ul>

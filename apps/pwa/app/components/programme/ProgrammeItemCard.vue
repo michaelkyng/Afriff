@@ -19,6 +19,8 @@ const props = defineProps<{
   showDay?: boolean
   /** Makes the whole card a link (stretched link on the title). */
   to?: string
+  /** Offers the save toggle. Off in places that are already a summary, like Home. */
+  saveable?: boolean
 }>()
 
 const eventIcons: Record<EventKind, Component> = {
@@ -105,16 +107,27 @@ const status = computed<{ text: string; tone: string } | null>(() => {
       </h3>
       <p class="mt-0.5 truncate text-label text-muted">{{ item.venue.shortName }}, {{ item.room }}</p>
 
-      <div class="mt-auto flex flex-wrap gap-1 pt-1.5">
-        <template v-if="item.kind === 'screening'">
-          <UiBadge v-if="item.screening.format === 'Gala'" tone="accent">Gala</UiBadge>
-          <UiBadge v-if="item.screening.hasQa">
-            <MessageCircleQuestionIcon aria-hidden="true" />
-            Q&amp;A
-          </UiBadge>
-          <UiBadge v-if="item.section">{{ item.section.name }}</UiBadge>
-        </template>
-        <UiBadge v-else>{{ eventLabels[item.event.kind] }}</UiBadge>
+      <div class="mt-auto flex items-end justify-between gap-2 pt-1.5">
+        <div class="flex flex-wrap gap-1">
+          <template v-if="item.kind === 'screening'">
+            <UiBadge v-if="item.screening.format === 'Gala'" tone="accent">Gala</UiBadge>
+            <UiBadge v-if="item.screening.hasQa">
+              <MessageCircleQuestionIcon aria-hidden="true" />
+              Q&amp;A
+            </UiBadge>
+            <UiBadge v-if="item.section">{{ item.section.name }}</UiBadge>
+          </template>
+          <UiBadge v-else>{{ eventLabels[item.event.kind] }}</UiBadge>
+        </div>
+        <!-- Positioned, so it sits above the card's stretched link. -->
+        <PlanSaveButton
+          v-if="saveable && !ended"
+          class="relative"
+          :kind="item.kind"
+          :ref-id="item.id"
+          :name="item.title"
+          size="sm"
+        />
       </div>
     </div>
 

@@ -53,7 +53,14 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
       </div>
     </div>
 
-    <div class="shrink-0">
+    <div class="flex shrink-0 items-center gap-2">
+      <PlanSaveButton
+        v-if="!ended"
+        kind="screening"
+        :ref-id="item.screening.id"
+        :name="`${item.title}, ${formatDay(item.startsAt)} ${formatTime(item.startsAt)}`"
+        size="sm"
+      />
       <span v-if="ended" class="text-meta font-medium text-subtle">Screened</span>
       <UiBadge v-else-if="live" tone="accent">Showing now</UiBadge>
       <UiButton v-else-if="item.availability.status === 'sold_out'" size="sm" variant="secondary" disabled>Sold out</UiButton>

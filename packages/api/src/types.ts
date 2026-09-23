@@ -90,6 +90,7 @@ export type {
   CheckoutInput,
   PaymentInput,
   TicketTransferInput,
+  SavedInput,
 } from '@afriff/validation'
 
 /** Nigerian (NFVCB-style) age classification. */
@@ -344,4 +345,16 @@ export interface Ticket {
   transfer?: TicketTransfer
   /** Set on a ticket that arrived from someone else. */
   origin?: TicketOrigin
+}
+
+// ------------------------------------------------------------------ my festival
+
+/** What an attendee can put aside: a film to watch out for, or a slot in their week. */
+export type SavedKind = 'film' | 'screening' | 'event'
+
+export interface SavedItem {
+  kind: SavedKind
+  /** The film, screening or event this points at. */
+  refId: string
+  savedAt: ISODateTime
 }

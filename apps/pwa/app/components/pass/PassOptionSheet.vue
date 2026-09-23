@@ -85,15 +85,26 @@ const maxQuantity = computed(() => {
   return Math.max(1, Math.min(...limits))
 })
 
-watch(open, (isOpen) => {
-  if (!isOpen) return
+function reset() {
   quantity.value = 1
   error.value = ''
   search.value = ''
   selectedDay.value = null
   selectedEvent.value = eventOptions.value.length === 1 ? (eventOptions.value[0]?.event.id ?? null) : null
   selectedScreening.value = props.screeningId ?? null
-})
+}
+
+/**
+ * Immediate, because a deep link (`/tickets?screening=…`) mounts this sheet with
+ * `open` already true: without it the preselected screening would never be picked up.
+ */
+watch(
+  open,
+  (isOpen) => {
+    if (isOpen) reset()
+  },
+  { immediate: true },
+)
 
 watch(maxQuantity, (max) => {
   if (quantity.value > max) quantity.value = max

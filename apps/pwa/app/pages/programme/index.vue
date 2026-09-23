@@ -231,7 +231,7 @@ const resultNoun = computed(() => {
           </h2>
           <ul class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <li v-for="item in group.items" :key="item.id">
-              <ProgrammeItemCard :item="item" :now="now" :to="programmeItemLink(item)" />
+              <ProgrammeItemCard :item="item" :now="now" :to="programmeItemLink(item)" saveable />
             </li>
           </ul>
         </section>

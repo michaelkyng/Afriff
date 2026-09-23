@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  BookmarkIcon,
   CheckIcon,
   ChevronRightIcon,
   LogOutIcon,
@@ -8,6 +9,7 @@ import {
   PencilIcon,
   RotateCcwIcon,
   SunIcon,
+  TicketCheckIcon,
   UserRoundIcon,
 } from 'lucide-vue-next'
 import { isApiError } from '@afriff/api'
@@ -30,6 +32,7 @@ watchEffect(() => {
 
 const orderTone = { paid: 'success', pending: 'accent', failed: 'danger' } as const
 const prefs = usePrefsStore()
+const plan = usePlanStore()
 const pwa = usePWA()
 const online = useOnline()
 const { data: festival } = useFestival()
@@ -178,6 +181,30 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </div>
       <UiButton size="sm" to="/signin">Sign in</UiButton>
     </UiCard>
+
+    <!-- Your festival -->
+    <section aria-labelledby="yours-title" class="space-y-2">
+      <h2 id="yours-title" class="px-1 text-meta font-semibold text-muted">Yours</h2>
+      <UiCard :padded="false" class="divide-y divide-line">
+        <NuxtLink to="/my-festival" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
+          <BookmarkIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">My festival</span>
+            <span class="block text-meta text-muted">Your plan, with clashes flagged</span>
+          </span>
+          <span v-if="plan.count" class="text-meta text-muted tabular-nums">{{ plan.count }}</span>
+          <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+        </NuxtLink>
+        <NuxtLink to="/tickets?view=mine" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
+          <TicketCheckIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">My tickets</span>
+            <span class="block text-meta text-muted">Everything you have bought</span>
+          </span>
+          <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+        </NuxtLink>
+      </UiCard>
+    </section>
 
     <!-- Orders -->
     <section v-if="isSignedIn" aria-labelledby="orders-title" class="space-y-2">

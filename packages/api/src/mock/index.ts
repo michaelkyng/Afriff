@@ -4,6 +4,7 @@ import { ApiError } from '../contract'
 import type { FilmQuery, ScreeningQuery } from '../types'
 import { createMockAuth } from './auth'
 import { createMockOrders } from './orders'
+import { createMockSaved } from './saved'
 import * as seed from './seed'
 
 export interface MockApiOptions {
@@ -32,6 +33,7 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
 
   const auth = createMockAuth(respond)
   const shop = createMockOrders(respond, auth.currentUser)
+  const saved = createMockSaved(respond, auth.currentUser)
 
   return {
     setAuthToken: auth.setToken,
@@ -93,5 +95,7 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
     orders: shop.orders,
 
     tickets: shop.tickets,
+
+    saved,
   }
 }

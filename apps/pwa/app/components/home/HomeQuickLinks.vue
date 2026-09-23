@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { CalendarDaysIcon, MapPinIcon, TicketCheckIcon, TicketIcon } from 'lucide-vue-next'
+import { BookmarkIcon, CalendarDaysIcon, MapPinIcon, TicketIcon } from 'lucide-vue-next'
 
 /** Shortcuts to the main areas. A row of tiles on phones and tablets, one segmented panel in the desktop rail. */
 const props = withDefaults(defineProps<{ fromPrice?: string; venueCount?: number; layout?: 'grid' | 'stack' }>(), {
   layout: 'grid',
 })
 
-const links = computed<{ label: string; hint: string; to: string; icon: Component }[]>(() => [
-  { label: 'Programme', hint: 'Films and times', to: '/programme', icon: CalendarDaysIcon },
-  { label: 'Tickets', hint: props.fromPrice ? `From ${props.fromPrice}` : 'Passes and tickets', to: '/tickets', icon: TicketIcon },
-  { label: 'My tickets', hint: 'What you have bought', to: '/tickets?view=mine', icon: TicketCheckIcon },
-  { label: 'Venues', hint: props.venueCount ? `${props.venueCount} across Lagos` : 'Getting there', to: '/#venues', icon: MapPinIcon },
-])
+const plan = usePlanStore()
+
+const links = computed<{ label: string; hint: string; to: string; icon: Component }[]>(() => {
+  const planCount = plan.count
+  return [
+    { label: 'Programme', hint: 'Films and times', to: '/programme', icon: CalendarDaysIcon },
+    { label: 'Tickets', hint: props.fromPrice ? `From ${props.fromPrice}` : 'Passes and tickets', to: '/tickets', icon: TicketIcon },
+    { label: 'My festival', hint: planCount ? `${planCount} saved` : 'Your plan and clashes', to: '/my-festival', icon: BookmarkIcon },
+    { label: 'Venues', hint: props.venueCount ? `${props.venueCount} across Lagos` : 'Getting there', to: '/#venues', icon: MapPinIcon },
+  ]
+})
 </script>
 
 <template>

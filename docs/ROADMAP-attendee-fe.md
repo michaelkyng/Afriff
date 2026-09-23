@@ -104,14 +104,18 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 
 **Done when:** tickets open with airplane mode on, and the entry code renders crisply at full brightness. ✔︎
 
-## F6 — My Festival ⬜
+## F6 — My Festival ✅
 
-- Save films to a watchlist
-- Personal schedule built from saved screenings and purchased tickets
-- Clash detection (overlapping screenings) with warnings
-- Reminder toggles (local notifications where the browser allows it)
+- `/my-festival`: the attendee's own week, day by day, built from what they have tickets for and what they have saved. Reached from Home, from Me, and from the rail on tablets and laptops; the phone tab bar stays at four
+- Save anything from where you find it: a bookmark on every programme card and screening row, and "Save film" on a film page. Saved films become the **watchlist**; saved screenings and events become the **schedule**
+- Saving works signed out. The list lives on the device under `afriff:plan`, and whatever was saved before there was an account is folded into it at sign-in (`saved.merge`). Signing out leaves the plan with the account
+- **Clash detection:** two slots running over each other are flagged as a clash, and two at different venues with less than 45 minutes between them as tight, with the gap in minutes. Both show at the top of the page and on the rows they affect
+- Tickets outrank saves for the same slot, so a screening that has been bought reads as a ticket and links to it
+- **Reminders** per slot, set on this device: the browser is asked for permission on the first toggle, and a timer per upcoming slot shows a notification 30 minutes before. They only fire while the app is open, which the page says; F7 replaces the mechanism, not the setting
+- Shared API: `saved.list / add / remove / merge` on the contract, `packages/api/src/mock/saved.ts` behind it, and the plan logic (`buildPlan`, `groupPlanByDay`, `planWarnings`, `warningsByKey`) in `@afriff/api/plan`
+- Fixed on the way: `/tickets?screening=…` from a film page opened the options sheet but never preselected the screening, because the sheet mounts with `open` already true and the watcher only ran on a change
 
-**Done when:** an attendee can plan their week and see clashes before they buy.
+**Done when:** an attendee can plan their week and see clashes before they buy. ✔︎
 
 ## F7 — Updates & notifications ⬜
 

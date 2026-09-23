@@ -10,6 +10,8 @@ import type {
   PaymentInput,
   ProfileInput,
   RequestCodeInput,
+  SavedInput,
+  SavedItem,
   Screening,
   ScreeningQuery,
   Section,
@@ -128,6 +130,20 @@ export interface AttendeeApi {
      * already, or whose screening has started.
      */
     transfer(id: string, input: TicketTransferInput): Promise<Ticket>
+  }
+
+  /**
+   * What the attendee has put aside: films to watch out for, and the screenings
+   * and events they mean to be at. Every call returns the whole list, because it
+   * is short and the app keeps a copy on the device.
+   */
+  saved: {
+    list(): Promise<SavedItem[]>
+    /** Adding something already saved is not an error; the list comes back unchanged. */
+    add(input: SavedInput): Promise<SavedItem[]>
+    remove(input: SavedInput): Promise<SavedItem[]>
+    /** Takes what a device saved before signing in and folds it into the account. */
+    merge(inputs: SavedInput[]): Promise<SavedItem[]>
   }
 }
 

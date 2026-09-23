@@ -9,6 +9,7 @@
     "./types": "./src/types.ts",
     "./format": "./src/format.ts",
     "./programme": "./src/programme.ts",
+    "./plan": "./src/plan.ts",
     "./qr": "./src/qr.ts",
     "./tickets": "./src/tickets.ts",
     "./filters": "./src/filters.ts",

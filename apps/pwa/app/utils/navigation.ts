@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { CalendarDaysIcon, HouseIcon, TicketIcon, UserRoundIcon } from 'lucide-vue-next'
+import { BookmarkIcon, CalendarDaysIcon, HouseIcon, TicketIcon, UserRoundIcon } from 'lucide-vue-next'
 
 export interface NavItem {
   label: string
@@ -14,6 +14,14 @@ export const primaryNav: NavItem[] = [
   { label: 'Programme', to: '/programme', icon: CalendarDaysIcon },
   { label: 'Tickets', to: '/tickets', icon: TicketIcon },
   { label: 'Me', to: '/me', icon: UserRoundIcon },
+]
+
+/**
+ * Reachable from Home and Me on phones, where the tab bar stays at four, and
+ * from the rail on anything wider.
+ */
+export const secondaryNav: NavItem[] = [
+  { label: 'My festival', to: '/my-festival', icon: BookmarkIcon },
 ]
 
 export function isNavActive(item: NavItem, path: string): boolean {
