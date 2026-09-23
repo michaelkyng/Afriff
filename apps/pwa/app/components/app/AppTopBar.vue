@@ -46,21 +46,21 @@ function back() {
 
 <template>
   <header class="pt-safe sticky top-0 z-40 hidden border-b border-line bg-chrome backdrop-blur-xl md:block">
-    <div class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-8">
-      <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1.5 text-sm">
+    <div class="mx-auto flex h-14 max-w-6xl items-center gap-4 px-8">
+      <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1.5">
         <button
           v-if="crumb"
           type="button"
-          class="-ml-2 grid size-9 shrink-0 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink"
+          class="pressable -ml-2 grid size-8 shrink-0 place-items-center rounded-full text-muted hover:bg-hover hover:text-ink"
           aria-label="Back"
           @click="back"
         >
-          <ArrowLeftIcon class="size-4.5" />
+          <ArrowLeftIcon class="size-4" />
         </button>
         <NuxtLink
           v-if="section"
           :to="section.to"
-          class="shrink-0 font-semibold"
+          class="shrink-0 font-medium transition-colors"
           :class="crumb ? 'text-muted hover:text-ink' : 'text-ink'"
           :aria-current="crumb ? undefined : 'page'"
         >
@@ -68,12 +68,12 @@ function back() {
         </NuxtLink>
         <template v-if="crumb">
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
-          <span class="truncate font-semibold" aria-current="page">{{ crumb }}</span>
+          <span class="truncate font-medium" aria-current="page">{{ crumb }}</span>
         </template>
       </nav>
 
       <form v-if="showSearch" role="search" class="relative ml-auto w-full max-w-xs" @submit.prevent="submit">
-        <SearchIcon class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+        <SearchIcon class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
         <input
           ref="input"
           v-model="query"
@@ -82,11 +82,11 @@ function back() {
           aria-label="Search the programme"
           aria-keyshortcuts="/"
           autocomplete="off"
-          class="h-10 w-full rounded-full border border-line bg-surface pr-10 pl-10 text-sm text-ink placeholder:text-subtle focus:border-line-strong focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          class="h-9 w-full rounded-full border border-line bg-surface pr-10 pl-9 text-meta text-ink shadow-card transition-[border-color,box-shadow] duration-150 ease-out placeholder:text-subtle hover:border-line-strong focus:border-accent/60 focus:shadow-[0_0_0_3px_var(--c-accent-soft)] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
           @keydown.esc="input?.blur()"
         />
         <kbd
-          class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 rounded-md border border-line px-1.5 font-sans text-xs text-subtle"
+          class="pointer-events-none absolute top-1/2 right-2.5 grid h-5 min-w-5 -translate-y-1/2 place-items-center rounded-tag border border-line px-1 font-sans text-label text-subtle"
           aria-hidden="true"
         >
           /

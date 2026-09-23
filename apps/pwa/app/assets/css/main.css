@@ -2,16 +2,18 @@
 @import "@afriff/ui-kit/styles/theme.css";
 @source "../..";
 
-/* Route transitions */
-.page-enter-active,
-.page-leave-active {
+/* Route transitions: a quick fade with a short rise. Exit is faster than enter. */
+.page-enter-active {
   transition:
-    opacity 180ms var(--ease-out-soft),
-    transform 220ms var(--ease-out-soft);
+    opacity 200ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+.page-leave-active {
+  transition: opacity 120ms var(--ease-out);
 }
 .page-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(4px);
 }
 .page-leave-to {
   opacity: 0;

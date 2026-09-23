@@ -5,7 +5,7 @@ import type { Film, Section } from '@afriff/api'
 defineProps<{
   film: Film
   section?: Section
-  /** Show the premiere badge over the poster. */
+  /** Show the premiere label over the poster. */
   showPremiere?: boolean
   /** Makes the card a link (defaults to the film's detail page). */
   to?: string | false
@@ -13,17 +13,23 @@ defineProps<{
 </script>
 
 <template>
-  <article class="group relative rounded-xl has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent has-[a:focus-visible]:ring-offset-4 has-[a:focus-visible]:ring-offset-canvas">
-    <div class="relative">
-      <FilmPoster :film="film" :show-text="false" class="transition-transform duration-300 group-hover:-translate-y-1" />
+  <article class="group relative">
+    <div
+      class="relative overflow-hidden rounded-tile transition-transform duration-200 ease-out group-active:scale-[0.98] group-has-[a:focus-visible]:ring-2 group-has-[a:focus-visible]:ring-accent group-has-[a:focus-visible]:ring-offset-2 group-has-[a:focus-visible]:ring-offset-canvas"
+    >
+      <FilmPoster
+        :film="film"
+        :show-text="false"
+        class="transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+      />
       <span
         v-if="showPremiere && film.premiere"
-        class="absolute top-2 left-2 z-[3] rounded-full bg-black/55 px-2 py-0.5 text-[0.625rem] font-semibold tracking-[0.08em] text-white uppercase backdrop-blur"
+        class="absolute bottom-2 left-2 z-[3] rounded-tag bg-navy-950/80 px-1.5 py-0.5 text-micro font-medium text-white"
       >
         {{ film.premiere }}
       </span>
     </div>
-    <h3 class="mt-2.5 leading-snug font-semibold">
+    <h3 class="mt-2.5 line-clamp-2 leading-snug font-semibold">
       <NuxtLink
         v-if="to !== false"
         :to="to || `/programme/${film.slug}`"
@@ -33,8 +39,8 @@ defineProps<{
       </NuxtLink>
       <template v-else>{{ film.title }}</template>
     </h3>
-    <p class="mt-0.5 text-sm text-muted">
-      <template v-if="section">{{ section.name }} · </template>{{ formatRuntime(film.runtimeMin) }}
+    <p class="mt-0.5 truncate text-meta text-muted">
+      {{ formatRuntime(film.runtimeMin) }}<template v-if="section"> · {{ section.name }}</template>
     </p>
   </article>
 </template>

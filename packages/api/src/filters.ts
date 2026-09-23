@@ -8,7 +8,7 @@ export type TimeOfDay = 'morning' | 'afternoon' | 'evening'
 
 export const TIMES_OF_DAY: { value: TimeOfDay; label: string; hint: string }[] = [
   { value: 'morning', label: 'Morning', hint: 'Before 12:00' },
-  { value: 'afternoon', label: 'Afternoon', hint: '12:00–17:00' },
+  { value: 'afternoon', label: 'Afternoon', hint: '12:00 to 17:00' },
   { value: 'evening', label: 'Evening', hint: 'From 17:00' },
 ]
 

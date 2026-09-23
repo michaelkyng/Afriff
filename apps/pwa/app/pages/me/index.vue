@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {
   ChevronRightIcon,
-  DownloadIcon,
   MonitorIcon,
   MoonIcon,
-  PaletteIcon,
   RotateCcwIcon,
   SunIcon,
-  TimerIcon,
   UserRoundIcon,
 } from 'lucide-vue-next'
 import { mockDb } from '@afriff/api/mock/db'
@@ -58,58 +55,56 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-8">
+  <div class="mx-auto max-w-2xl space-y-7">
     <AppPageHeader title="Me" />
 
     <!-- Account -->
-    <UiCard class="flex flex-wrap items-center gap-4">
-      <div class="grid size-14 shrink-0 place-items-center rounded-full bg-raised text-muted" aria-hidden="true">
-        <UserRoundIcon class="size-6" />
+    <UiCard class="flex flex-wrap items-center gap-3.5">
+      <div class="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-raised text-muted" aria-hidden="true">
+        <UserRoundIcon class="size-5" />
       </div>
       <div class="min-w-0 flex-1 basis-52">
         <p class="font-semibold">Browsing as a guest</p>
-        <p class="text-sm text-muted">Sign in to buy passes and keep your tickets.</p>
+        <p class="text-meta text-muted">Sign in to buy passes and keep your tickets.</p>
       </div>
       <UiButton size="sm" variant="secondary" disabled>Sign in</UiButton>
     </UiCard>
 
     <!-- Appearance -->
-    <section aria-labelledby="appearance-title" class="space-y-3">
-      <h2 id="appearance-title" class="flex items-center gap-2 text-sm font-semibold text-muted">
-        <PaletteIcon class="size-4" aria-hidden="true" />
+    <section aria-labelledby="appearance-title" class="space-y-2">
+      <h2 id="appearance-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
         Appearance
       </h2>
       <UiCard class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p class="font-medium">Theme</p>
-          <p class="text-sm text-muted">System follows your phone’s setting.</p>
+          <p class="text-meta text-muted">System follows your device setting.</p>
         </div>
         <UiSegmented v-model="mode" :options="themeOptions" label="Theme" />
       </UiCard>
     </section>
 
     <!-- App -->
-    <section aria-labelledby="app-title" class="space-y-3">
-      <h2 id="app-title" class="flex items-center gap-2 text-sm font-semibold text-muted">
-        <DownloadIcon class="size-4" aria-hidden="true" />
+    <section aria-labelledby="app-title" class="space-y-2">
+      <h2 id="app-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
         App
       </h2>
       <UiCard :padded="false" class="divide-y divide-line">
-        <div class="flex items-center justify-between gap-4 p-5">
+        <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
             <p class="font-medium">Install on this device</p>
-            <p class="text-sm text-muted">
-              {{ pwa?.isPWAInstalled ? 'Installed — you’re using the app.' : 'Add AFRIFF to your home screen.' }}
+            <p class="text-meta text-muted">
+              {{ pwa?.isPWAInstalled ? 'Installed. You’re using the app.' : 'Add AFRIFF to your home screen.' }}
             </p>
           </div>
           <UiButton v-if="pwa?.showInstallPrompt" size="sm" @click="pwa?.install()">Install</UiButton>
           <UiBadge v-else-if="pwa?.isPWAInstalled" tone="success">Installed</UiBadge>
         </div>
-        <div class="flex items-center justify-between gap-4 p-5">
+        <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <p class="font-medium">Connection</p>
           <UiBadge :tone="online ? 'success' : 'neutral'">{{ online ? 'Online' : 'Offline' }}</UiBadge>
         </div>
-        <div class="flex items-center justify-between gap-4 p-5">
+        <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <p class="font-medium">Ready for offline use</p>
           <UiBadge :tone="pwa?.offlineReady || pwa?.swActivated ? 'success' : 'neutral'">
             {{ pwa?.offlineReady || pwa?.swActivated ? 'Yes' : 'Not yet' }}
@@ -119,23 +114,22 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
     </section>
 
     <!-- Developer -->
-    <section aria-labelledby="dev-title" class="space-y-3">
-      <h2 id="dev-title" class="flex items-center gap-2 text-sm font-semibold text-muted">
-        <TimerIcon class="size-4" aria-hidden="true" />
+    <section aria-labelledby="dev-title" class="space-y-2">
+      <h2 id="dev-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
         Developer
         <UiBadge tone="info">Local build</UiBadge>
       </h2>
       <UiCard :padded="false" class="divide-y divide-line">
-        <div class="space-y-3 p-5">
+        <div class="space-y-2.5 px-4 py-4 md:px-5">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
             <p class="font-medium">Festival clock</p>
-            <p class="text-sm text-muted tabular-nums">
+            <p class="text-meta text-muted tabular-nums">
               {{ formatDay(now) }}, {{ formatTime(now) }}
               <UiBadge v-if="isSimulated" tone="info" class="ml-1">Simulated</UiBadge>
             </p>
           </div>
-          <p class="text-sm text-muted">Preview how the app looks at different points in festival week.</p>
-          <div class="flex flex-wrap gap-2">
+          <p class="text-meta text-muted">Preview how the app looks at different points in festival week.</p>
+          <div class="flex flex-wrap gap-1.5 pt-1">
             <UiChip
               v-for="preset in clockPresets"
               :key="preset.label"
@@ -146,17 +140,17 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
             </UiChip>
           </div>
         </div>
-        <NuxtLink to="/styleguide" class="flex items-center justify-between gap-4 p-5 hover:bg-raised/50">
+        <NuxtLink to="/styleguide" class="row-interactive flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
             <p class="font-medium">Styleguide</p>
-            <p class="text-sm text-muted">Design tokens and UI components.</p>
+            <p class="text-meta text-muted">Design tokens and UI components.</p>
           </div>
-          <ChevronRightIcon class="size-5 text-muted" aria-hidden="true" />
+          <ChevronRightIcon class="size-4 text-subtle" aria-hidden="true" />
         </NuxtLink>
-        <div class="flex items-center justify-between gap-4 p-5">
+        <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
             <p class="font-medium">Reset demo data</p>
-            <p class="text-sm text-muted">Clears mock accounts, orders, tickets and preferences on this device.</p>
+            <p class="text-meta text-muted">Clears mock accounts, orders, tickets and preferences on this device.</p>
           </div>
           <UiButton size="sm" variant="danger" @click="resetDemoData">
             <RotateCcwIcon aria-hidden="true" />

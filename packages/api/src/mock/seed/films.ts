@@ -12,7 +12,7 @@ export const films: Film[] = [
     title: 'The Harmattan Letters',
     logline: 'A retired postman delivers the letters he never sent.',
     synopsis:
-      'When the dry season returns to Ilorin, a retired postman finds a sack of undelivered letters from 1987 — and one addressed to him. His journey across the north to hand them over becomes a reckoning with the love he walked away from.',
+      'When the dry season returns to Ilorin, a retired postman finds a sack of undelivered letters from 1987, and one addressed to him. His journey across the north to hand them over becomes a reckoning with the love he walked away from.',
     year: 2026,
     runtimeMin: 112,
     countries: ['Nigeria'],
@@ -221,7 +221,7 @@ export const films: Film[] = [
     title: 'Okada Diaries',
     logline: 'One day, six passengers, one very patient motorcyclist.',
     synopsis:
-      'An okada rider in Lagos Island carries a bride, a thief, a pastor and a lost child in a single day — and keeps a diary of every one.',
+      'An okada rider in Lagos Island carries a bride, a thief, a pastor and a lost child in a single day, and keeps a diary of every one.',
     year: 2026,
     runtimeMin: 18,
     countries: ['Nigeria'],
@@ -257,7 +257,7 @@ export const films: Film[] = [
     id: 'flm_mamaskitchen',
     slug: 'mamas-kitchen-accra',
     title: 'Mama’s Kitchen, Accra',
-    logline: 'The chop bar that feeds a neighbourhood — and its secrets.',
+    logline: 'The chop bar that feeds a neighbourhood, and keeps its secrets.',
     synopsis: 'A short documentary portrait of a beloved Accra chop bar on its last week before the lease runs out.',
     year: 2025,
     runtimeMin: 15,

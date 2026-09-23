@@ -12,7 +12,7 @@ export const products: TicketProduct[] = [
     summary: 'Every regular screening, all seven days.',
     price: naira(75_000),
     perks: [
-      'All regular screenings, 1–7 Nov (subject to seats)',
+      'All regular screenings, 1-7 Nov (subject to seats)',
       'Priority entry queue',
       'Industry panels and the Filmmakers’ Mixer',
     ],

@@ -16,39 +16,34 @@ const dayNumber = (date: string) => Number(date.slice(8, 10))
 </script>
 
 <template>
-  <div role="radiogroup" aria-label="Festival day" class="scrollbar-none flex gap-2 overflow-x-auto">
+  <div role="radiogroup" aria-label="Festival day" class="scrollbar-none flex gap-1.5 overflow-x-auto">
     <button
       v-for="day in days"
       :key="day.date"
       type="button"
       role="radio"
       :aria-checked="model === day.date"
-      :aria-label="`${day.label}${counts ? `, ${counts[day.date] ?? 0} listings` : ''}${today === day.date ? ', today' : ''}`"
-      class="relative flex min-w-[3.75rem] shrink-0 flex-col items-center rounded-2xl border px-2.5 pt-1.5 pb-2 transition-colors"
+      :aria-label="`${day.label}${day.highlight ? `, ${day.highlight}` : ''}${counts ? `, ${counts[day.date] ?? 0} listings` : ''}${today === day.date ? ', today' : ''}`"
+      :title="day.highlight"
+      class="pressable flex w-[3.25rem] shrink-0 flex-col items-center rounded-tile border py-1.5"
       :class="
         model === day.date
           ? 'border-transparent bg-ink text-canvas'
-          : 'border-line bg-surface text-ink hover:border-line-strong'
+          : 'border-line bg-surface text-ink hover:border-line-strong hover:bg-hover'
       "
       @click="model = day.date"
     >
-      <span class="text-[0.6875rem] font-semibold tracking-[0.08em] uppercase" :class="model === day.date ? 'opacity-75' : 'text-muted'">
+      <span class="text-micro font-medium" :class="model === day.date ? 'opacity-70' : 'text-muted'">
         {{ today === day.date ? 'Today' : weekday(day.date) }}
       </span>
-      <span class="font-display text-2xl leading-tight font-semibold tabular-nums">{{ dayNumber(day.date) }}</span>
+      <span class="text-h3 leading-6 font-semibold tabular-nums">{{ dayNumber(day.date) }}</span>
       <span
         v-if="counts"
-        class="text-[0.6875rem] font-medium tabular-nums"
-        :class="model === day.date ? 'opacity-75' : (counts[day.date] ?? 0) ? 'text-muted' : 'text-subtle'"
+        class="text-micro tabular-nums"
+        :class="model === day.date ? 'opacity-70' : (counts[day.date] ?? 0) ? 'text-muted' : 'text-subtle'"
       >
         {{ counts[day.date] ?? 0 }}
       </span>
-      <span
-        v-if="day.highlight"
-        class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-accent"
-        :title="day.highlight"
-        aria-hidden="true"
-      />
     </button>
   </div>
 </template>

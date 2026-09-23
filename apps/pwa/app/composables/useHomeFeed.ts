@@ -53,10 +53,10 @@ export function useHomeFeed() {
 
   const sections = computed(() =>
     (programme.value?.sections ?? [])
-      .map((section) => ({
-        section,
-        filmCount: programme.value?.films.filter((film) => film.sectionId === section.id).length ?? 0,
-      }))
+      .map((section) => {
+        const films = programme.value?.films.filter((film) => film.sectionId === section.id) ?? []
+        return { section, filmCount: films.length, films: films.slice(0, 3) }
+      })
       .filter((entry) => entry.filmCount > 0),
   )
 
@@ -74,7 +74,7 @@ export function useHomeFeed() {
     return counts
   })
 
-  /** Galas, awards, panels and parties — with masterclasses grouped into one card. */
+  /** Galas, awards, panels and parties, with masterclasses grouped into one card. */
   const dontMiss = computed<DontMissCard[]>(() => {
     const data = programme.value
     const map = lookups.value
@@ -109,9 +109,9 @@ export function useHomeFeed() {
         key: 'masterclasses',
         kind: 'masterclass',
         title: `${masterclasses.length} masterclasses`,
-        when: `${formatDay(first.startsAt)} – ${formatDay(last.startsAt)}, ${formatTime(first.startsAt)} daily`,
+        when: `${formatDay(first.startsAt)} to ${formatDay(last.startsAt)}, ${formatTime(first.startsAt)} daily`,
         where: venueName(first),
-        description: masterclasses.map((e) => e.title).join(' · '),
+        description: masterclasses.map((e) => e.title).join(', '),
         price: priceOf(first),
       })
     }

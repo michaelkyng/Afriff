@@ -2,7 +2,7 @@
 
 **Scope:** the attendee-facing Progressive Web App, built fully local. No backend, no payments, no email/SMS. Every "server" call goes through a typed mock API that stores its state in the browser, so the real backend can replace it later without touching pages or components.
 
-**Stack:** Nuxt 4 (SPA mode) · Tailwind CSS 4 · TypeScript · Pinia · VueUse · @vite-pwa/nuxt · lucide icons · self-hosted fonts (Fraunces + Inter).
+**Stack:** Nuxt 4 (SPA mode) · Tailwind CSS 4 · TypeScript · Pinia · VueUse · @vite-pwa/nuxt · lucide icons · self-hosted fonts (Archivo + Onest).
 
 **How we work:** one feature at a time. Each feature ends in a working, clickable state and gets reviewed before the next one starts.
 
@@ -15,7 +15,7 @@ Status key: ✅ done · 🟡 in progress · ⬜ not started
 The base every later feature builds on.
 
 - Nuxt 4 app in `apps/pwa`, SPA mode (`ssr: false`) so everything runs offline from the browser
-- Design tokens in Tailwind 4 (deep navy + gold, dark-first, with a light theme), Fraunces display + Inter UI fonts, bundled locally
+- Design tokens in Tailwind 4 (deep navy + gold, dark-first, with a light theme), Archivo display + Onest UI fonts, bundled locally
 - App shell: phones get a top bar + bottom tab bar (Home · Programme · Passes · Wallet · Me); tablets and laptops get a web-app shell — sidebar (icon rail on tablets, full on laptops) with festival status, theme and account, plus a top bar with breadcrumbs, global search (press `/`) and "Get passes" *(desktop shell added after F2 review)*; offline banner, "update available" and "install app" prompts
 - PWA: manifest, icons (placeholder mark — replaced with the official logo in F1), service worker with offline app shell
 - Mock API layer: typed contract (`packages/api/src/contract.ts`), mock adapter with simulated latency, localStorage-backed mock DB with reset
@@ -39,7 +39,7 @@ The base every later feature builds on.
 
 ## F2 — Programme & film detail ✅
 
-- `/programme` has two views: **Schedule** (by day) and **Films A–Z**
+- `/programme` has two views: **Schedule** (by day) and **All films** (A to Z)
 - Schedule: sticky day picker with per-day counts (respecting filters), listings grouped by start time, "Now showing" and finished states; on today's schedule, finished listings are tucked behind "Show N finished"
 - Search across titles, directors, cast, countries, languages and event hosts (accent-insensitive, all words must match)
 - Filter sheet (native `<dialog>`): section, venue, time of day, genre, language — applied live, removable chips, "Clear all"
@@ -50,6 +50,17 @@ The base every later feature builds on.
 - Unknown films or venues show the app's 404 page
 
 **Done when:** an attendee can find any film by day, venue or search and see where and when it plays. ✔︎
+
+## Design pass: cards and type ✅ *(after F2 review)*
+
+A refinement of the existing look for a sleeker, more professional app feel. Rules applied from the taste, Impeccable and Emil Kowalski design guides.
+
+- **Type roles** in `layers/ui-kit/styles/theme.css`: `text-micro` 11, `text-label` 12, `text-meta` 13, `text-body` 15 (UI default), `text-prose` 16, `text-h3` 17, `text-h2` 20, `text-h1` 28, `text-display` 36, `text-display-lg` 44. Fixed rem steps of about 1.15. Archivo only for page, section and film titles; everything else is Onest. Tabular numerals for times, prices and counts.
+- **Cards:** one radius system (cards 16, tiles 12, thumbs 8, tags 6; controls stay pills), hairline borders, navy-tinted offset shadows, and shared `card`, `card-interactive`, `row-interactive` and `pressable` utilities. Hover only on real pointers; press scales to 0.985 (cards) or 0.97 (buttons).
+- **Programme cards** show start time and duration, one status on the right (Sold out, N left, price, Included, Ended) and quiet tags. On tablets and laptops the schedule has a time gutter.
+- **Removed:** uppercase eyebrow labels above headings (section headers take an inline `meta` instead), decorative glass and glows, coloured top bars, em and en dashes in visible text (ranges use hyphens or "to"), and stacked middle dots.
+- **Motion:** custom ease-out and drawer curves, 150 to 250 ms for UI, sheets slide fully in on the drawer curve, exits faster than entrances, reduced motion respected.
+- Fixed: "Explore by section" was empty after the monorepo move because `ProgrammeSectionCard` no longer resolved (the file is now `ProgrammeSectionCard.vue`).
 
 ## F3 — Account (mock auth) ⬜
 

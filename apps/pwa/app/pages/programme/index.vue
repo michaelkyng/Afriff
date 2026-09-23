@@ -17,7 +17,7 @@ const filtersOpen = ref(false)
 const viewModel = computed<ProgrammeView>({ get: () => view.value, set: (value) => setView(value) })
 const viewOptions = [
   { value: 'schedule' as const, label: 'Schedule', icon: CalendarDaysIcon },
-  { value: 'films' as const, label: 'Films A–Z', icon: FilmIcon },
+  { value: 'films' as const, label: 'All films', icon: FilmIcon },
 ]
 
 const search = computed({ get: () => filters.value.q, set: (value: string) => setQuery(value) })
@@ -122,7 +122,7 @@ const resultNoun = computed(() => {
   <div class="space-y-6">
     <AppPageHeader
       title="Programme"
-      :eyebrow="festival ? formatDateRange(festival.startsAt, festival.endsAt) : 'Official selection'"
+      :description="festival ? `${formatDateRange(festival.startsAt, festival.endsAt)}, across Lagos` : undefined"
     >
       <template #actions>
         <UiSegmented v-model="viewModel" :options="viewOptions" label="View" />
@@ -142,7 +142,7 @@ const resultNoun = computed(() => {
         <span class="max-sm:sr-only">Filters</span>
         <span
           v-if="activeCount"
-          class="grid size-5 place-items-center rounded-full bg-accent text-[0.6875rem] font-bold text-on-accent"
+          class="grid size-5 place-items-center rounded-full bg-accent text-micro font-semibold text-on-accent tabular-nums"
           aria-hidden="true"
         >
           {{ activeCount }}
@@ -156,14 +156,14 @@ const resultNoun = computed(() => {
         v-for="chip in activeChips"
         :key="`${chip.group}:${chip.value}`"
         type="button"
-        class="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft pr-2 pl-3 text-sm font-medium text-accent-ink hover:bg-accent/25"
+        class="pressable inline-flex h-7 items-center gap-1 rounded-full bg-accent-soft pr-1.5 pl-2.5 text-meta font-medium text-accent-ink hover:bg-accent/25"
         :aria-label="`Remove filter: ${chip.label}`"
         @click="toggle(chip.group, chip.value)"
       >
         {{ chip.label }}
         <XIcon class="size-3.5" aria-hidden="true" />
       </button>
-      <button type="button" class="px-2 text-sm font-semibold text-muted hover:text-ink" @click="clearAll()">Clear all</button>
+      <button type="button" class="px-2 text-meta font-medium text-muted transition-colors hover:text-ink" @click="clearAll()">Clear all</button>
     </div>
 
     <UiEmptyState
@@ -181,7 +181,7 @@ const resultNoun = computed(() => {
     <!-- ================================================= Schedule -->
     <template v-else-if="view === 'schedule'">
       <div
-        class="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-30 -mx-4 border-b border-line bg-canvas/90 px-4 py-3 backdrop-blur-xl md:top-[calc(4rem+env(safe-area-inset-top,0px))] md:-mx-8 md:px-8"
+        class="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-30 -mx-4 border-b border-line bg-canvas/90 px-4 py-3 backdrop-blur-xl md:-mx-8 md:px-8"
       >
         <ProgrammeDayPicker
           v-if="festival"
@@ -191,28 +191,27 @@ const resultNoun = computed(() => {
           :today="phase === 'during' ? today?.date : null"
         />
         <div v-else class="flex gap-2">
-          <UiSkeleton v-for="n in 7" :key="n" class="h-[4.75rem] w-[3.75rem] shrink-0 rounded-2xl" />
+          <UiSkeleton v-for="n in 7" :key="n" class="h-[4.25rem] w-[3.25rem] shrink-0" />
         </div>
       </div>
 
       <div v-if="pending" class="space-y-3">
-        <UiSkeleton class="h-5 w-20" />
+        <UiSkeleton class="h-4 w-16 rounded-md" />
         <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <UiSkeleton v-for="n in 6" :key="n" class="h-[7.5rem] rounded-card" />
+          <UiSkeleton v-for="n in 6" :key="n" class="h-[6.75rem] rounded-card" />
         </div>
       </div>
 
-      <div v-else-if="groups.length || endedCount" class="space-y-7">
+      <div v-else-if="groups.length || endedCount" class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <p class="text-sm text-muted" role="status">
-            <span class="font-semibold text-ink">{{ selectedDayInfo?.label }}</span>
-            <template v-if="selectedDayInfo?.highlight"> · {{ selectedDayInfo.highlight }}</template>
+          <p class="text-meta text-muted" role="status">
+            <span class="font-semibold text-ink">{{ selectedDayInfo?.label }}</span><template v-if="selectedDayInfo?.highlight">, {{ selectedDayInfo.highlight }}</template>
             · {{ allDayItems.length }} {{ allDayItems.length === 1 ? 'listing' : 'listings' }}
           </p>
           <button
             v-if="endedCount"
             type="button"
-            class="text-sm font-semibold text-accent-ink hover:underline"
+            class="text-meta font-medium text-muted transition-colors hover:text-ink"
             :aria-pressed="showEarlier"
             @click="showEarlier = !showEarlier"
           >
@@ -220,12 +219,17 @@ const resultNoun = computed(() => {
           </button>
         </div>
         <p v-if="!groups.length" class="text-muted">Everything on {{ selectedDayInfo?.label }} has finished.</p>
-        <section v-for="group in groups" :key="group.time" :aria-label="`Starting at ${group.time}`">
-          <h2 class="mb-3 flex items-center gap-3 text-sm font-semibold text-muted tabular-nums">
-            <span class="font-display text-xl text-ink">{{ group.time }}</span>
-            <span class="h-px flex-1 bg-line" aria-hidden="true" />
+        <section
+          v-for="group in groups"
+          :key="group.time"
+          :aria-label="`Starting at ${group.time}`"
+          class="md:grid md:grid-cols-[4rem_minmax(0,1fr)] md:gap-x-4 md:border-t md:border-line md:pt-4"
+        >
+          <h2 class="mb-2.5 flex items-center gap-3 md:sticky md:top-[calc(9.5rem+env(safe-area-inset-top,0px))] md:mb-0 md:self-start md:pt-3">
+            <span class="font-semibold tabular-nums">{{ group.time }}</span>
+            <span class="h-px flex-1 bg-line md:hidden" aria-hidden="true" />
           </h2>
-          <ul class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <ul class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <li v-for="item in group.items" :key="item.id">
               <ProgrammeItemCard :item="item" :now="now" :to="programmeItemLink(item)" />
             </li>
@@ -240,26 +244,26 @@ const resultNoun = computed(() => {
         :description="otherDays.length ? 'Your filters match listings on other days:' : 'Nothing in the programme matches these filters.'"
       >
         <UiButton v-for="d in otherDays.slice(0, 4)" :key="d.date" variant="secondary" size="sm" @click="selectedDay = d.date">
-          {{ d.label }} · {{ dayCounts[d.date] }}
+          {{ d.label }} ({{ dayCounts[d.date] }})
         </UiButton>
         <UiButton v-if="activeCount || filters.q" size="sm" @click="clearAll()">Clear filters</UiButton>
       </UiEmptyState>
     </template>
 
-    <!-- ================================================= Films A–Z -->
+    <!-- ================================================= All films -->
     <template v-else>
-      <ul v-if="pending" class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+      <ul v-if="pending" class="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:gap-x-4 lg:grid-cols-4 xl:grid-cols-5">
         <li v-for="n in 10" :key="n" class="space-y-2">
           <UiSkeleton class="aspect-[2/3]" />
-          <UiSkeleton class="h-4 w-3/4" />
-          <UiSkeleton class="h-3 w-1/2" />
+          <UiSkeleton class="h-4 w-3/4 rounded-md" />
+          <UiSkeleton class="h-3 w-1/2 rounded-md" />
         </li>
       </ul>
       <template v-else-if="matchingFilms.length">
-        <p class="text-sm text-muted" role="status">
+        <p class="text-meta text-muted" role="status">
           {{ matchingFilms.length }} {{ matchingFilms.length === 1 ? 'film' : 'films' }}
         </p>
-        <ul class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
+        <ul class="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:gap-x-4 lg:grid-cols-4 xl:grid-cols-5">
           <li v-for="film in matchingFilms" :key="film.id">
             <FilmCard :film="film" :section="lookups?.section.get(film.sectionId)" show-premiere />
           </li>

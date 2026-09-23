@@ -3,18 +3,64 @@ name: Check workspaces
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  NUXT_TELEMETRY_DISABLED: '1'
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node from .nvmrc
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-      - uses: oven-sh/setup-bun@v2
+          package-manager-cache: false
+
+      - name: Set up Bun from package.json
+        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.14
-      - run: bun install --frozen-lockfile
-      - run: bun run check
-      - run: bun run generate
+          bun-version-file: package.json
+
+      - name: Install apps, layers and packages
+        run: bun install --frozen-lockfile
+
+      # Nuxt checks layers/ui-kit through the consuming PWA. Plain packages
+      # (api and validation) also run their own independent TypeScript checks.
+      - name: Typecheck PWA, UI layer and shared packages
+        run: bun run typecheck
+
+      - name: Test API, programme logic and validation
+        run: bun run test
+
+      - name: Generate static PWA
+        run: bun run generate:pwa
+
+      - name: Verify PWA output and shared assets
+        run: |
+          pwa_output=apps/pwa/.output/public
+          test -s "$pwa_output/index.html"
+          test -s "$pwa_output/sw.js"
+          test -s "$pwa_output/manifest.webmanifest"
+          test -s "$pwa_output/brand/afriff-emblem-192.webp"
+          test -s "$pwa_output/pwa-192x192.png"
+          test -s "$pwa_output/pwa-512x512.png"
+          compgen -G "$pwa_output/_nuxt/archivo-*.woff2" > /dev/null
+          compgen -G "$pwa_output/_nuxt/onest-*.woff2" > /dev/null

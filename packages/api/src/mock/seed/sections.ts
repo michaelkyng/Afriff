@@ -39,7 +39,7 @@ export const sections: Section[] = [
     slug: 'student-films',
     name: 'Student Films',
     kind: 'competition',
-    description: 'The next generation — work from film schools and academies.',
+    description: 'The next generation: work from film schools and academies.',
     hue: 150,
   },
   {

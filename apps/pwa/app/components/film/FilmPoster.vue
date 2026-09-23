@@ -55,13 +55,15 @@ const background = computed(() => {
 })
 
 const titleSize = computed(
-  () => ({ sm: 'text-sm leading-tight', md: 'text-lg leading-tight', lg: 'text-3xl leading-[1.05]' })[props.size],
+  () => ({ sm: 'text-meta', md: 'text-h3 leading-tight', lg: 'text-[1.75rem] leading-[1.05] tracking-[-0.025em]' })[props.size],
 )
+const radius = computed(() => ({ sm: 'rounded-thumb', md: 'rounded-tile', lg: 'rounded-card' })[props.size])
 </script>
 
 <template>
   <div
-    class="grain relative aspect-[2/3] overflow-hidden rounded-xl bg-navy-900 text-white shadow-lift"
+    class="grain relative aspect-[2/3] overflow-hidden bg-navy-900 text-white outline -outline-offset-1 outline-white/10"
+    :class="[radius, size !== 'sm' && 'shadow-card']"
     :style="{ background }"
     role="img"
     :aria-label="`Poster art for ${film.title}`"
@@ -69,7 +71,7 @@ const titleSize = computed(
     <div
       v-if="showText"
       class="absolute inset-0 z-[2] flex flex-col justify-end bg-gradient-to-t from-black/75 via-black/15 to-transparent"
-      :class="size === 'lg' ? 'p-5' : 'p-3'"
+      :class="size === 'lg' ? 'p-5' : 'p-3.5'"
     >
       <p
         class="font-display font-semibold tracking-tight text-balance drop-shadow-sm"
@@ -77,7 +79,7 @@ const titleSize = computed(
       >
         {{ film.title }}
       </p>
-      <p v-if="size !== 'sm'" class="mt-1 text-[0.6875rem] font-medium tracking-[0.12em] text-white/70 uppercase">
+      <p v-if="size !== 'sm'" class="mt-1.5 text-micro font-medium tracking-[0.1em] text-white/75 uppercase">
         {{ film.director }}
       </p>
     </div>

@@ -17,7 +17,7 @@ function back(event: MouseEvent) {
 <template>
   <NuxtLink
     :to="fallback"
-    class="-ml-2 inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-muted hover:text-ink"
+    class="-ml-2 inline-flex h-8 items-center gap-1 rounded-full px-2 text-meta font-medium text-muted transition-colors hover:text-ink"
     @click="back"
   >
     <ArrowLeftIcon class="size-4" aria-hidden="true" />

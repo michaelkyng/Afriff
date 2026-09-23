@@ -65,7 +65,7 @@ export default defineNuxtConfig({
     registerType: 'prompt',
     manifest: {
       id: '/',
-      name: 'AFRIFF — Africa International Film Festival',
+      name: 'AFRIFF · Africa International Film Festival',
       short_name: 'AFRIFF',
       description: 'Programme, passes and tickets for the Africa International Film Festival.',
       start_url: '/',

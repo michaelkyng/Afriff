@@ -12,11 +12,11 @@ const route = useRoute()
         <NuxtLink
           :to="item.to"
           :aria-current="isNavActive(item, route.path) ? 'page' : undefined"
-          class="group flex flex-col items-center gap-1 pt-2 pb-2.5 text-[0.6875rem] font-semibold transition-colors"
+          class="group flex flex-col items-center gap-0.5 pt-1.5 pb-2 text-micro font-medium transition-colors"
           :class="isNavActive(item, route.path) ? 'text-accent-ink' : 'text-muted'"
         >
           <span
-            class="grid h-8 w-14 place-items-center rounded-full transition-colors duration-200"
+            class="grid h-8 w-14 place-items-center rounded-full transition-[background-color,scale] duration-200 ease-out group-active:scale-95"
             :class="isNavActive(item, route.path) ? 'bg-accent-soft' : 'group-active:bg-raised'"
           >
             <component

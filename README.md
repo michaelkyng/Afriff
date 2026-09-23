@@ -59,6 +59,11 @@ Stop the app's dev server before building: both commands write to `.nuxt`.
 For static deployment, run `bun run generate:pwa` from the root and publish
 `apps/pwa/.output/public` with an SPA fallback to `index.html`. CI installs using
 `bun install --frozen-lockfile`, checks the workspaces, and generates the PWA.
+The [GitHub Actions workflow](.github/workflows/check.yml) runs on pushes, pull
+requests, and manual dispatch. It reads Node from `.nvmrc` and Bun from the root
+`packageManager` field, reports type checks, tests and generation as separate
+steps, and verifies the static shell, service worker, shared branding, and bundled
+Archivo/Onest font files. New runs cancel older runs for the same event and ref.
 
 ## Boundaries
 

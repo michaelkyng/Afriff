@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AccessibilityIcon, ArrowUpRightIcon, MapPinIcon, MonitorPlayIcon, SearchXIcon } from 'lucide-vue-next'
+import { AccessibilityIcon, ArrowUpRightIcon, CheckIcon, MapPinIcon, MonitorPlayIcon, SearchXIcon } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,24 +46,22 @@ const totalSeats = computed(() => venue.value?.screens.reduce((sum, s) => sum + 
 </script>
 
 <template>
-  <div class="space-y-10">
+  <div class="space-y-8">
     <AppBackLink fallback="/#venues" label="Back" class="md:hidden" />
 
     <div v-if="pending || !venue" class="space-y-4" aria-busy="true">
-      <UiSkeleton class="h-4 w-32" />
-      <UiSkeleton class="h-12 w-2/3" />
-      <UiSkeleton class="h-4 w-1/2" />
+      <UiSkeleton class="h-10 w-2/3" />
+      <UiSkeleton class="h-4 w-1/2 rounded-md" />
     </div>
 
     <template v-else>
       <header>
-        <p class="text-xs font-semibold tracking-[0.14em] text-accent-ink uppercase">{{ venue.area }}</p>
-        <h1 class="mt-1 font-display text-4xl leading-[1.05] font-semibold tracking-tight md:text-[2.5rem]">{{ venue.name }}</h1>
-        <p class="mt-3 flex items-start gap-2 text-muted">
-          <MapPinIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <h1 class="font-display text-h1 font-semibold md:text-display">{{ venue.name }}</h1>
+        <p class="mt-2 flex items-start gap-2 text-muted">
+          <MapPinIcon class="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden="true" />
           {{ venue.address }}
         </p>
-        <div class="mt-5 flex flex-wrap gap-3">
+        <div class="mt-5 flex flex-wrap gap-2.5">
           <UiButton :to="venue.mapsUrl" target="_blank" rel="noopener noreferrer" external>
             Directions
             <ArrowUpRightIcon aria-hidden="true" />
@@ -74,41 +72,42 @@ const totalSeats = computed(() => venue.value?.screens.reduce((sum, s) => sum + 
         </div>
       </header>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-3 md:grid-cols-2 md:gap-4">
         <UiCard>
           <h2 class="flex items-center gap-2 font-semibold">
-            <MonitorPlayIcon class="size-5 text-accent-ink" aria-hidden="true" />
+            <MonitorPlayIcon class="size-4.5 text-muted" aria-hidden="true" />
             <template v-if="venue.screens.length === 1">{{ venue.screens[0]?.name }}</template>
             <template v-else>{{ venue.screens.length }} screens</template>
-            <span class="text-sm font-normal text-muted">· {{ totalSeats.toLocaleString('en-NG') }} seats</span>
+            <span class="ml-auto text-meta font-normal text-muted tabular-nums">{{ totalSeats.toLocaleString('en-NG') }} seats</span>
           </h2>
-          <ul v-if="venue.screens.length > 1" class="mt-3 divide-y divide-line">
-            <li v-for="screen in venue.screens" :key="screen.id" class="flex justify-between py-2 text-sm">
+          <ul v-if="venue.screens.length > 1" class="mt-2 divide-y divide-line">
+            <li v-for="screen in venue.screens" :key="screen.id" class="flex justify-between py-2 text-meta">
               <span>{{ screen.name }}</span>
               <span class="text-muted tabular-nums">{{ screen.capacity }} seats</span>
             </li>
           </ul>
-          <p v-else class="mt-3 text-sm text-muted">One screen hosts everything at this venue.</p>
+          <p v-else class="mt-2 text-meta text-muted">One screen hosts everything at this venue.</p>
         </UiCard>
         <UiCard>
           <h2 class="flex items-center gap-2 font-semibold">
-            <AccessibilityIcon class="size-5 text-accent-ink" aria-hidden="true" />
+            <AccessibilityIcon class="size-4.5 text-muted" aria-hidden="true" />
             Accessibility
           </h2>
-          <ul class="mt-3 space-y-2 text-sm">
+          <ul class="mt-2 space-y-2 text-meta">
             <li v-for="line in venue.accessibility" :key="line" class="flex gap-2">
-              <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-success" aria-hidden="true" />
+              <CheckIcon class="mt-0.5 size-3.5 shrink-0 text-success" aria-hidden="true" />
               {{ line }}
             </li>
           </ul>
         </UiCard>
       </div>
 
-      <section aria-labelledby="whatson-title" class="space-y-4">
-        <UiSectionHeader title="What’s on here" title-id="whatson-title" :eyebrow="`${venueItems.length} listings this festival`" />
+      <section aria-labelledby="whatson-title">
+        <UiSectionHeader title="What’s on here" title-id="whatson-title" :meta="`${venueItems.length} listings this festival`" />
         <ProgrammeDayPicker
           v-if="festival"
           v-model="selectedDay"
+          class="mb-4"
           :days="festival.days"
           :counts="dayCounts"
           :today="phase === 'during' ? today?.date : null"

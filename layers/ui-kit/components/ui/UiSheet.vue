@@ -43,16 +43,16 @@ function onBackdropClick(event: MouseEvent) {
   <dialog
     ref="dialog"
     :aria-labelledby="titleId"
-    class="ui-sheet m-0 mt-auto max-h-[88dvh] w-full max-w-none overflow-hidden rounded-t-[1.75rem] border border-line bg-surface p-0 text-ink shadow-lift backdrop:bg-scrim backdrop:backdrop-blur-sm md:mt-0 md:mr-0 md:ml-auto md:h-dvh md:max-h-none md:w-[26rem] md:max-w-[90vw] md:rounded-none md:rounded-l-[1.75rem] md:border-y-0 md:border-r-0"
+    class="ui-sheet m-0 mt-auto max-h-[88dvh] w-full max-w-none overflow-hidden rounded-t-[1.5rem] border border-line bg-surface p-0 text-ink shadow-pop backdrop:bg-scrim md:mt-0 md:mr-0 md:ml-auto md:h-dvh md:max-h-none md:w-[26rem] md:max-w-[90vw] md:rounded-none md:rounded-l-[1.5rem] md:border-y-0 md:border-r-0"
     @close="open = false"
     @click="onBackdropClick"
   >
     <div class="flex max-h-[inherit] flex-col md:h-full">
-      <header class="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
-        <h2 :id="titleId" class="font-display text-xl font-semibold">{{ title }}</h2>
+      <header class="flex items-center justify-between gap-4 border-b border-line py-3 pr-3 pl-5">
+        <h2 :id="titleId" class="text-h3 font-semibold">{{ title }}</h2>
         <button
           type="button"
-          class="-mr-2 grid size-10 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink"
+          class="pressable grid size-9 place-items-center rounded-full text-muted hover:bg-hover hover:text-ink"
           aria-label="Close"
           @click="open = false"
         >

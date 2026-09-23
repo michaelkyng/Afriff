@@ -24,10 +24,10 @@ const status = computed(() => {
   if (!f || !phase.value) return null
   if (phase.value === 'before') {
     const days = countdown.value?.days ?? 0
-    return { title: days ? `${days} ${days === 1 ? 'day' : 'days'} to go` : 'Opens today', detail: `Opening night · ${f.days[0]?.label ?? ''}` }
+    return { title: days ? `${days} ${days === 1 ? 'day' : 'days'} to go` : 'Opens today', detail: `Opening night, ${f.days[0]?.label ?? ''}` }
   }
   if (phase.value === 'during') {
-    return { title: `Day ${today.value?.number ?? '–'} of ${f.days.length}`, detail: today.value?.highlight ?? today.value?.label ?? '' }
+    return { title: `Day ${today.value?.number ?? 1} of ${f.days.length}`, detail: today.value?.highlight ?? today.value?.label ?? '' }
   }
   return { title: 'That’s a wrap', detail: 'See you next year' }
 })
@@ -39,7 +39,7 @@ const status = computed(() => {
     aria-label="App navigation"
   >
     <!-- Brand -->
-    <div class="flex h-16 shrink-0 items-center px-4 lg:px-5">
+    <div class="flex h-14 shrink-0 items-center px-4 lg:px-5">
       <NuxtLink to="/" aria-label="AFRIFF home" class="rounded-lg">
         <span class="lg:hidden"><AppLogo :show-wordmark="false" /></span>
         <span class="hidden lg:block"><AppLogo /></span>
@@ -54,9 +54,9 @@ const status = computed(() => {
             :to="item.to"
             :title="item.label"
             :aria-current="isNavActive(item, route.path) ? 'page' : undefined"
-            class="flex h-11 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-medium transition-colors md:justify-center lg:justify-start"
+            class="flex h-10 items-center gap-3 rounded-tile px-3 font-medium transition-colors md:justify-center lg:justify-start"
             :class="
-              isNavActive(item, route.path) ? 'bg-accent-soft text-accent-ink' : 'text-muted hover:bg-raised hover:text-ink'
+              isNavActive(item, route.path) ? 'bg-accent-soft text-accent-ink' : 'text-muted hover:bg-hover hover:text-ink'
             "
           >
             <component
@@ -75,13 +75,10 @@ const status = computed(() => {
     <NuxtLink
       v-if="status"
       to="/programme"
-      class="mx-3 mt-6 hidden rounded-2xl border border-line bg-canvas p-4 transition-colors hover:border-line-strong lg:block"
+      class="card-interactive mx-3 mt-6 hidden rounded-card border border-line bg-canvas p-3.5 lg:block"
     >
-      <p class="text-[0.6875rem] font-semibold tracking-[0.14em] text-accent-ink uppercase">
-        {{ festival?.editionTitle }}
-      </p>
-      <p class="mt-1 font-display text-xl leading-tight font-semibold">{{ status.title }}</p>
-      <p class="mt-0.5 truncate text-sm text-muted">{{ status.detail }}</p>
+      <p class="font-semibold">{{ status.title }}</p>
+      <p class="mt-0.5 truncate text-meta text-muted">{{ status.detail }}</p>
     </NuxtLink>
 
     <div class="flex-1" />
@@ -92,7 +89,7 @@ const status = computed(() => {
         v-if="pwa?.showInstallPrompt"
         type="button"
         title="Install the app"
-        class="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-raised hover:text-ink md:justify-center lg:justify-start"
+        class="flex h-10 w-full items-center gap-3 rounded-tile px-3 text-meta font-medium text-muted transition-colors hover:bg-hover hover:text-ink md:justify-center lg:justify-start"
         @click="pwa?.install()"
       >
         <DownloadIcon class="size-5 shrink-0" aria-hidden="true" />
@@ -101,9 +98,9 @@ const status = computed(() => {
 
       <button
         type="button"
-        :title="`${themeMeta.label} — click to change`"
+        :title="`${themeMeta.label}. Click to change`"
         :aria-label="`${themeMeta.label}. Change theme`"
-        class="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-raised hover:text-ink md:justify-center lg:justify-start"
+        class="flex h-10 w-full items-center gap-3 rounded-tile px-3 text-meta font-medium text-muted transition-colors hover:bg-hover hover:text-ink md:justify-center lg:justify-start"
         @click="mode = nextTheme[mode]"
       >
         <component :is="themeMeta.icon" class="size-5 shrink-0" aria-hidden="true" />
@@ -113,14 +110,14 @@ const status = computed(() => {
       <NuxtLink
         to="/me"
         title="Account"
-        class="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-raised md:justify-center lg:justify-start"
+        class="flex items-center gap-3 rounded-tile p-2 transition-colors hover:bg-hover md:justify-center lg:justify-start"
       >
-        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-raised text-muted" aria-hidden="true">
-          <UserRoundIcon class="size-5" />
+        <span class="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-raised text-muted" aria-hidden="true">
+          <UserRoundIcon class="size-4" />
         </span>
         <span class="min-w-0 md:sr-only lg:not-sr-only">
-          <span class="block truncate text-sm font-semibold">Guest</span>
-          <span class="block truncate text-xs text-muted">Sign in to buy passes</span>
+          <span class="block truncate text-meta font-semibold">Guest</span>
+          <span class="block truncate text-label text-muted">Sign in to buy passes</span>
         </span>
       </NuxtLink>
     </div>

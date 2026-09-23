@@ -33,6 +33,19 @@ const themeOptions = [
   { value: 'light' as const, label: 'Light', icon: SunIcon },
 ]
 
+const typeRoles = [
+  { token: 'text-display-lg', className: 'font-display text-display-lg font-semibold', sample: 'Salt Roads', use: '44, film title (wide)' },
+  { token: 'text-display', className: 'font-display text-display font-semibold', sample: 'Salt Roads', use: '36, film title, hero' },
+  { token: 'text-h1', className: 'font-display text-h1 font-semibold', sample: 'Programme', use: '28, page titles' },
+  { token: 'text-h2', className: 'font-display text-h2 font-semibold', sample: 'Up next today', use: '20, section titles' },
+  { token: 'text-h3', className: 'text-h3 font-semibold', sample: 'Filters', use: '17, panel titles' },
+  { token: 'text-prose', className: 'text-prose', sample: 'A retired postman finds a sack of letters.', use: '16, long reading' },
+  { token: 'text-body', className: 'text-body font-semibold', sample: 'The Harmattan Letters', use: '15, UI copy, card titles' },
+  { token: 'text-meta', className: 'text-meta text-muted', sample: 'Landmark, Cinema 2', use: '13, secondary lines' },
+  { token: 'text-label', className: 'text-label font-medium', sample: 'Q&A', use: '12, tags, captions' },
+  { token: 'text-micro', className: 'text-micro font-medium', sample: 'Programme', use: '11, tab labels' },
+]
+
 const chipA = ref(true)
 const chipB = ref(false)
 const loading = ref(false)
@@ -48,15 +61,15 @@ const postersByMotif = computed(() =>
 </script>
 
 <template>
-  <div class="space-y-14">
-    <AppPageHeader title="Styleguide" eyebrow="Design system">
+  <div class="space-y-12">
+    <AppPageHeader title="Styleguide" description="Tokens and components from the shared UI kit.">
       <template #actions>
         <UiSegmented v-model="mode" :options="themeOptions" label="Theme" />
       </template>
     </AppPageHeader>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Brand" eyebrow="From afriff.com" />
+      <UiSectionHeader title="Brand" meta="From afriff.com" />
       <div class="grid gap-4 md:grid-cols-3">
         <UiCard class="grid place-items-center py-8">
           <BrandLockup :emblem-size="72" />
@@ -68,52 +81,51 @@ const postersByMotif = computed(() =>
           <BrandLockup :emblem-size="72" />
         </div>
       </div>
-      <p class="text-sm text-muted">
+      <p class="text-meta text-muted">
         Emblem cut from the official logo; wordmark and festival name traced to vectors so they follow the theme colour.
         Swap in official vector artwork when the festival supplies it.
       </p>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Colour" eyebrow="Tokens" />
+      <UiSectionHeader title="Colour" />
       <div>
-        <p class="mb-2 text-sm font-semibold text-muted">Semantic (switch with the theme)</p>
+        <p class="mb-2 text-meta font-semibold text-muted">Semantic (switch with the theme)</p>
         <ul class="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          <li v-for="token in semantic" :key="token.name" class="text-sm">
-            <div class="h-16 rounded-xl border border-line" :class="token.className" />
-            <p class="mt-1.5 font-mono text-xs text-muted">{{ token.name }}</p>
+          <li v-for="token in semantic" :key="token.name" class="text-meta">
+            <div class="h-16 rounded-tile border border-line" :class="token.className" />
+            <p class="mt-1.5 font-mono text-label text-muted">{{ token.name }}</p>
           </li>
         </ul>
       </div>
       <div class="space-y-2">
-        <p class="text-sm font-semibold text-muted">Brand scales</p>
-        <div class="flex overflow-hidden rounded-xl">
+        <p class="text-meta font-semibold text-muted">Brand scales</p>
+        <div class="flex overflow-hidden rounded-tile">
           <div v-for="c in navy" :key="c" class="h-10 flex-1" :class="c" :title="c" />
         </div>
-        <div class="flex overflow-hidden rounded-xl">
+        <div class="flex overflow-hidden rounded-tile">
           <div v-for="c in gold" :key="c" class="h-10 flex-1" :class="c" :title="c" />
         </div>
-        <div class="flex max-w-sm overflow-hidden rounded-xl">
+        <div class="flex max-w-sm overflow-hidden rounded-tile">
           <div v-for="c in emblem" :key="c" class="h-10 flex-1" :class="c" :title="c" />
         </div>
       </div>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Type" eyebrow="Archivo + Onest" />
-      <div class="space-y-3">
-        <p class="font-display text-6xl leading-none font-semibold tracking-tight">Display 60</p>
-        <p class="font-display text-4xl font-semibold tracking-tight">Display 36 — film titles</p>
-        <p class="font-display text-2xl font-semibold tracking-tight">Display 24 — section titles</p>
-        <p class="text-base">Body 16 — Onest for everything functional: labels, times, prices, forms.</p>
-        <p class="text-sm text-muted">Small 14 muted — secondary information.</p>
-        <p class="text-xs font-semibold tracking-[0.14em] text-accent-ink uppercase">Eyebrow 12</p>
-        <p class="font-display text-3xl font-semibold tabular-nums">18:30 · ₦75,000</p>
-      </div>
+      <UiSectionHeader title="Type" meta="Archivo for titles, Onest for everything else" />
+      <ul class="card divide-y divide-line">
+        <li v-for="role in typeRoles" :key="role.token" class="flex flex-wrap items-baseline gap-x-6 gap-y-1 px-4 py-3.5 md:px-5">
+          <code class="w-28 shrink-0 font-mono text-label text-muted">{{ role.token }}</code>
+          <p class="min-w-0 flex-1 truncate" :class="role.className">{{ role.sample }}</p>
+          <p class="text-label text-subtle">{{ role.use }}</p>
+        </li>
+      </ul>
+      <p class="font-display text-h1 font-semibold tabular-nums">18:30 · ₦75,000</p>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Buttons" eyebrow="Actions" />
+      <UiSectionHeader title="Buttons" />
       <div class="flex flex-wrap items-center gap-3">
         <UiButton>Primary</UiButton>
         <UiButton variant="secondary">Secondary</UiButton>
@@ -137,7 +149,7 @@ const postersByMotif = computed(() =>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Badges, chips, toggles" eyebrow="Status" />
+      <UiSectionHeader title="Badges, chips, toggles" />
       <div class="flex flex-wrap gap-2">
         <UiBadge>Neutral</UiBadge>
         <UiBadge tone="accent">World Premiere</UiBadge>
@@ -155,11 +167,11 @@ const postersByMotif = computed(() =>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Surfaces" eyebrow="Layout" to="/styleguide" link-label="Section link" />
+      <UiSectionHeader title="Surfaces" to="/styleguide" link-label="Section link" />
       <div class="grid gap-4 md:grid-cols-2">
         <UiCard interactive>
           <p class="font-semibold">Card</p>
-          <p class="mt-1 text-sm text-muted">Surface with a hairline border. Add <code>interactive</code> for hover lift.</p>
+          <p class="mt-1 text-meta text-muted">Surface with a hairline border. Add <code>interactive</code> for hover and press feedback.</p>
         </UiCard>
         <UiCard class="space-y-3">
           <UiSkeleton class="h-5 w-2/3" />
@@ -175,11 +187,11 @@ const postersByMotif = computed(() =>
     </section>
 
     <section class="space-y-5">
-      <UiSectionHeader title="Poster art" eyebrow="Generated, works offline" />
+      <UiSectionHeader title="Poster art" meta="Generated, works offline" />
       <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <li v-for="film in postersByMotif" :key="film.id">
           <FilmPoster :film="film" />
-          <p class="mt-1.5 font-mono text-xs text-muted">{{ film.poster.motif }}</p>
+          <p class="mt-1.5 font-mono text-label text-muted">{{ film.poster.motif }}</p>
         </li>
       </ul>
     </section>

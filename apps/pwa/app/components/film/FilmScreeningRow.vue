@@ -16,44 +16,46 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
 </script>
 
 <template>
-  <article
-    class="flex items-center gap-4 rounded-card border border-line bg-surface p-4"
-    :class="ended && 'opacity-60'"
-  >
-    <div class="w-12 shrink-0 text-center" aria-hidden="true">
-      <p class="text-[0.6875rem] font-semibold tracking-[0.08em] text-muted uppercase">{{ parts.weekday }}</p>
-      <p class="font-display text-2xl leading-none font-semibold tabular-nums">{{ parts.day }}</p>
-      <p class="text-[0.6875rem] font-medium text-muted">{{ parts.month }}</p>
+  <article class="card flex items-center gap-3.5 p-3">
+    <div
+      class="flex w-12 shrink-0 flex-col items-center rounded-tile border border-line bg-raised py-1.5"
+      :class="ended && 'opacity-60'"
+      aria-hidden="true"
+    >
+      <span class="text-micro font-medium text-muted">{{ parts.weekday }}</span>
+      <span class="text-h3 leading-6 font-semibold tabular-nums">{{ parts.day }}</span>
+      <span class="text-micro text-muted">{{ parts.month }}</span>
     </div>
 
     <div class="min-w-0 flex-1">
-      <p class="font-semibold tabular-nums">
+      <p class="tabular-nums">
         <span class="sr-only">{{ formatLongDate(item.startsAt) }}, </span>
-        {{ formatTime(item.startsAt) }}–{{ formatTime(item.endsAt) }}
+        <span class="font-semibold" :class="ended && 'text-muted'">{{ formatTime(item.startsAt) }}</span>
+        <span class="text-meta text-muted"> · ends {{ formatTime(item.endsAt) }}</span>
       </p>
-      <p class="truncate text-sm text-muted">
-        <NuxtLink :to="`/venues/${item.venue.slug}`" class="hover:text-ink hover:underline">{{ item.venue.shortName }}</NuxtLink>
-        · {{ item.room }}
+      <p class="truncate text-meta text-muted">
+        <NuxtLink :to="`/venues/${item.venue.slug}`" class="transition-colors hover:text-ink hover:underline">{{
+          item.venue.shortName
+        }}</NuxtLink>, {{ item.room }}
       </p>
-      <div class="mt-2 flex flex-wrap gap-1.5">
-        <UiBadge v-if="isGala" tone="accent">Opening Night Gala</UiBadge>
-        <UiBadge v-if="item.screening.hasQa" tone="info">
+      <div
+        v-if="isGala || item.screening.hasQa || (!ended && item.availability.status === 'selling_fast')"
+        class="mt-1.5 flex flex-wrap gap-1"
+      >
+        <UiBadge v-if="isGala" tone="accent">Gala</UiBadge>
+        <UiBadge v-if="item.screening.hasQa">
           <MessageCircleQuestionIcon aria-hidden="true" />
           Q&amp;A
         </UiBadge>
-        <template v-if="!ended">
-          <UiBadge v-if="item.availability.status === 'sold_out'" tone="danger">Sold out</UiBadge>
-          <UiBadge v-else-if="item.availability.status === 'selling_fast'" tone="accent">
-            {{ item.availability.seatsLeft }} seats left
-          </UiBadge>
-          <UiBadge v-else tone="success">Available</UiBadge>
-        </template>
+        <UiBadge v-if="!ended && item.availability.status === 'selling_fast'" tone="accent">
+          {{ item.availability.seatsLeft }} seats left
+        </UiBadge>
       </div>
     </div>
 
     <div class="shrink-0">
-      <span v-if="ended" class="text-sm font-medium text-muted">Screened</span>
-      <UiBadge v-else-if="live" tone="accent">Now showing</UiBadge>
+      <span v-if="ended" class="text-meta font-medium text-subtle">Screened</span>
+      <UiBadge v-else-if="live" tone="accent">Showing now</UiBadge>
       <UiButton v-else-if="item.availability.status === 'sold_out'" size="sm" variant="secondary" disabled>Sold out</UiButton>
       <UiButton v-else-if="isGala" size="sm" to="/passes">Gala tickets</UiButton>
       <UiButton v-else size="sm" :to="{ path: '/passes', query: { screening: item.screening.id } }">Tickets</UiButton>

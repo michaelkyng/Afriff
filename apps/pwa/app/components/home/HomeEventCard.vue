@@ -32,17 +32,22 @@ const labels: Record<EventKind, string> = {
 </script>
 
 <template>
-  <article class="flex h-full flex-col rounded-card border border-line bg-surface p-5">
-    <p class="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-accent-ink uppercase">
-      <component :is="icons[kind]" class="size-4" aria-hidden="true" />
-      {{ labels[kind] }}
-    </p>
-    <h3 class="mt-3 font-display text-xl leading-tight font-semibold">{{ title }}</h3>
-    <p class="mt-1 text-sm font-medium">{{ when }}</p>
-    <p class="text-sm text-muted">{{ where }}</p>
-    <p class="mt-3 line-clamp-3 text-sm text-muted">{{ description }}</p>
-    <div class="mt-auto flex items-center justify-between gap-3 pt-5">
-      <span class="text-sm font-semibold">{{ price ?? access }}</span>
+  <article class="card flex h-full flex-col">
+    <div class="flex flex-1 flex-col p-4">
+      <div class="flex items-start justify-between gap-3">
+        <span class="grid size-10 place-items-center rounded-tile border border-line bg-raised text-ink" aria-hidden="true">
+          <component :is="icons[kind]" class="size-5" :stroke-width="1.75" />
+        </span>
+        <UiBadge>{{ labels[kind] }}</UiBadge>
+      </div>
+      <h3 class="mt-4 text-h3 font-semibold">{{ title }}</h3>
+      <p class="mt-1 text-meta font-medium tabular-nums">{{ when }}</p>
+      <p class="text-meta text-muted">{{ where }}</p>
+      <p class="mt-2 line-clamp-2 text-meta text-muted">{{ description }}</p>
+    </div>
+    <div class="flex min-h-14 items-center justify-between gap-3 border-t border-line px-4 py-2.5">
+      <span v-if="price" class="font-semibold tabular-nums">{{ price }}</span>
+      <span v-else class="text-meta text-muted">{{ access }}</span>
       <UiButton v-if="price" to="/passes" size="sm">Get tickets</UiButton>
     </div>
   </article>

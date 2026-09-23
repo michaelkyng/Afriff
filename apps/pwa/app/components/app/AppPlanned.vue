@@ -10,17 +10,16 @@ defineProps<{
 </script>
 
 <template>
-  <aside class="rounded-card border border-dashed border-line-strong p-5">
-    <p class="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-accent-ink uppercase">
-      <SparklesIcon class="size-4" aria-hidden="true" />
-      Planned · {{ feature }}
-    </p>
-    <p class="mt-2 font-semibold">{{ title }}</p>
-    <ul class="mt-2 space-y-1 text-sm text-muted">
-      <li v-for="item in items" :key="item" class="flex gap-2">
-        <span class="mt-2 size-1 shrink-0 rounded-full bg-subtle" aria-hidden="true" />
-        {{ item }}
-      </li>
+  <aside class="rounded-card border border-dashed border-line-strong p-4 md:p-5">
+    <div class="flex items-center justify-between gap-3">
+      <p class="flex items-center gap-2 font-semibold">
+        <SparklesIcon class="size-4 text-muted" aria-hidden="true" />
+        {{ title }}
+      </p>
+      <UiBadge tone="info">Planned for {{ feature }}</UiBadge>
+    </div>
+    <ul class="mt-2.5 list-disc space-y-1 pl-10 text-meta text-muted marker:text-subtle">
+      <li v-for="item in items" :key="item">{{ item }}</li>
     </ul>
   </aside>
 </template>

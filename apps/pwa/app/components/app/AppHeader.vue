@@ -13,7 +13,7 @@ const dates = computed(() =>
       <NuxtLink to="/" aria-label="AFRIFF home" class="rounded-lg">
         <AppLogo />
       </NuxtLink>
-      <span v-if="dates" class="ml-auto text-xs font-medium text-muted">{{ dates }} · Lagos</span>
+      <span v-if="dates" class="ml-auto text-label font-medium text-muted tabular-nums">{{ dates }}, Lagos</span>
     </div>
   </header>
 </template>

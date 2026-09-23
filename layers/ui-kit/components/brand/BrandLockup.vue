@@ -7,7 +7,7 @@ withDefaults(defineProps<{ emblemSize?: number }>(), { emblemSize: 72 })
 </script>
 
 <template>
-  <div class="inline-flex flex-col items-center gap-3" role="img" aria-label="AFRIFF — Africa International Film Festival">
+  <div class="inline-flex flex-col items-center gap-3" role="img" aria-label="AFRIFF, Africa International Film Festival">
     <BrandEmblem :size="emblemSize" />
     <BrandWordmark class="h-auto w-44" aria-hidden="true" />
     <BrandSubline class="-mt-1 h-auto w-44" aria-hidden="true" />

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ArrowRightIcon } from 'lucide-vue-next'
+import { ChevronRightIcon } from 'lucide-vue-next'
 
+/** Section title with optional inline meta (e.g. "Day 3, 14:15") and a "See all" link. */
 defineProps<{
   title: string
   /** id for the heading, so a <section aria-labelledby> can point at it. */
   titleId?: string
-  eyebrow?: string
+  /** Short muted context shown after the title on the same line. */
+  meta?: string
   /** Optional "See all" link. */
   to?: string
   linkLabel?: string
@@ -13,18 +15,18 @@ defineProps<{
 </script>
 
 <template>
-  <div class="mb-4 flex items-end justify-between gap-4">
-    <div>
-      <p v-if="eyebrow" class="mb-1 text-xs font-semibold tracking-[0.14em] text-accent-ink uppercase">{{ eyebrow }}</p>
-      <h2 :id="titleId" class="font-display text-2xl font-semibold tracking-tight md:text-3xl">{{ title }}</h2>
+  <div class="mb-3 flex items-baseline justify-between gap-4 md:mb-4">
+    <div class="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+      <h2 :id="titleId" class="font-display text-h2 font-semibold">{{ title }}</h2>
+      <p v-if="meta" class="text-meta text-muted tabular-nums">{{ meta }}</p>
     </div>
     <NuxtLink
       v-if="to"
       :to="to"
-      class="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent-ink hover:underline"
+      class="group -mr-1 inline-flex shrink-0 items-center gap-0.5 rounded-full py-1 pl-2 pr-1 text-meta font-medium text-muted transition-colors hover:text-ink"
     >
       {{ linkLabel ?? 'See all' }}
-      <ArrowRightIcon class="size-4" aria-hidden="true" />
+      <ChevronRightIcon class="size-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" aria-hidden="true" />
     </NuxtLink>
   </div>
 </template>

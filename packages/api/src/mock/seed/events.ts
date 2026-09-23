@@ -56,7 +56,7 @@ export const events: FestivalEvent[] = [
     slug: 'masterclass-distribution-in-the-streaming-era',
     kind: 'masterclass',
     title: 'Distribution in the Streaming Era',
-    description: 'Festivals, sales agents, streamers and cinemas — mapping a route to audiences.',
+    description: 'Festivals, sales agents, streamers and cinemas map a route to audiences.',
     venueId: 'ven_terrakulture',
     startsAt: '2026-11-05T10:00:00+01:00',
     endsAt: '2026-11-05T12:30:00+01:00',

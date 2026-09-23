@@ -13,19 +13,19 @@ const showInstall = computed(() => Boolean(pwa?.showInstallPrompt && !pwa?.needR
     aria-live="polite"
   >
     <Transition
-      enter-active-class="transition duration-300 ease-out"
+      enter-active-class="transition-[opacity,translate] duration-300 ease-out"
       enter-from-class="translate-y-3 opacity-0"
-      leave-active-class="transition duration-200 ease-in"
-      leave-to-class="translate-y-3 opacity-0"
+      leave-active-class="transition-[opacity,translate] duration-150 ease-out"
+      leave-to-class="translate-y-2 opacity-0"
       mode="out-in"
     >
       <div
         v-if="showUpdate"
         key="update"
-        class="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-line bg-surface p-3 pl-4 shadow-lift"
+        class="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-card border border-line bg-surface p-2.5 pl-4 shadow-pop"
       >
         <RefreshCwIcon class="size-5 shrink-0 text-accent-ink" aria-hidden="true" />
-        <p class="flex-1 text-sm font-medium">A new version of the app is ready.</p>
+        <p class="flex-1 text-meta font-medium">A new version of the app is ready.</p>
         <UiButton size="sm" variant="ghost" @click="pwa?.cancelPrompt()">Later</UiButton>
         <UiButton size="sm" @click="pwa?.updateServiceWorker(true)">Reload</UiButton>
       </div>
@@ -33,12 +33,12 @@ const showInstall = computed(() => Boolean(pwa?.showInstallPrompt && !pwa?.needR
       <div
         v-else-if="showInstall"
         key="install"
-        class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border border-line bg-surface p-4 shadow-lift"
+        class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-card border border-line bg-surface p-4 shadow-pop"
       >
         <AppLogo :show-wordmark="false" />
         <div class="flex-1">
-          <p class="text-sm font-semibold">Install the AFRIFF app</p>
-          <p class="mt-0.5 text-sm text-muted">Quick access to your tickets, even without data.</p>
+          <p class="font-semibold">Install the AFRIFF app</p>
+          <p class="mt-0.5 text-meta text-muted">Quick access to your tickets, even without data.</p>
           <div class="mt-3 flex gap-2">
             <UiButton size="sm" @click="pwa?.install()">
               <DownloadIcon aria-hidden="true" />
@@ -49,7 +49,7 @@ const showInstall = computed(() => Boolean(pwa?.showInstallPrompt && !pwa?.needR
         </div>
         <button
           type="button"
-          class="-m-1 grid size-8 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink"
+          class="pressable -m-1 grid size-8 place-items-center rounded-full text-muted hover:bg-hover hover:text-ink"
           aria-label="Dismiss"
           @click="pwa?.cancelInstall()"
         >

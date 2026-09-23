@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** Surface with a hairline border. `interactive` adds hover and press feedback for clickable cards. */
 withDefaults(
   defineProps<{
     as?: string
@@ -10,14 +11,7 @@ withDefaults(
 </script>
 
 <template>
-  <component
-    :is="as"
-    class="rounded-card border border-line bg-surface"
-    :class="[
-      padded && 'p-5',
-      interactive && 'transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong',
-    ]"
-  >
+  <component :is="as" class="card" :class="[padded && 'p-4 md:p-5', interactive && 'card-interactive']">
     <slot />
   </component>
 </template>

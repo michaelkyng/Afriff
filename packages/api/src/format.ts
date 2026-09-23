@@ -57,14 +57,14 @@ const dayMonth = new Intl.DateTimeFormat(LOCALE, { timeZone: FESTIVAL_TZ, day: '
 const dayOnly = new Intl.DateTimeFormat(LOCALE, { timeZone: FESTIVAL_TZ, day: 'numeric' })
 const monthYear = new Intl.DateTimeFormat(LOCALE, { timeZone: FESTIVAL_TZ, month: 'long', year: 'numeric' })
 
-/** 1–7 November 2026 (or 30 Oct – 2 Nov 2026 across months) */
+/** 1-7 November 2026 (or 30 Oct - 2 Nov 2026 across months). Plain hyphens, no en dashes. */
 export function formatDateRange(start: string | Date, end: string | Date): string {
   const a = new Date(start)
   const b = new Date(end)
   if (monthYear.format(a) === monthYear.format(b)) {
-    return `${dayOnly.format(a)}–${dayOnly.format(b)} ${monthYear.format(b)}`
+    return `${dayOnly.format(a)}-${dayOnly.format(b)} ${monthYear.format(b)}`
   }
-  return `${dayMonth.format(a)} – ${dayMonth.format(b)} ${b.getFullYear()}`
+  return `${dayMonth.format(a)} - ${dayMonth.format(b)} ${b.getFullYear()}`
 }
 
 /** 1h 52m */

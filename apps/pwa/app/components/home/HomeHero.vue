@@ -29,12 +29,11 @@ const tiles = computed(() => {
 })
 
 const pad = (n: number) => String(n).padStart(2, '0')
-const isPhone = useMediaQuery('(max-width: 767px)')
 </script>
 
 <template>
   <section
-    class="grain relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-navy-950 text-white"
+    class="grain relative overflow-hidden rounded-card border border-white/10 bg-navy-950 text-white shadow-card"
     aria-labelledby="hero-title"
   >
     <div
@@ -48,29 +47,27 @@ const isPhone = useMediaQuery('(max-width: 767px)')
       aria-hidden="true"
     />
 
-    <div class="relative z-[2] grid gap-10 p-6 md:grid-cols-[1.4fr_1fr] md:items-center md:gap-6 md:p-8 lg:px-10">
+    <div class="relative z-[2] grid gap-8 p-5 md:grid-cols-[1.4fr_1fr] md:items-center md:gap-6 md:p-8 lg:px-10">
       <div>
-        <div class="flex flex-wrap items-center gap-2">
-          <p class="text-xs font-semibold tracking-[0.18em] text-gold-300 uppercase">
-            {{ festival?.editionTitle ?? 'AFRIFF' }} · {{ festival?.city ?? 'Lagos' }}
-          </p>
-          <span v-if="isSimulated" class="rounded-full bg-white/12 px-2.5 py-0.5 text-xs font-semibold text-white/85">
-            Simulated time
-          </span>
-        </div>
+        <span
+          v-if="isSimulated"
+          class="mb-4 inline-flex h-6 items-center rounded-full border border-white/15 px-2.5 text-label font-medium text-white/80"
+        >
+          Simulated time
+        </span>
 
-        <h1 id="hero-title" class="mt-4 font-display text-[2.5rem] leading-[1.08] font-semibold tracking-[-0.035em] md:mt-3 md:text-[2.5rem]">
+        <h1 id="hero-title" class="max-w-[20ch] font-display text-display font-semibold md:text-[2.5rem] md:leading-[2.75rem]">
           <template v-if="festival">{{ festival.tagline }}</template>
-          <UiSkeleton v-else class="h-24 w-full bg-white/10" />
+          <UiSkeleton v-else class="h-20 w-full bg-white/10" />
         </h1>
 
-        <dl class="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/75">
-          <div class="flex items-center gap-2">
+        <dl class="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-meta text-white/75">
+          <div class="flex items-center gap-1.5">
             <dt class="sr-only">Dates</dt>
             <CalendarDaysIcon class="size-4 text-gold-300" aria-hidden="true" />
-            <dd>{{ festival ? formatDateRange(festival.startsAt, festival.endsAt) : '—' }}</dd>
+            <dd>{{ festival ? formatDateRange(festival.startsAt, festival.endsAt) : 'Dates to be announced' }}</dd>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5">
             <dt class="sr-only">Venues</dt>
             <MapPinIcon class="size-4 text-gold-300" aria-hidden="true" />
             <dd>{{ venueCount ? `${venueCount} venues across Lagos` : 'Venues across Lagos' }}</dd>
@@ -78,60 +75,58 @@ const isPhone = useMediaQuery('(max-width: 767px)')
         </dl>
 
         <!-- Festival clock -->
-        <div class="mt-8 md:mt-6" aria-live="off">
+        <div class="mt-7 md:mt-6" aria-live="off">
           <div v-if="phase === 'before'" role="timer" aria-label="Time until the festival opens">
-            <p class="mb-3 text-sm font-medium text-white/70">Opening night in</p>
-            <ol class="grid max-w-md grid-cols-4 gap-2">
+            <p class="mb-2.5 text-meta text-white/70">Opening night in</p>
+            <ol class="grid max-w-sm grid-cols-4 gap-2">
               <li
                 v-for="tile in tiles"
                 :key="tile.label"
-                class="rounded-2xl border border-white/10 bg-white/[0.06] px-2 py-3 text-center backdrop-blur"
+                class="rounded-tile border border-white/10 bg-white/[0.05] px-2 py-2.5 text-center"
               >
-                <span class="block font-display text-3xl font-semibold tabular-nums">{{ pad(tile.value) }}</span>
-                <span class="mt-0.5 block text-[0.6875rem] font-semibold tracking-[0.14em] text-white/60 uppercase">
-                  {{ tile.label }}
-                </span>
+                <span class="block font-display text-h1 font-semibold tabular-nums">{{ pad(tile.value) }}</span>
+                <span class="block text-micro text-white/60">{{ tile.label }}</span>
               </li>
             </ol>
           </div>
 
           <div v-else-if="phase === 'during'">
-            <p class="font-display text-3xl font-semibold">
-              Day {{ today?.number ?? '–' }} <span class="text-white/55">of {{ festival?.days.length }}</span>
+            <p class="font-display text-h1 font-semibold tabular-nums">
+              Day {{ today?.number }} <span class="text-white/55">of {{ festival?.days.length }}</span>
             </p>
-            <p class="mt-1 text-sm text-white/70">
-              {{ today?.label }}<template v-if="today?.highlight"> · {{ today.highlight }}</template>
-              <template v-if="todayCount"> · {{ todayCount }} screenings &amp; events today</template>
+            <p class="mt-1 text-meta text-white/70">
+              {{ today?.label }}<template v-if="today?.highlight">, {{ today.highlight }}</template>
+              <template v-if="todayCount"> · {{ todayCount }} screenings and events</template>
             </p>
           </div>
 
           <div v-else-if="phase === 'after'">
-            <p class="font-display text-3xl font-semibold">That’s a wrap.</p>
-            <p class="mt-1 text-sm text-white/70">Thank you for seven days of African cinema. See you next year.</p>
+            <p class="font-display text-h1 font-semibold">That’s a wrap.</p>
+            <p class="mt-1 text-meta text-white/70">Thank you for seven days of African cinema. See you next year.</p>
           </div>
         </div>
 
-        <div class="mt-8 flex flex-wrap gap-3 md:mt-6">
-          <UiButton v-if="phase !== 'after'" to="/passes" :size="isPhone ? 'lg' : 'md'">Get passes</UiButton>
+        <div class="mt-7 flex flex-wrap gap-2.5 md:mt-6">
+          <UiButton v-if="phase !== 'after'" to="/passes">Get passes</UiButton>
           <UiButton
             to="/programme"
-            :size="isPhone ? 'lg' : 'md'"
             variant="ghost"
-            class="border border-white/20 text-white hover:bg-white/10"
+            class="border border-white/20 text-white hover:bg-white/10!"
           >
-            {{ phase === 'after' ? 'Revisit the programme' : 'Browse programme' }}
+            <template v-if="phase === 'after'">Revisit the programme</template>
+            <template v-else><span class="max-sm:hidden">Browse programme</span><span class="sm:hidden">Programme</span></template>
             <ArrowRightIcon aria-hidden="true" />
           </UiButton>
         </div>
       </div>
 
       <!-- Poster fan -->
-      <div class="relative mx-auto -mt-2 h-52 w-full max-w-sm md:mt-0 md:h-72" aria-hidden="true">
+      <div class="relative mx-auto hidden h-72 w-full max-w-sm md:block" aria-hidden="true">
         <template v-if="posters.length">
           <div
             v-for="(film, i) in posters.slice(0, 3)"
             :key="film.id"
-            class="absolute top-1/2 left-1/2 w-28 md:w-40"
+            class="absolute top-1/2 left-1/2 w-40"
             :class="[
               i === 0 && '-translate-x-[108%] -translate-y-[46%] -rotate-[9deg]',
               i === 1 && 'z-10 -translate-x-1/2 -translate-y-1/2',
@@ -141,7 +136,7 @@ const isPhone = useMediaQuery('(max-width: 767px)')
             <FilmPoster :film="film" :show-text="i === 1" :class="i !== 1 && 'opacity-70'" />
           </div>
         </template>
-        <div v-else class="absolute top-1/2 left-1/2 w-28 -translate-x-1/2 -translate-y-1/2 md:w-40">
+        <div v-else class="absolute top-1/2 left-1/2 w-40 -translate-x-1/2 -translate-y-1/2">
           <UiSkeleton class="aspect-[2/3] bg-white/10" />
         </div>
       </div>

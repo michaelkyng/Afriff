@@ -9,17 +9,17 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col items-center px-6 py-14 text-center">
+  <div class="flex flex-col items-center px-6 py-12 text-center">
     <div
       v-if="icon"
-      class="mb-5 grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent-ink"
+      class="mb-4 grid size-12 place-items-center rounded-tile border border-line bg-surface text-muted shadow-card"
       aria-hidden="true"
     >
-      <component :is="icon" class="size-6" />
+      <component :is="icon" class="size-5" />
     </div>
-    <h2 class="font-display text-2xl font-semibold tracking-tight">{{ title }}</h2>
-    <p v-if="description" class="mt-2 max-w-sm text-pretty text-muted">{{ description }}</p>
-    <div v-if="$slots.default" class="mt-6 flex flex-wrap justify-center gap-3">
+    <h2 class="text-h3 font-semibold">{{ title }}</h2>
+    <p v-if="description" class="mt-1.5 max-w-sm text-muted">{{ description }}</p>
+    <div v-if="$slots.default" class="mt-5 flex flex-wrap justify-center gap-2">
       <slot />
     </div>
   </div>

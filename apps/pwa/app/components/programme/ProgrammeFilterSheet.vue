@@ -33,10 +33,10 @@ const groups = computed(() => {
 
 <template>
   <UiSheet v-model:open="open" title="Filters">
-    <div class="space-y-7">
+    <div class="space-y-6">
       <fieldset v-for="group in groups" :key="group.key">
-        <legend class="mb-3 text-sm font-semibold text-muted">{{ group.title }}</legend>
-        <div class="flex flex-wrap gap-2">
+        <legend class="mb-2.5 text-meta font-semibold text-muted">{{ group.title }}</legend>
+        <div class="flex flex-wrap gap-1.5">
           <UiChip
             v-for="option in group.options"
             :key="option.value"
@@ -51,7 +51,7 @@ const groups = computed(() => {
               aria-hidden="true"
             />
             {{ option.label }}
-            <span v-if="option.hint" class="text-xs opacity-60">{{ option.hint }}</span>
+            <span v-if="option.hint" class="text-label tabular-nums opacity-60">{{ option.hint }}</span>
           </UiChip>
         </div>
       </fieldset>

@@ -74,10 +74,13 @@ The desktop top bar shows breadcrumbs (detail pages set theirs with `usePageCrum
 
 ## Design system
 
-- **Colours:** defined in `layers/ui-kit/styles/theme.css`; use the semantic tokens, not raw scales: `bg-canvas`, `bg-surface`, `bg-raised`, `border-line`, `text-ink`, `text-muted`, `bg-accent`/`text-on-accent`, `text-accent-ink` (gold text that passes contrast in both themes), `success`/`danger`/`info` (+ `-soft`). They switch automatically with the theme.
+- **Colours:** defined in `layers/ui-kit/styles/theme.css`; use the semantic tokens, not raw scales: `bg-canvas`, `bg-surface`, `bg-raised`, `bg-hover`, `border-line`, `text-ink`, `text-muted`, `text-subtle`, `bg-accent`/`text-on-accent`, `text-accent-ink` (gold text that passes contrast in both themes), `success`/`danger`/`info` (+ `-soft`). They switch automatically with the theme. Gold is for primary actions, selection and live state, not decoration.
 - **Theme:** dark-first, with light. Stored in the `prefs` store (`afriff:prefs`); a tiny script in `nuxt.config.ts` applies it before first paint.
-- **Type:** `font-display` (Archivo) for titles and big numbers, Onest for everything functional.
-- **Components:** start from `layers/ui-kit/components/ui` at the repository root. Browse them all at `/styleguide` (linked from Me → Developer).
+- **Type roles:** use the role, not a raw size. `text-micro` 11 · `text-label` 12 · `text-meta` 13 (secondary lines) · `text-body` 15 (UI copy and card titles, the page default) · `text-prose` 16 (long reading) · `text-h3` 17 · `text-h2` 20 (section titles) · `text-h1` 28 (page titles) · `text-display` 36 / `text-display-lg` 44 (film titles, hero). `font-display` (Archivo) only for page, section and film titles and big numbers; Onest for everything functional. Add `tabular-nums` to times, prices and counts.
+- **Surfaces:** `card` (hairline border, surface, resting shadow), `card-interactive` (hover lift on real pointers, press feedback), `row-interactive` (list rows), `pressable` (small controls). Radii: `rounded-card` 16, `rounded-tile` 12, `rounded-thumb` 8, `rounded-tag` 6; buttons, chips and inputs are pills. Shadows: `shadow-card`, `shadow-hover`, `shadow-pop`.
+- **Motion:** `ease-out` is a strong custom curve and the default for transitions; `ease-drawer` for sheets. Keep UI transitions at 150 to 250 ms, animate transform and opacity, exit faster than enter.
+- **Copy:** no uppercase eyebrow labels above headings (use `UiSectionHeader`'s `meta`), no em or en dashes in visible text, at most one middle dot per line.
+- **Components:** start from `layers/ui-kit/components/ui` at the repository root. Browse them all, including the type scale, at `/styleguide` (linked from Me → Developer).
 - **Brand:** the logo comes from afriff.com — emblem as an image, wordmark traced to SVG so it follows the text colour. Sources, the rebuild script and caveats are in [`brand/README.md`](../../brand/README.md).
 
 ## Programme URLs
@@ -86,7 +89,7 @@ Everything on `/programme` is in the query string, so any view can be linked to 
 
 | Param | Example | Meaning |
 |---|---|---|
-| `view` | `films` | Films A–Z instead of the schedule |
+| `view` | `films` | All films (A to Z) instead of the schedule |
 | `day` | `2026-11-03` | Schedule day (default: today during the festival, else opening day) |
 | `q` | `harmattan` | Search |
 | `section`, `venue` | `feature-competition,animation` | Slugs, comma-separated (OR within a group) |
