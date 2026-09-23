@@ -91,7 +91,7 @@ const status = computed<{ text: string; tone: string } | null>(() => {
           <span class="text-muted"> · ends {{ formatTime(item.endsAt) }}</span>
         </p>
         <p v-else class="truncate">
-          <span class="font-semibold" :class="ended ? 'text-muted' : 'text-ink'">
+          <span class="font-medium" :class="ended ? 'text-muted' : 'text-ink'">
             <template v-if="showDay">{{ formatDay(item.startsAt) }}, </template>{{ formatTime(item.startsAt) }}
           </span>
           <span class="text-muted"> · {{ duration }}</span>
@@ -99,13 +99,13 @@ const status = computed<{ text: string; tone: string } | null>(() => {
         <p v-if="status" class="shrink-0 text-label font-medium" :class="status.tone">{{ status.text }}</p>
       </div>
 
-      <h3 class="mt-1 line-clamp-2 leading-snug font-semibold" :class="ended && 'text-muted'">
+      <h3 class="mt-1 line-clamp-2 text-body font-semibold" :class="ended && 'text-muted'">
         <NuxtLink v-if="to" :to="to" class="after:absolute after:inset-0 focus-visible:outline-none">{{ item.title }}</NuxtLink>
         <template v-else>{{ item.title }}</template>
       </h3>
-      <p class="mt-0.5 truncate text-meta text-muted">{{ item.venue.shortName }}, {{ item.room }}</p>
+      <p class="mt-0.5 truncate text-label text-muted">{{ item.venue.shortName }}, {{ item.room }}</p>
 
-      <div class="mt-auto flex flex-wrap gap-1 pt-2">
+      <div class="mt-auto flex flex-wrap gap-1 pt-1.5">
         <template v-if="item.kind === 'screening'">
           <UiBadge v-if="item.screening.format === 'Gala'" tone="accent">Gala</UiBadge>
           <UiBadge v-if="item.screening.hasQa">

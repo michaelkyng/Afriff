@@ -11,7 +11,7 @@ defineProps<{ films: Film[]; lookups: ProgrammeLookups | null; pending: boolean 
     <UiCarousel label="Featured films">
       <template v-if="pending">
         <li v-for="n in 5" :key="n" class="w-36 shrink-0 snap-start md:w-40">
-          <UiSkeleton class="aspect-[2/3]" />
+          <UiSkeleton class="aspect-2/3" />
           <UiSkeleton class="mt-2.5 h-4 w-3/4 rounded-md" />
           <UiSkeleton class="mt-1.5 h-3 w-1/2 rounded-md" />
         </li>

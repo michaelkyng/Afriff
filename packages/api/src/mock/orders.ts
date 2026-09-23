@@ -1,4 +1,4 @@
-import { checkoutSchema, paymentSchema } from '@afriff/validation'
+import { checkoutSchema, paymentSchema, ticketTransferSchema } from '@afriff/validation'
 import { ApiError } from '../contract'
 import type { AttendeeApi } from '../contract'
 import { formatDay, formatDateRange, formatTime } from '../format'
@@ -10,6 +10,7 @@ import type {
   Ticket,
   TicketProduct,
   TicketSelection,
+  TicketTransferInput,
   User,
 } from '../types'
 import { mockDb } from './db'
@@ -250,6 +251,7 @@ export function createMockOrders(
           ? seed.events.find((item) => item.id === line.selection?.eventId)
           : undefined
         const venueId = screening?.venueId ?? event?.venueId
+        const venue = venueId ? venueOf(venueId) : undefined
         const ticket: Ticket & { userId: string } = {
           id: `tkt_${randomCode(12).toLowerCase()}`,
           code: `AF-${randomCode(4)}-${randomCode(4)}`,
@@ -263,7 +265,9 @@ export function createMockOrders(
           title: line.title,
           subtitle: line.detail,
           startsAt: screening?.startsAt ?? event?.startsAt,
-          venueName: venueId ? venueOf(venueId)?.name : undefined,
+          endsAt: screening?.endsAt ?? event?.endsAt,
+          venueName: venue?.name,
+          roomName: screening ? venue?.screens.find((item) => item.id === screening.screenId)?.name : undefined,
           selection: line.selection,
           issuedAt: new Date().toISOString(),
         }
@@ -281,6 +285,25 @@ export function createMockOrders(
     const order = state.orders.find((item) => item.id === id && item.userId === userId)
     if (!order) throw new ApiError('not_found', 'We could not find that order.', { orderId: id })
     return order
+  }
+
+  function findTicket(id: string, userId: string) {
+    const ticket = state.tickets.find((item) => item.id === id && item.userId === userId)
+    if (!ticket) throw new ApiError('not_found', 'We could not find that ticket.', { ticketId: id })
+    return ticket
+  }
+
+  /**
+   * A ticket sent to someone with no account waits under their email until they
+   * have one. Standing in for the invitation email the backend will send.
+   */
+  const parkedId = (email: string) => `email:${email.toLowerCase()}`
+
+  function claimParked(user: User) {
+    const waiting = state.tickets.filter((ticket) => ticket.userId === parkedId(user.email))
+    if (!waiting.length) return
+    for (const ticket of waiting) ticket.userId = user.id
+    persist()
   }
 
   /** Paid and pending orders hold stock; a failed one gives it back. */
@@ -372,10 +395,59 @@ export function createMockOrders(
       list: () =>
         respond(() => {
           const user = requireUser()
+          claimParked(user)
           return state.tickets
             .filter((ticket) => ticket.userId === user.id)
             .sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''))
             .map(publicTicket)
+        }),
+
+      get: (id: string) =>
+        respond(() => {
+          const user = requireUser()
+          claimParked(user)
+          return publicTicket(findTicket(id, user.id))
+        }),
+
+      transfer: (id: string, input: TicketTransferInput) =>
+        respond(() => {
+          const user = requireUser()
+          const parsed = ticketTransferSchema.safeParse(input)
+          if (!parsed.success) fail(parsed.error.issues, 'Check the email address.')
+          const { email, name } = parsed.data
+
+          const ticket = findTicket(id, user.id)
+          if (ticket.status === 'transferred') {
+            throw new ApiError('conflict', 'You have already passed this ticket on.', { ticketId: id })
+          }
+          if (ticket.status !== 'valid') {
+            throw new ApiError('conflict', 'That ticket can no longer be passed on.', { ticketId: id })
+          }
+          if (email === user.email.toLowerCase()) {
+            throw new ApiError('validation', 'That is your own address.', { field: 'email' })
+          }
+          const ends = ticket.endsAt ?? ticket.startsAt
+          if (ends && Date.parse(ends) < Date.now()) {
+            throw new ApiError('conflict', 'That screening is over.', { ticketId: id })
+          }
+
+          const at = new Date().toISOString()
+          const holderName = name?.trim() || email
+          state.tickets.push({
+            ...ticket,
+            id: `tkt_${randomCode(12).toLowerCase()}`,
+            code: `AF-${randomCode(4)}-${randomCode(4)}`,
+            userId: parkedId(email),
+            holderName,
+            issuedAt: at,
+            transfer: undefined,
+            origin: { fromName: user.name, at },
+          })
+
+          ticket.status = 'transferred'
+          ticket.transfer = { toEmail: email, toName: name?.trim() || undefined, at }
+          persist()
+          return publicTicket(ticket)
         }),
     },
   }

@@ -11,12 +11,12 @@ defineProps<{ venue: Venue; todayCount?: number }>()
   >
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <h3 class="leading-snug font-semibold">
+        <h3 class="text-body font-semibold">
           <NuxtLink :to="`/venues/${venue.slug}`" class="after:absolute after:inset-0 focus-visible:outline-none">
             {{ venue.name }}
           </NuxtLink>
         </h3>
-        <p class="mt-0.5 text-meta text-muted">{{ venue.area }}</p>
+        <p class="mt-0.5 text-label text-muted">{{ venue.area }}</p>
       </div>
       <UiBadge v-if="todayCount" tone="accent" class="tabular-nums">{{ todayCount }} today</UiBadge>
     </div>

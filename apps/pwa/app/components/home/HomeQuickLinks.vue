@@ -25,7 +25,7 @@ const links = computed<{ label: string; hint: string; to: string; icon: Componen
           </span>
           <span class="min-w-0">
             <span class="block leading-tight font-semibold">{{ link.label }}</span>
-            <span class="mt-0.5 block truncate text-meta text-muted">{{ link.hint }}</span>
+            <span class="mt-0.5 block truncate text-micro text-muted">{{ link.hint }}</span>
           </span>
         </NuxtLink>
       </li>
@@ -37,7 +37,7 @@ const links = computed<{ label: string; hint: string; to: string; icon: Componen
           <component :is="link.icon" class="size-5 text-muted" :stroke-width="1.75" aria-hidden="true" />
           <span class="min-w-0">
             <span class="block leading-tight font-semibold">{{ link.label }}</span>
-            <span class="mt-0.5 block truncate text-meta text-muted">{{ link.hint }}</span>
+            <span class="mt-0.5 block truncate text-micro text-muted">{{ link.hint }}</span>
           </span>
         </NuxtLink>
       </li>

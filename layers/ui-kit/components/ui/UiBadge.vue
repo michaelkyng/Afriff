@@ -15,7 +15,7 @@ const tones: Record<Tone, string> = {
 
 <template>
   <span
-    class="inline-flex h-5 items-center gap-1 rounded-tag px-1.5 text-label font-medium whitespace-nowrap [&_svg]:size-3"
+    class="inline-flex max-w-full shrink-0 items-center gap-1 self-start rounded-tag px-1.5 py-px text-micro font-medium whitespace-nowrap [&_svg]:size-2.5 [&_svg]:shrink-0"
     :class="tones[tone]"
   >
     <slot />

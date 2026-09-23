@@ -36,9 +36,9 @@ app/
   spa-loading-template.html  splash shown while JS loads
   assets/css/main.css     imports the shared theme; attendee route transitions
   layouts/default.vue     app shell: phone header + tab bar, or desktop sidebar + top bar; offline banner, PWA prompts
-  pages/                  index, /programme (+ [slug]), /tickets (Buy and My tickets), /me, plus /venues/[slug],
-                          /cart, /checkout, /orders/[id], /signin, /signup, /reset-pin, /styleguide
-  (F4 adds /cart, /checkout and /orders/[id])
+  pages/                  index, /programme (+ [slug]), /tickets (Buy and My tickets) + /tickets/[id], /me,
+                          plus /venues/[slug], /cart, /checkout, /orders/[id], /signin, /signup, /reset-pin,
+                          /styleguide
   components/
     app/                  shell pieces (AppSidebar, AppTopBar, AppHeader, AppTabBar, AppPageHeader, AppPwaPrompts, …)
     auth/                 AuthCodeStep, AuthPinStep — the steps /signup and /reset-pin share
@@ -46,7 +46,7 @@ app/
     programme/            ProgrammeItemCard, ProgrammeDayPicker, ProgrammeFilterSheet, ProgrammeSectionCard
     home/                 Home sections (HomeHero, HomeNowNext, HomeFeatured, HomeDontMiss, HomeVenues, …)
     pass/                 PassProductCard, PassOptionSheet, CartLineRow, OrderSummary, PaymentFields
-    ticket/               TicketCard
+    ticket/               TicketCard, TicketQrCode, TicketTransferSheet
   composables/            useApi, useAuth, usePinSetup, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useTheme, useBreadcrumb
   middleware/auth.ts      sends guests to /signin and back again
   stores/                 Pinia stores (prefs, session, cart)
@@ -57,7 +57,8 @@ public/                   attendee robots.txt
 ../../layers/ui-kit/     shared Nuxt layer: UI/brand components, tokens, fonts, icons
 ../../packages/
   validation/             Zod schemas for shared programme inputs
-  api/                    shared models, programme helpers, API contract, mock adapter and seed data
+  api/                    shared models, programme helpers, API contract, mock adapter and seed data,
+                          plus the QR encoder (`@afriff/api/qr`) and ticket helpers (`@afriff/api/tickets`)
 ```
 
 ## How the mock API works
@@ -67,6 +68,7 @@ public/                   attendee robots.txt
 - Anything attendees create (accounts, orders, tickets — from F3 onward) is written through `mockDb` into `localStorage` under `afriff:mockdb:*`.
 - **Accounts (F3):** `auth.signIn` takes an email and a six-digit PIN. Getting a PIN — signing up, or replacing a forgotten one — runs `requestCode` → `verifyCode` → `setPin`. In mock mode `requestCode` returns the code it would have emailed (`devCode`) so the screen can show it, and **any six digits are accepted** while there is no mail integration (`ACCEPT_ANY_CODE` in `mock/auth.ts`). `setPin` returns a token, which the app keeps in the `session` store and hands back to the adapter with `setAuthToken`. PINs are stored salted and hashed, five wrong ones lock an account for five minutes, and a reset ends the account's other sessions.
 - **Buying (F4):** `/tickets` has two tabs, Buy and My tickets (`?view=mine`). The cart lives in the `cart` store on the device; `orders.checkout` takes the items, checks them against the catalogue and the programme, decides the payment outcome and issues tickets. Payment outcomes are deterministic in mock mode: a card ending 0000 is declined, one ending 0001 stays pending, anything else is paid, and a transfer waits for `orders.confirmTransfer`.
+- **Tickets (F5):** `tickets.list` and `tickets.get` come denormalised — title, time, venue, room, holder — so `/tickets/[id]` needs nothing else to render. `tickets.transfer` marks the sender's copy `transferred` and issues the recipient a new ticket with its own code; if that email has no account yet, the ticket waits under it and is picked up the first time they sign in. Stored statuses are `valid`, `used`, `transferred` and `void`; `expired` is worked out from the clock by `ticketState`.
 - **Adding an API area:** add the methods to `AttendeeApi`, implement them in the mock adapter, then use them from pages via `useApi()`. When the backend arrives, an `http` adapter implements the same interface and `NUXT_PUBLIC_API_MODE=http` switches over.
 
 All seed data (films, people, prices, venues, dates) is fictional or a placeholder — replace it with official data before any public use.

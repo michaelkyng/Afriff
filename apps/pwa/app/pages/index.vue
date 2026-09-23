@@ -37,7 +37,6 @@ const isWide = useMediaQuery('(min-width: 1024px)')
       :today="today"
       :countdown="countdown"
       :is-simulated="isSimulated"
-      :posters="featured"
       :venue-count="programme?.venues.length"
       :today-count="todayCount"
     />

@@ -29,8 +29,8 @@ defineProps<{ venues: Venue[]; todayCounts: Map<string, number>; pending: boolea
         <li v-for="venue in venues" :key="venue.id">
           <NuxtLink :to="`/venues/${venue.slug}`" class="row-interactive flex items-center gap-3 px-3.5 py-3">
             <span class="min-w-0 flex-1">
-              <span class="block truncate font-medium">{{ venue.name }}</span>
-              <span class="block truncate text-meta text-muted">{{ venue.area }}</span>
+              <span class="block truncate text-body font-semibold">{{ venue.name }}</span>
+              <span class="block truncate text-label text-muted">{{ venue.area }}</span>
             </span>
             <span v-if="todayCounts.get(venue.id)" class="shrink-0 text-meta text-muted tabular-nums">
               {{ todayCounts.get(venue.id) }} today

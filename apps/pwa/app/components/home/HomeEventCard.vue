@@ -40,9 +40,13 @@ const labels: Record<EventKind, string> = {
         </span>
         <UiBadge>{{ labels[kind] }}</UiBadge>
       </div>
-      <h3 class="mt-4 text-h3 font-semibold">{{ title }}</h3>
-      <p class="mt-1 text-meta font-medium tabular-nums">{{ when }}</p>
-      <p class="text-meta text-muted">{{ where }}</p>
+      
+        <h3 class="mt-4 text-body font-semibold">{{ title }}</h3>
+        <p class="text-label font-medium text-muted">{{ where }}</p>
+        <p class="mt-1 text-muted tabular-nums text-[10px]">{{ when }}</p>
+        
+      
+      
       <p class="mt-2 line-clamp-2 text-meta text-muted">{{ description }}</p>
     </div>
     <div class="flex min-h-14 items-center justify-between gap-3 border-t border-line px-4 py-2.5">

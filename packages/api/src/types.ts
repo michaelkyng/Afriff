@@ -89,6 +89,7 @@ export type {
   CartLineInput,
   CheckoutInput,
   PaymentInput,
+  TicketTransferInput,
 } from '@afriff/validation'
 
 /** Nigerian (NFVCB-style) age classification. */
@@ -297,7 +298,24 @@ export interface Order {
   ticketIds: string[]
 }
 
-export type TicketStatus = 'valid' | 'used' | 'void'
+/**
+ * Where a ticket stands. `expired` is not among them: it is worked out from the
+ * clock by `ticketState`, so a ticket never has to be rewritten to go stale.
+ */
+export type TicketStatus = 'valid' | 'used' | 'transferred' | 'void'
+
+/** Where a ticket went, on the copy the sender keeps. */
+export interface TicketTransfer {
+  toEmail: string
+  toName?: string
+  at: ISODateTime
+}
+
+/** Who a ticket came from, on the copy the recipient gets. */
+export interface TicketOrigin {
+  fromName: string
+  at: ISODateTime
+}
 
 /**
  * One admission. Everything needed to show and check it is denormalised here,
@@ -316,7 +334,14 @@ export interface Ticket {
   title: string
   subtitle?: string
   startsAt?: ISODateTime
+  endsAt?: ISODateTime
   venueName?: string
+  /** Which screen or room, when the venue has more than one. */
+  roomName?: string
   selection?: TicketSelection
   issuedAt: ISODateTime
+  /** Set once this ticket has been passed on; it stops admitting anyone. */
+  transfer?: TicketTransfer
+  /** Set on a ticket that arrived from someone else. */
+  origin?: TicketOrigin
 }

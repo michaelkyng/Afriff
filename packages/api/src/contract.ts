@@ -17,6 +17,7 @@ import type {
   SignInInput,
   Ticket,
   TicketProduct,
+  TicketTransferInput,
   User,
   Venue,
   VerificationTicket,
@@ -111,8 +112,22 @@ export interface AttendeeApi {
   }
 
   tickets: {
-    /** Every admission the attendee holds, earliest first. Shown under My tickets. */
+    /**
+     * Every admission the attendee holds, earliest first. Shown under My tickets.
+     * Anything transferred to their email before they had an account arrives here
+     * the first time they ask.
+     */
     list(): Promise<Ticket[]>
+    /** Throws `ApiError('not_found')` for a ticket that is not the attendee's. */
+    get(id: string): Promise<Ticket>
+    /**
+     * Passes a ticket on. The sender keeps a record of where it went; the
+     * recipient gets a new ticket with its own code, waiting for them if they do
+     * not have an account yet.
+     * Throws `ApiError('conflict')` for a ticket that has been used, passed on
+     * already, or whose screening has started.
+     */
+    transfer(id: string, input: TicketTransferInput): Promise<Ticket>
   }
 }
 

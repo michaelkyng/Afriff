@@ -8,7 +8,7 @@
 
 const PREFIX = 'afriff:mockdb:'
 /** Bump when stored shapes change; older data is discarded. */
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 interface Envelope<T> {
   v: number

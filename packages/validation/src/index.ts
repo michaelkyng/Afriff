@@ -130,6 +130,14 @@ export const checkoutSchema = z.object({
   payment: paymentSchema,
 })
 
+// ------------------------------------------------------------------ tickets
+
+/** Passing a ticket on: where it goes, and who to put on it. */
+export const ticketTransferSchema = z.object({
+  email: emailSchema,
+  name: z.union([nameSchema, z.literal('')]).optional(),
+})
+
 export type Genre = z.infer<typeof genreSchema>
 export type FilmQuery = z.infer<typeof filmQuerySchema>
 export type ScreeningQuery = z.infer<typeof screeningQuerySchema>
@@ -143,3 +151,4 @@ export type CartLineInput = z.input<typeof cartLineSchema>
 export type OrderContactInput = z.input<typeof orderContactSchema>
 export type PaymentInput = z.input<typeof paymentSchema>
 export type CheckoutInput = z.input<typeof checkoutSchema>
+export type TicketTransferInput = z.input<typeof ticketTransferSchema>

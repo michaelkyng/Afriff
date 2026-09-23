@@ -41,7 +41,7 @@ defineProps<{
       />
       <ul class="grid gap-3 @lg:grid-cols-2">
         <template v-if="pending">
-          <li v-for="n in 4" :key="n"><UiSkeleton class="h-[6.75rem] rounded-card" /></li>
+          <li v-for="n in 4" :key="n"><UiSkeleton class="h-27 rounded-card" /></li>
         </template>
         <template v-else>
           <li v-for="item in upNext" :key="item.id">

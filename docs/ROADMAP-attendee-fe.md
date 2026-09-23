@@ -89,17 +89,20 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 
 **Done when:** an attendee can buy any product type and see it arrive under My tickets, and a failed payment is handled cleanly. ✔︎
 
-## F5 — Ticket detail 🟡
+## F5 — Ticket detail ✅
 
-*The wallet is scrapped. Tickets now live on the **My tickets** tab of `/tickets`, next to the Buy tab (delivered with F4). Payment moves to a real provider later, which will change how a ticket is issued but not what one is.*
+*The wallet is scrapped. Tickets live on the **My tickets** tab of `/tickets`, next to the Buy tab. Payment moves to a real provider later, which will change how a ticket is issued but not what one is.*
 
-- Done with F4: My tickets grouped into passes, coming up and past; each card shows what it admits to, the holder and the entry code; a sign-in prompt in place for guests
-- Ticket detail page with the entry code shown large (payload shaped like the future signed token), brightness hint, and status (valid, used, expired, transferred)
-- Works fully offline once loaded
-- Add to calendar (.ics download)
-- Transfer a ticket to another email
+- Ticket page at `/tickets/[id]`: the QR filling the card, the printed code under it in full, a brightness hint, and one line saying where the ticket stands
+- The QR is drawn by an encoder that ships with the app (`@afriff/api/qr`) — byte mode, versions 1 to 40, level Q, no dependency and no network. It is checked against a reference implementation in `packages/api/tests/qr.test.js`, and the rendered symbol was read back with an independent scanner
+- The payload is shaped like the signed token the backend will issue: `AF1|<ticket>|<code>|<starts at>`. Nothing in it proves anything on its own; the scanner checks it against the festival's records
+- Status without a round trip: `valid`, `used`, `transferred`, `void` are stored, and `expired` is worked out from the clock, so a ticket never has to be rewritten to go stale
+- Everything on the page comes from the ticket itself — what it admits to, when, where, the holder — so it holds up in airplane mode once the app shell is cached
+- Add to calendar: an .ics built on the device, with the times in UTC and an alarm an hour before
+- Pass a ticket on to another email: the sender keeps a record of where it went and their copy stops admitting anyone, the recipient gets a new ticket with its own code, and one sent to somebody without an account is waiting the first time they sign in
+- Shared API: `tickets.get` and `tickets.transfer` on the contract, `ticketPayload` / `ticketState` / `ticketAdmits` / `ticketIcs` in `@afriff/api/tickets`, transfer schema in `@afriff/validation`
 
-**Done when:** tickets open with airplane mode on, and the entry code renders crisply at full brightness.
+**Done when:** tickets open with airplane mode on, and the entry code renders crisply at full brightness. ✔︎
 
 ## F6 — My Festival ⬜
 

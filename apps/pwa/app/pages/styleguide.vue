@@ -42,8 +42,8 @@ const typeRoles = [
   { token: 'text-prose', className: 'text-prose', sample: 'A retired postman finds a sack of letters.', use: '16, long reading' },
   { token: 'text-body', className: 'text-body font-semibold', sample: 'The Harmattan Letters', use: '15, UI copy, card titles' },
   { token: 'text-meta', className: 'text-meta text-muted', sample: 'Landmark, Cinema 2', use: '13, secondary lines' },
-  { token: 'text-label', className: 'text-label font-medium', sample: 'Q&A', use: '12, tags, captions' },
-  { token: 'text-micro', className: 'text-micro font-medium', sample: 'Programme', use: '11, tab labels' },
+  { token: 'text-label', className: 'text-label text-muted', sample: 'Landmark, Cinema 2', use: '12, compact card details, captions' },
+  { token: 'text-micro', className: 'text-micro font-medium', sample: 'Q&A', use: '11, badges, tab labels' },
 ]
 
 const chipA = ref(true)

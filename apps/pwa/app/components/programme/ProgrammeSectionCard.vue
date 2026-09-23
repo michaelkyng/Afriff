@@ -12,7 +12,7 @@ defineProps<{ section: Section; filmCount: number; films?: Film[] }>()
     class="card card-interactive group flex h-full flex-col p-4"
   >
     <span class="flex items-start justify-between gap-3">
-      <span class="leading-snug font-semibold">{{ section.name }}</span>
+      <span class="text-body font-semibold">{{ section.name }}</span>
       <ArrowUpRightIcon
         class="size-4 shrink-0 text-subtle transition-[color,translate] duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ink"
         aria-hidden="true"
@@ -31,7 +31,7 @@ defineProps<{ section: Section; filmCount: number; films?: Film[] }>()
           :class="i > 0 && '-ml-2'"
         />
       </span>
-      <span class="text-meta font-medium text-muted tabular-nums">
+      <span class="text-label text-muted tabular-nums">
         {{ filmCount }} {{ filmCount === 1 ? 'film' : 'films' }}
       </span>
     </span>

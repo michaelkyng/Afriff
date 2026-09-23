@@ -41,8 +41,8 @@ const icons: Record<EventKind, Component> = {
             <component :is="icons[card.kind]" class="size-4.5" :stroke-width="1.75" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block truncate font-medium">{{ card.title }}</span>
-            <span class="block truncate text-meta text-muted tabular-nums">{{ card.when }}</span>
+            <span class="block truncate text-body font-semibold">{{ card.title }}</span>
+            <span class="block truncate text-label text-muted tabular-nums">{{ card.when }}</span>
           </span>
           <span class="shrink-0 text-meta font-medium tabular-nums" :class="card.price ? 'text-ink' : 'text-muted'">
             {{ card.price ?? 'Included' }}

@@ -9,6 +9,8 @@
     "./types": "./src/types.ts",
     "./format": "./src/format.ts",
     "./programme": "./src/programme.ts",
+    "./qr": "./src/qr.ts",
+    "./tickets": "./src/tickets.ts",
     "./filters": "./src/filters.ts",
     "./mock": "./src/mock/index.ts",
     "./mock/db": "./src/mock/db.ts"

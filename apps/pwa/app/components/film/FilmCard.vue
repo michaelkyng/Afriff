@@ -29,7 +29,7 @@ defineProps<{
         {{ film.premiere }}
       </span>
     </div>
-    <h3 class="mt-2.5 line-clamp-2 leading-snug font-semibold">
+    <h3 class="mt-2.5 line-clamp-2 text-body font-semibold">
       <NuxtLink
         v-if="to !== false"
         :to="to || `/programme/${film.slug}`"
@@ -39,7 +39,7 @@ defineProps<{
       </NuxtLink>
       <template v-else>{{ film.title }}</template>
     </h3>
-    <p class="mt-0.5 truncate text-meta text-muted">
+    <p class="mt-0.5 truncate text-label text-muted">
       {{ formatRuntime(film.runtimeMin) }}<template v-if="section"> · {{ section.name }}</template>
     </p>
   </article>

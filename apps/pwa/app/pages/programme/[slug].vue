@@ -78,7 +78,7 @@ async function shareFilm() {
             <NuxtLink
               v-if="section"
               :to="{ path: '/programme', query: { view: 'films', section: section.slug } }"
-              class="inline-flex h-5 items-center gap-1.5 rounded-tag border border-line px-1.5 text-label font-medium text-ink transition-colors hover:border-line-strong hover:bg-hover"
+              class="inline-flex min-h-6 items-center gap-1 rounded-tag border border-line px-1.5 text-micro font-medium text-ink transition-colors hover:border-line-strong hover:bg-hover"
             >
               <span class="size-1.5 rounded-full" :style="{ background: `hsl(${section.hue} 70% 55%)` }" aria-hidden="true" />
               {{ section.name }}
@@ -93,7 +93,7 @@ async function shareFilm() {
             <li>{{ film.year }}</li>
             <li>{{ formatRuntime(film.runtimeMin) }}</li>
             <li>
-              <span class="rounded-tag border border-line-strong px-1 text-label font-semibold text-ink" :title="`Rated ${film.rating}`">
+              <span class="rounded-tag border border-line-strong px-1 text-micro font-medium text-ink" :title="`Rated ${film.rating}`">
                 {{ film.rating }}
               </span>
             </li>

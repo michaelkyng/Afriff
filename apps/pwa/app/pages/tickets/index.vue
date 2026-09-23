@@ -7,6 +7,7 @@ import {
   TriangleAlertIcon,
   UserRoundIcon,
 } from 'lucide-vue-next'
+import { ticketState } from '@afriff/api/tickets'
 import type { TicketProduct } from '@afriff/api'
 import type { EventItem, ScreeningItem } from '@afriff/api/programme'
 
@@ -92,13 +93,17 @@ watchEffect(() => {
   if (view.value === 'mine' && isSignedIn.value && ticketsStatus.value === 'idle') refreshTickets()
 })
 
-/** Dated tickets split around now; passes have no date and sit at the top. */
+/**
+ * What still admits someone comes first: undated passes, then what is coming up.
+ * Anything spent — used, expired, passed on — drops to the bottom.
+ */
 const groups = computed(() => {
   const all = myTickets.value ?? []
+  const live = all.filter((ticket) => ticketState(ticket, now.value) === 'valid')
   return {
-    passes: all.filter((ticket) => !ticket.startsAt),
-    upcoming: all.filter((ticket) => ticket.startsAt && Date.parse(ticket.startsAt) >= now.value.getTime()),
-    past: all.filter((ticket) => ticket.startsAt && Date.parse(ticket.startsAt) < now.value.getTime()),
+    passes: live.filter((ticket) => !ticket.startsAt),
+    upcoming: live.filter((ticket) => ticket.startsAt),
+    past: all.filter((ticket) => ticketState(ticket, now.value) !== 'valid'),
   }
 })
 </script>
@@ -199,21 +204,21 @@ const groups = computed(() => {
         <section v-if="groups.passes.length" aria-labelledby="passes-title">
           <UiSectionHeader title="Passes" title-id="passes-title" />
           <ul class="grid gap-3 md:grid-cols-2">
-            <li v-for="ticket in groups.passes" :key="ticket.id"><TicketCard :ticket="ticket" /></li>
+            <li v-for="ticket in groups.passes" :key="ticket.id"><TicketCard :ticket="ticket" :now="now" /></li>
           </ul>
         </section>
 
         <section v-if="groups.upcoming.length" aria-labelledby="upcoming-title">
           <UiSectionHeader title="Coming up" title-id="upcoming-title" :meta="`${groups.upcoming.length}`" />
           <ul class="grid gap-3 md:grid-cols-2">
-            <li v-for="ticket in groups.upcoming" :key="ticket.id"><TicketCard :ticket="ticket" /></li>
+            <li v-for="ticket in groups.upcoming" :key="ticket.id"><TicketCard :ticket="ticket" :now="now" /></li>
           </ul>
         </section>
 
         <section v-if="groups.past.length" aria-labelledby="past-title">
           <UiSectionHeader title="Past" title-id="past-title" />
           <ul class="grid gap-3 md:grid-cols-2">
-            <li v-for="ticket in groups.past" :key="ticket.id"><TicketCard :ticket="ticket" past /></li>
+            <li v-for="ticket in groups.past" :key="ticket.id"><TicketCard :ticket="ticket" :now="now" /></li>
           </ul>
         </section>
       </div>
