@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import { AccessibilityIcon, ArrowUpRightIcon, CheckIcon, MapPinIcon, MonitorPlayIcon, SearchXIcon } from 'lucide-vue-next'
+import {
+  AccessibilityIcon,
+  ArrowUpRightIcon,
+  BusIcon,
+  CarIcon,
+  CheckIcon,
+  ClockIcon,
+  LandmarkIcon,
+  MapPinIcon,
+  MonitorPlayIcon,
+  RouteIcon,
+  SearchXIcon,
+  UsersIcon,
+} from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +56,19 @@ const selectedDay = computed<string>({
 const dayItems = computed(() => venueItems.value.filter((item) => lagosDateKey(item.startsAt) === selectedDay.value))
 const selectedDayInfo = computed(() => festival.value?.days.find((d) => d.date === selectedDay.value))
 const totalSeats = computed(() => venue.value?.screens.reduce((sum, s) => sum + s.capacity, 0) ?? 0)
+
+/** Only the travel notes this venue actually has, in the order they are needed. */
+const travelRows = computed(() => {
+  const travel = venue.value?.travel
+  if (!travel) return []
+  return [
+    { label: 'Look for', value: travel.landmark, icon: LandmarkIcon },
+    { label: 'Parking', value: travel.parking, icon: CarIcon },
+    { label: 'Drop-off', value: travel.dropOff, icon: UsersIcon },
+    { label: 'Other ways', value: travel.transport, icon: BusIcon },
+    { label: 'Leave by', value: travel.timing, icon: ClockIcon },
+  ].filter((row): row is { label: string; value: string; icon: typeof CarIcon } => Boolean(row.value))
+})
 </script>
 
 <template>
@@ -99,8 +125,33 @@ const totalSeats = computed(() => venue.value?.screens.reduce((sum, s) => sum + 
               {{ line }}
             </li>
           </ul>
+          <p v-if="venue.accessibilityNote" class="mt-3 border-t border-line pt-3 text-meta text-muted">
+            {{ venue.accessibilityNote }}
+          </p>
         </UiCard>
       </div>
+
+      <!-- Getting there -->
+      <UiCard v-if="venue.travel" :padded="false">
+        <h2 class="flex items-center gap-2 border-b border-line px-4 py-3.5 font-semibold md:px-5">
+          <RouteIcon class="size-4.5 text-muted" aria-hidden="true" />
+          Getting there
+        </h2>
+        <dl class="divide-y divide-line">
+          <div v-for="row in travelRows" :key="row.label" class="flex items-start gap-3 px-4 py-3 md:px-5">
+            <component :is="row.icon" class="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden="true" />
+            <dt class="w-24 shrink-0 text-meta text-muted">{{ row.label }}</dt>
+            <dd class="min-w-0 flex-1 text-meta">{{ row.value }}</dd>
+          </div>
+        </dl>
+        <p class="border-t border-line px-4 py-3 text-meta text-muted md:px-5">
+          Parking, access and support for every venue are listed together on
+          <NuxtLink to="/info#venues" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">
+            Info and help
+          </NuxtLink>
+          .
+        </p>
+      </UiCard>
 
       <section aria-labelledby="whatson-title">
         <UiSectionHeader title="What’s on here" title-id="whatson-title" :meta="`${venueItems.length} listings this festival`" />

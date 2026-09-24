@@ -15,11 +15,10 @@ defineProps<{ supportEmail?: string; compact?: boolean }>()
         The Africa International Film Festival brings filmmakers, industry and audiences together in Lagos every
         November: screenings, masterclasses, the AFRIFF Film &amp; Content Market and the Globe Awards.
       </p>
-      <p v-if="supportEmail" class="mt-3 text-micro text-muted">
-        Questions about tickets?
-        <a :href="`mailto:${supportEmail}`" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">{{
-          supportEmail
-        }}</a>
+      <!-- No line breaks inside the sentence: they would render as spaces before the punctuation. -->
+      <p class="mt-3 text-micro text-muted">
+        Questions about tickets, venues or access?
+        <NuxtLink to="/info" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">Info and help</NuxtLink><template v-if="supportEmail">, or email <a :href="`mailto:${supportEmail}`" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">{{ supportEmail }}</a></template>.
       </p>
     </div>
   </section>

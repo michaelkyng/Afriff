@@ -88,6 +88,10 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
       listEvents: () => respond(() => seed.events),
     },
 
+    info: {
+      get: () => respond(() => ({ faqs: seed.faqs, policies: seed.policies, contact: seed.contact })),
+    },
+
     updates: {
       list: () =>
         respond(() =>

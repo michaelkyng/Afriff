@@ -55,7 +55,23 @@ export interface Venue {
   address: string
   mapsUrl: string
   screens: Screen[]
+  /** What the venue has, in short lines an attendee can scan before setting off. */
   accessibility: string[]
+  /** Anything that needs a sentence rather than a tick: where to ask, what to expect. */
+  accessibilityNote?: string
+  travel?: VenueTravel
+}
+
+/** Getting there, the way someone in Lagos would actually ask about it. */
+export interface VenueTravel {
+  /** The landmark to aim for, for a driver who does not know the address. */
+  landmark?: string
+  parking?: string
+  dropOff?: string
+  /** Buses, ferries, ride-hailing — whatever gets people there without a car. */
+  transport?: string
+  /** When to leave, given the traffic that venue is known for. */
+  timing?: string
 }
 
 export interface Screen {
@@ -391,4 +407,41 @@ export interface FestivalUpdate {
   subject?: UpdateSubject
   /** Where to go for the detail, when there is somewhere to go. */
   link?: string
+}
+
+// ------------------------------------------------------------------ info
+
+export type FaqTopic = 'tickets' | 'at-the-festival' | 'access' | 'getting-there'
+
+export interface Faq {
+  id: string
+  topic: FaqTopic
+  question: string
+  answer: string
+  /** Somewhere in the app that answers it better than words can. */
+  link?: string
+  linkLabel?: string
+}
+
+/** A festival rule, in the words an attendee is owed before they buy. */
+export interface Policy {
+  id: string
+  title: string
+  body: string
+}
+
+export interface ContactInfo {
+  email: string
+  phone?: string
+  whatsapp?: string
+  /** When a person is actually there to answer. */
+  hours: string
+  /** Where to go at the venue itself. */
+  inPerson?: string
+}
+
+export interface FestivalInfo {
+  faqs: Faq[]
+  policies: Policy[]
+  contact: ContactInfo
 }

@@ -3,6 +3,7 @@ import type {
   CodeChallenge,
   Festival,
   FestivalEvent,
+  FestivalInfo,
   FestivalUpdate,
   Film,
   FilmQuery,
@@ -131,6 +132,14 @@ export interface AttendeeApi {
      * already, or whose screening has started.
      */
     transfer(id: string, input: TicketTransferInput): Promise<Ticket>
+  }
+
+  /**
+   * The answers that do not change through the week: how tickets work, what the
+   * rules are, and who to ask. Public, and small enough to fetch in one call.
+   */
+  info: {
+    get(): Promise<FestivalInfo>
   }
 
   /**

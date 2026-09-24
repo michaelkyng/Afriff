@@ -130,10 +130,18 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 
 **Done when:** an attendee hears about a change that affects them without going looking. ✔︎
 
-## F8 — Info & help ⬜
+## F8 — Info & help ✅
 
-- Venues & getting there, FAQs, festival policies, contact/support
-- Accessibility information per venue
+- `/info`, one page with its own in-page nav: **Venues and getting there**, **Questions**, **Festival policies** and **Talk to us**. Linked from the Me tab, the About band on Home and the rail on tablets and laptops
+- **Venues and getting there:** all four venues with the area, what parking is like, when to leave given the traffic, and their access in one line, each linking to the venue page and to directions
+- **Questions:** 21 seeded FAQs across tickets, at the festival, access and getting there, as native `<details>` disclosures (so find-in-page, the keyboard and screen readers all work). A search filters across question and answer and opens what it finds; an empty search points at the contact details
+- **Policies:** admission and age ratings, latecomers, refunds and exchanges, programme changes, photography, bags and security, code of conduct, and filming at the festival
+- **Talk to us:** email, phone, where the festival desk is, and when a person is actually there, with a note that changes during the week go to Updates
+- **Access per venue:** `Venue` gained `accessibilityNote` for what needs a sentence rather than a tick (where to ask, what to expect, which room is up a flight of stairs) and `travel` for the landmark to aim for, parking, drop-off, other ways in and when to leave. The venue page now carries a "Getting there" card and the note under its access list
+- Shared API: `info.get()` on the contract returning `{ faqs, policies, contact }`, with the seed behind it. Public, like the programme
+- New in the UI kit: `UiDisclosure`, a `<details>`-based accordion that animates open and not shut
+
+**Done when:** an attendee can answer their own question without emailing anyone. ✔︎
 
 ## F9 — PWA polish & quality pass ⬜
 

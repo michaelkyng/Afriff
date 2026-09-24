@@ -4,6 +4,7 @@ import {
   BookmarkIcon,
   CheckIcon,
   ChevronRightIcon,
+  CircleHelpIcon,
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
@@ -214,6 +215,14 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
           <span class="min-w-0 flex-1">
             <span class="block font-medium">My tickets</span>
             <span class="block text-meta text-muted">Everything you have bought</span>
+          </span>
+          <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+        </NuxtLink>
+        <NuxtLink to="/info" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
+          <CircleHelpIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">Info and help</span>
+            <span class="block text-meta text-muted">Venues, questions, policies and contact</span>
           </span>
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </NuxtLink>

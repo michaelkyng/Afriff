@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { BellIcon, BookmarkIcon, CalendarDaysIcon, HouseIcon, TicketIcon, UserRoundIcon } from 'lucide-vue-next'
+import { BellIcon, BookmarkIcon, CalendarDaysIcon, CircleHelpIcon, HouseIcon, TicketIcon, UserRoundIcon } from 'lucide-vue-next'
 
 export interface NavItem {
   label: string
@@ -23,6 +23,7 @@ export const primaryNav: NavItem[] = [
 export const secondaryNav: NavItem[] = [
   { label: 'My festival', to: '/my-festival', icon: BookmarkIcon },
   { label: 'Updates', to: '/updates', icon: BellIcon },
+  { label: 'Info and help', to: '/info', icon: CircleHelpIcon },
 ]
 
 export function isNavActive(item: NavItem, path: string): boolean {
