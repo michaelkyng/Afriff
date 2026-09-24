@@ -12,6 +12,7 @@
     "./plan": "./src/plan.ts",
     "./qr": "./src/qr.ts",
     "./tickets": "./src/tickets.ts",
+    "./updates": "./src/updates.ts",
     "./filters": "./src/filters.ts",
     "./mock": "./src/mock/index.ts",
     "./mock/db": "./src/mock/db.ts"

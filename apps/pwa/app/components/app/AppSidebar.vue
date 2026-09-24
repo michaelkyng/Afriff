@@ -13,6 +13,10 @@ const { mode } = useTheme()
 const { user, isSignedIn, initials } = useAuth()
 const pwa = usePWA()
 const plan = usePlanStore()
+const { unread } = useUpdates()
+
+/** The count each secondary entry carries, when it has one. */
+const badgeFor = (to: string) => (to === '/my-festival' ? plan.count : to === '/updates' ? unread.value : 0)
 
 const nextTheme: Record<ThemeMode, ThemeMode> = { system: 'dark', dark: 'light', light: 'system' }
 const themeMeta = computed(() => ({
@@ -91,9 +95,9 @@ const status = computed(() => {
             />
             <span class="md:sr-only lg:not-sr-only">{{ item.label }}</span>
             <span
-              v-if="plan.count"
+              v-if="badgeFor(item.to)"
               class="ml-auto hidden text-meta text-muted tabular-nums lg:inline"
-            >{{ plan.count }}</span>
+            >{{ badgeFor(item.to) }}</span>
           </NuxtLink>
         </li>
       </ul>

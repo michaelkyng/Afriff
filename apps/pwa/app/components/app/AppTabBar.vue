@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const cart = useCartStore()
+const { unread } = useUpdates()
 </script>
 
 <template>
@@ -26,6 +27,13 @@ const cart = useCartStore()
               :aria-label="`${cart.count} in cart`"
             >
               {{ cart.count }}
+            </span>
+            <span
+              v-if="item.to === '/me' && unread"
+              class="absolute top-0 right-2.5 grid size-4 place-items-center rounded-full bg-accent text-[0.625rem] font-semibold text-on-accent tabular-nums"
+              :aria-label="`${unread} unread ${unread === 1 ? 'update' : 'updates'}`"
+            >
+              {{ unread }}
             </span>
             <component
               :is="item.icon"

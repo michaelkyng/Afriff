@@ -19,7 +19,6 @@ useHead({ title: 'Tickets' })
 
 const route = useRoute()
 const router = useRouter()
-const api = useApi()
 const cart = useCartStore()
 const { isSignedIn } = useAuth()
 const { data: festival } = useFestival()
@@ -81,16 +80,17 @@ watchEffect(() => {
 
 // ------------------------------------------------------------------ mine
 
-const { data: myTickets, status: ticketsStatus, error: ticketsError, refresh: refreshTickets } = useLazyAsyncData(
-  'tickets:mine',
-  () => api.tickets.list(),
-  { immediate: false },
-)
-const ticketsLoading = computed(() => ticketsStatus.value !== 'success' && ticketsStatus.value !== 'error')
+const {
+  tickets: myTickets,
+  error: ticketsError,
+  loading: ticketsLoading,
+  refresh: refreshTickets,
+  ensure: ensureTickets,
+} = useMyTickets()
 
 // Only fetched once the tab is opened by someone signed in.
 watchEffect(() => {
-  if (view.value === 'mine' && isSignedIn.value && ticketsStatus.value === 'idle') refreshTickets()
+  if (view.value === 'mine') ensureTickets()
 })
 
 /**

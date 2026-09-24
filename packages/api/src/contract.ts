@@ -3,6 +3,7 @@ import type {
   CodeChallenge,
   Festival,
   FestivalEvent,
+  FestivalUpdate,
   Film,
   FilmQuery,
   CheckoutInput,
@@ -130,6 +131,16 @@ export interface AttendeeApi {
      * already, or whose screening has started.
      */
     transfer(id: string, input: TicketTransferInput): Promise<Ticket>
+  }
+
+  /**
+   * Festival announcements and changes. Public: no account needed, since an
+   * attendee should see that a venue moved whether or not they signed in.
+   * Everything is returned with the moment it was published, and the app shows
+   * what the festival clock says has happened. Read state is the device's.
+   */
+  updates: {
+    list(): Promise<FestivalUpdate[]>
   }
 
   /**

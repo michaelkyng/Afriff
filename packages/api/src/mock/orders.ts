@@ -267,6 +267,7 @@ export function createMockOrders(
           startsAt: screening?.startsAt ?? event?.startsAt,
           endsAt: screening?.endsAt ?? event?.endsAt,
           venueName: venue?.name,
+          venueId: venue?.id,
           roomName: screening ? venue?.screens.find((item) => item.id === screening.screenId)?.name : undefined,
           selection: line.selection,
           issuedAt: new Date().toISOString(),

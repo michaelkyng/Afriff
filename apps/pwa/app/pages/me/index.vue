@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  BellIcon,
   BookmarkIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -33,6 +34,7 @@ watchEffect(() => {
 const orderTone = { paid: 'success', pending: 'accent', failed: 'danger' } as const
 const prefs = usePrefsStore()
 const plan = usePlanStore()
+const { unread } = useUpdates()
 const pwa = usePWA()
 const online = useOnline()
 const { data: festival } = useFestival()
@@ -193,6 +195,18 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
             <span class="block text-meta text-muted">Your plan, with clashes flagged</span>
           </span>
           <span v-if="plan.count" class="text-meta text-muted tabular-nums">{{ plan.count }}</span>
+          <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+        </NuxtLink>
+        <NuxtLink to="/updates" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
+          <BellIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+          <span class="min-w-0 flex-1">
+            <span class="block font-medium">Updates</span>
+            <span class="block text-meta text-muted">Schedule changes and festival news</span>
+          </span>
+          <span
+            v-if="unread"
+            class="grid size-5 place-items-center rounded-full bg-accent text-micro font-semibold text-on-accent tabular-nums"
+          >{{ unread }}</span>
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </NuxtLink>
         <NuxtLink to="/tickets?view=mine" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">

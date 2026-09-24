@@ -16,7 +16,6 @@ import { buildPlan, groupPlanByDay, planWarnings, warningsByKey } from '@afriff/
  */
 useHead({ title: 'My festival' })
 
-const api = useApi()
 const plan = usePlanStore()
 const { isSignedIn } = useAuth()
 const { data: festival } = useFestival()
@@ -31,13 +30,8 @@ const {
 } = useReminders()
 
 /** Tickets count towards the plan, so they are fetched once someone is signed in. */
-const { data: tickets, refresh: refreshTickets } = useLazyAsyncData('plan:tickets', () => api.tickets.list(), {
-  immediate: false,
-  default: () => [],
-})
-watchEffect(() => {
-  if (isSignedIn.value) refreshTickets()
-})
+const { tickets, ensure: ensureTickets } = useMyTickets()
+ensureTickets()
 
 const entries = computed(() => buildPlan(timeline.value, tickets.value ?? [], plan.items))
 const days = computed(() => groupPlanByDay(entries.value))

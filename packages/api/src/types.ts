@@ -337,6 +337,8 @@ export interface Ticket {
   startsAt?: ISODateTime
   endsAt?: ISODateTime
   venueName?: string
+  /** Kept alongside the name so a venue notice can be matched with no programme loaded. */
+  venueId?: string
   /** Which screen or room, when the venue has more than one. */
   roomName?: string
   selection?: TicketSelection
@@ -357,4 +359,36 @@ export interface SavedItem {
   /** The film, screening or event this points at. */
   refId: string
   savedAt: ISODateTime
+}
+
+// ------------------------------------------------------------------ updates
+
+/** What an update is about, which decides its icon and how it reads. */
+export type UpdateKind = 'schedule' | 'venue' | 'announcement'
+
+/**
+ * How loudly it should land. `urgent` earns a banner when it touches something
+ * the attendee holds a ticket for; everything else waits in the inbox.
+ */
+export type UpdateSeverity = 'normal' | 'urgent'
+
+/** What an update concerns, so the app can tell whose week it changes. */
+export interface UpdateSubject {
+  screeningId?: string
+  eventId?: string
+  venueId?: string
+  filmId?: string
+}
+
+export interface FestivalUpdate {
+  id: string
+  kind: UpdateKind
+  severity: UpdateSeverity
+  title: string
+  /** One or two sentences, already written for an attendee to act on. */
+  body: string
+  publishedAt: ISODateTime
+  subject?: UpdateSubject
+  /** Where to go for the detail, when there is somewhere to go. */
+  link?: string
 }

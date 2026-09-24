@@ -37,10 +37,10 @@ app/
   assets/css/main.css     imports the shared theme; attendee route transitions
   layouts/default.vue     app shell: phone header + tab bar, or desktop sidebar + top bar; offline banner, PWA prompts
   pages/                  index, /programme (+ [slug]), /tickets (Buy and My tickets) + /tickets/[id],
-                          /my-festival, /me, plus /venues/[slug], /cart, /checkout, /orders/[id], /signin,
-                          /signup, /reset-pin, /styleguide
+                          /my-festival, /updates, /me, plus /venues/[slug], /cart, /checkout, /orders/[id],
+                          /signin, /signup, /reset-pin, /styleguide
   components/
-    app/                  shell pieces (AppSidebar, AppTopBar, AppHeader, AppTabBar, AppPageHeader, AppPwaPrompts, …)
+    app/                  shell pieces (AppSidebar, AppTopBar, AppHeader, AppTabBar, AppPageHeader, AppUpdateBanner, AppPwaPrompts, …)
     auth/                 AuthCodeStep, AuthPinStep — the steps /signup and /reset-pin share
     film/                 FilmPoster, FilmCard, FilmScreeningRow
     programme/            ProgrammeItemCard, ProgrammeDayPicker, ProgrammeFilterSheet, ProgrammeSectionCard
@@ -48,9 +48,9 @@ app/
     pass/                 PassProductCard, PassOptionSheet, CartLineRow, OrderSummary, PaymentFields
     ticket/               TicketCard, TicketQrCode, TicketTransferSheet
     plan/                 PlanSaveButton — the bookmark toggle used across the programme
-  composables/            useApi, useAuth, usePinSetup, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useReminders, useTheme, useBreadcrumb
+  composables/            useApi, useAuth, usePinSetup, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useMyTickets, useUpdates, useReminders, useTheme, useBreadcrumb
   middleware/auth.ts      sends guests to /signin and back again
-  stores/                 Pinia stores (prefs, session, cart, plan, reminders)
+  stores/                 Pinia stores (prefs, session, cart, plan, reminders, inbox)
   plugins/api.ts          selects and injects the shared API adapter
   plugins/auth.client.ts  restores the saved session into the adapter on start-up
   utils/                  Nuxt auto-import bridges to @afriff/api; attendee navigation
@@ -59,8 +59,8 @@ public/                   attendee robots.txt
 ../../packages/
   validation/             Zod schemas for shared programme inputs
   api/                    shared models, programme helpers, API contract, mock adapter and seed data, plus
-                          the QR encoder (`@afriff/api/qr`), ticket helpers (`@afriff/api/tickets`) and the
-                          plan logic (`@afriff/api/plan`)
+                          the QR encoder (`@afriff/api/qr`), ticket helpers (`@afriff/api/tickets`), the
+                          plan logic (`@afriff/api/plan`) and update sorting (`@afriff/api/updates`)
 ```
 
 ## How the mock API works
@@ -72,6 +72,7 @@ public/                   attendee robots.txt
 - **Buying (F4):** `/tickets` has two tabs, Buy and My tickets (`?view=mine`). The cart lives in the `cart` store on the device; `orders.checkout` takes the items, checks them against the catalogue and the programme, decides the payment outcome and issues tickets. Payment outcomes are deterministic in mock mode: a card ending 0000 is declined, one ending 0001 stays pending, anything else is paid, and a transfer waits for `orders.confirmTransfer`.
 - **Tickets (F5):** `tickets.list` and `tickets.get` come denormalised — title, time, venue, room, holder — so `/tickets/[id]` needs nothing else to render. `tickets.transfer` marks the sender's copy `transferred` and issues the recipient a new ticket with its own code; if that email has no account yet, the ticket waits under it and is picked up the first time they sign in. Stored statuses are `valid`, `used`, `transferred` and `void`; `expired` is worked out from the clock by `ticketState`.
 - **My festival (F6):** `saved.list / add / remove / merge` keeps one list per account covering films, screenings and events. The `plan` store mirrors it on the device so saving works signed out; `merge` folds that device list into the account at sign-in, and signing out clears the device copy. `@afriff/api/plan` turns saved items plus tickets into the schedule (`buildPlan`, `groupPlanByDay`) and finds where it cannot be kept (`planWarnings`: a clash, or less than 45 minutes between two venues). Reminders are device-only timers in the `reminders` store and fire only while the app is open.
+- **Updates (F7):** `updates.list()` is public and returns every seeded update with the moment it was published; the app shows what the festival clock says has happened, so the dev clock presets on Me simulate the week filling up. `@afriff/api/updates` decides what touches this attendee (`refsFromTickets` + `refsFromSaved` → `touches`), what is unread (`unreadCount`) and what earns the banner (`urgentForAttendee`: urgent, theirs, unread, undismissed). Read state is device-only, in the `inbox` store.
 - **Adding an API area:** add the methods to `AttendeeApi`, implement them in the mock adapter, then use them from pages via `useApi()`. When the backend arrives, an `http` adapter implements the same interface and `NUXT_PUBLIC_API_MODE=http` switches over.
 
 All seed data (films, people, prices, venues, dates) is fictional or a placeholder — replace it with official data before any public use.

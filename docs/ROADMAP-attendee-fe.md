@@ -117,11 +117,18 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 
 **Done when:** an attendee can plan their week and see clashes before they buy. ✔︎
 
-## F7 — Updates & notifications ⬜
+## F7 — Updates & notifications ✅
 
-- In-app inbox: schedule changes, venue changes, announcements (seeded + simulated)
-- Unread badge on the Me tab; mark as read
-- Banner for urgent changes affecting a ticket the attendee holds
+- `/updates`: schedule changes, venue notices and announcements, newest first, with the kind, when it was published, and an "Affects you" mark on anything that names a screening, event or venue the attendee has a ticket for or has saved
+- Updates are public — no account needed to see that a venue moved — and each carries the moment it was published. The app shows what the **festival clock** says has happened, so the inbox fills as the week goes on and the dev clock presets on Me are what simulate it. Eleven are seeded across the edition, from "the programme is live" in September to "that's a wrap"
+- Read state lives on the device (`afriff:inbox`), so the badge is honest for someone who never signs in. Mark one read, or mark all
+- Unread badge on the **Me** tab and in the desktop rail, and an Updates row on the Me page
+- **Banner** for the one case worth interrupting someone: an urgent update about something they hold a ticket for, unread and not yet waved away. Only the newest shows, it never appears on `/updates` itself, and dismissing it is remembered without marking the update read
+- Shared API: `updates.list()` on the contract with the seed behind it, and the sorting logic in `@afriff/api/updates` (`publishedUpdates`, `touches`, `updatesForAttendee`, `urgentForAttendee`, `unreadCount`, `refsFromTickets`, `refsFromSaved`, `mergeRefs`)
+- A ticket now carries `venueId` as well as the venue name, so a venue notice can be matched to it with no programme loaded
+- Tidied on the way: the phone tab bar was still laid out as five columns after the wallet went, and the three screens that want the attendee's tickets now share one fetch (`useMyTickets`)
+
+**Done when:** an attendee hears about a change that affects them without going looking. ✔︎
 
 ## F8 — Info & help ⬜
 

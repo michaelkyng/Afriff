@@ -88,6 +88,13 @@ export function createMockApi(options: MockApiOptions): AttendeeApi {
       listEvents: () => respond(() => seed.events),
     },
 
+    updates: {
+      list: () =>
+        respond(() =>
+          [...seed.updates].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+        ),
+    },
+
     catalog: {
       listProducts: () => respond(() => shop.products()),
     },

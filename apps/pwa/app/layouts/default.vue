@@ -13,6 +13,7 @@
       <AppHeader />
       <AppTopBar />
       <AppOfflineBanner />
+      <AppUpdateBanner />
       <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-32 md:px-8 md:pt-8 md:pb-16">
         <slot />
       </main>
