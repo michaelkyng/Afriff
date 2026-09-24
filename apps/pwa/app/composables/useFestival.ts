@@ -5,6 +5,6 @@
 export function useFestival() {
   const api = useApi()
   return useLazyAsyncData('festival', () => api.festival.get(), {
-    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+    getCachedData: reuseLoaded,
   })
 }

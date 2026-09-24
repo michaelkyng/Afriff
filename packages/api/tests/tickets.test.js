@@ -8,9 +8,10 @@ const CARD = { method: 'card', cardName: 'Ada Okoye', cardNumber: '4111 1111 111
 const CONTACT = { name: 'Ada Okoye', email: 'ada@example.com', phone: '0803 123 4567' }
 
 async function signUp(api, email, name) {
+  const [firstName, lastName] = name.split(' ')
   await api.auth.requestCode({ email, purpose: 'signup' })
   const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  await api.auth.setPin({ ticket: ticket.token, pin: PIN, name })
+  await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName, lastName })
 }
 
 /** One paid screening ticket, and the API it lives in. */

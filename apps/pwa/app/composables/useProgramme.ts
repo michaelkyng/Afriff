@@ -21,7 +21,7 @@ export function useProgramme() {
       ])
       return { films, venues, sections, screenings, events, products }
     },
-    { getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] ?? nuxtApp.static.data[key] },
+    { getCachedData: reuseLoaded },
   )
 
   const lookups = computed(() => (result.data.value ? buildLookups(result.data.value) : null))

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, ChevronRightIcon, SearchIcon } from 'lucide-vue-next'
 
-/** Desktop top bar: location, programme search (press "/") and notifications. */
+/** Desktop top bar: location, programme search (press "/") and updates. */
 const route = useRoute()
 const router = useRouter()
 const crumb = useBreadcrumb()

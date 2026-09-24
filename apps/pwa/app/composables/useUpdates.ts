@@ -27,7 +27,7 @@ export function useUpdates() {
 
   const { data: all } = useLazyAsyncData('updates:all', () => api.updates.list(), {
     default: () => [] as FestivalUpdate[],
-    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+    getCachedData: reuseLoaded,
   })
 
   // The banner needs the tickets, so this is where they get asked for.

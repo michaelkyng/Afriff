@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
   filmQuerySchema,
-  newPinSchema,
   otpCodeSchema,
   pinSchema,
   profileSchema,
@@ -51,31 +50,31 @@ describe('shared account input validation', () => {
   test('takes the same six digits for a PIN when signing in', () => {
     expect(signInSchema.parse({ email: 'ada@example.com', pin: ' 481902 ' }).pin).toBe('481902')
     expect(signInSchema.safeParse({ email: 'ada@example.com', pin: '4819' }).success).toBe(false)
-    // Sign-in checks the shape only: a PIN too weak to choose today still has to work.
     expect(pinSchema.safeParse('111111').success).toBe(true)
   })
 
-  test('turns down a PIN that is too easy to guess when one is being chosen', () => {
-    for (const pin of ['481902', '204815', '730264']) {
-      expect(newPinSchema.safeParse(pin).success).toBe(true)
+  test('takes any six digits when a PIN is being chosen', () => {
+    for (const pin of ['481902', '000000', '111111', '123456', '654321']) {
+      expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin }).success).toBe(true)
     }
-    for (const pin of ['000000', '111111', '123456', '654321', '345678']) {
-      expect(newPinSchema.safeParse(pin).success).toBe(false)
+    for (const pin of ['', '12345', '1234567', '12345a']) {
+      expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin }).success).toBe(false)
     }
   })
 
-  test('takes a name when signing up, and none when resetting a PIN', () => {
-    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902' }).name).toBeUndefined()
-    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902', name: ' Ada Okoye ' }).name).toBe('Ada Okoye')
-    expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin: '481902', name: 'A' }).success).toBe(false)
+  test('takes a first and last name when signing up, and none when resetting a PIN', () => {
+    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902' })).not.toHaveProperty('firstName')
+    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902', firstName: ' Ada ', lastName: ' Okoye ' }))
+      .toMatchObject({ firstName: 'Ada', lastName: 'Okoye' })
+    expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin: '481902', firstName: 'Ada', lastName: ' ' }).success).toBe(false)
     expect(setPinSchema.safeParse({ ticket: '', pin: '481902' }).success).toBe(false)
   })
 
   test('accepts Nigerian phone numbers, and an empty one', () => {
     for (const phone of ['08031234567', '0803 123 4567', '+234 803 123 4567', '234-803-123-4567', '']) {
-      expect(profileSchema.safeParse({ name: 'Ada Okoye', phone }).success).toBe(true)
+      expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye', phone }).success).toBe(true)
     }
-    expect(profileSchema.safeParse({ name: 'Ada Okoye', phone: '123' }).success).toBe(false)
-    expect(profileSchema.safeParse({ name: 'Ada Okoye' }).success).toBe(true)
+    expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye', phone: '123' }).success).toBe(false)
+    expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye' }).success).toBe(true)
   })
 })

@@ -3,21 +3,29 @@ import type { CodeChallenge, CodePurpose, VerificationTicket } from '@afriff/api
 
 export type PinSetupStep = 'email' | 'code' | 'pin'
 
-type Field = 'email' | 'code' | 'name' | 'pin' | 'confirm'
+type Field = 'email' | 'code' | 'firstName' | 'lastName' | 'pin' | 'confirm'
 
 /**
  * The three-step flow behind both sign-up and "forgot PIN": confirm the email
  * with a one-time code, then choose the PIN that signs you in from here on.
  *
- * The two pages differ only in their wording and in whether a name is asked
- * for, so they share this state machine and the `Auth*` step components.
+ * The two pages differ only in their wording and in whether a first and last
+ * name are asked for, so they share this state machine and the `Auth*` step
+ * components.
  */
 export function usePinSetup(purpose: CodePurpose) {
   const auth = useAuth()
 
   const step = ref<PinSetupStep>('email')
-  const form = reactive({ email: '', code: '', name: '', pin: '', confirm: '' })
-  const errors = reactive<Record<Field, string>>({ email: '', code: '', name: '', pin: '', confirm: '' })
+  const form = reactive({ email: '', code: '', firstName: '', lastName: '', pin: '', confirm: '' })
+  const errors = reactive<Record<Field, string>>({
+    email: '',
+    code: '',
+    firstName: '',
+    lastName: '',
+    pin: '',
+    confirm: '',
+  })
   const challenge = ref<CodeChallenge | null>(null)
   const ticket = ref<VerificationTicket | null>(null)
   const pending = ref(false)
@@ -67,7 +75,6 @@ export function usePinSetup(purpose: CodePurpose) {
     pending.value = true
     try {
       ticket.value = await auth.verifyCode({ email: current.email, code: form.code })
-      form.name = ticket.value.name ?? form.name
       step.value = 'pin'
     }
     catch (error) {
@@ -83,8 +90,13 @@ export function usePinSetup(purpose: CodePurpose) {
     clearErrors()
     const current = ticket.value
     if (!current) return false
-    if (purpose === 'signup' && form.name.trim().length < 2) {
-      errors.name = 'Enter your name.'
+    if (purpose === 'signup') {
+      if (!form.firstName.trim()) errors.firstName = 'Enter your first name.'
+      if (!form.lastName.trim()) errors.lastName = 'Enter your last name.'
+      if (errors.firstName || errors.lastName) return false
+    }
+    if (!/^\d{6}$/.test(form.pin)) {
+      errors.pin = 'Enter all six digits of your PIN.'
       return false
     }
     if (form.pin !== form.confirm) {
@@ -96,7 +108,8 @@ export function usePinSetup(purpose: CodePurpose) {
       await auth.setPin({
         ticket: current.token,
         pin: form.pin,
-        name: purpose === 'signup' ? form.name : undefined,
+        firstName: purpose === 'signup' ? form.firstName : undefined,
+        lastName: purpose === 'signup' ? form.lastName : undefined,
       })
       return true
     }

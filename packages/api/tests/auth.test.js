@@ -8,10 +8,10 @@ const PIN = '481902'
 /** Any six digits pass while there is no mail integration, so the code itself is arbitrary. */
 const ANY_CODE = '314159'
 
-async function signUp(api, { email = 'ada@example.com', name = 'Ada Okoye', pin = PIN } = {}) {
+async function signUp(api, { email = 'ada@example.com', firstName = 'Ada', lastName = 'Okoye', pin = PIN } = {}) {
   await api.auth.requestCode({ email, purpose: 'signup' })
   const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  return api.auth.setPin({ ticket: ticket.token, pin, name })
+  return api.auth.setPin({ ticket: ticket.token, pin, firstName, lastName })
 }
 
 describe('mock sign-up', () => {
@@ -49,21 +49,37 @@ describe('mock sign-up', () => {
     const api = newApi()
     const session = await signUp(api)
     expect(session.token).toMatch(/^ses_/)
-    expect(session.user).toMatchObject({ email: 'ada@example.com', name: 'Ada Okoye' })
+    expect(session.user).toMatchObject({ email: 'ada@example.com', firstName: 'Ada', lastName: 'Okoye', name: 'Ada Okoye' })
     expect(await api.auth.me()).toMatchObject({ id: session.user.id })
   })
 
-  test('needs a name, and a PIN that is not an obvious guess', async () => {
+  test('takes any six digits for the PIN, however simple', async () => {
     const api = newApi()
-    await api.auth.requestCode({ email: 'ada@example.com', purpose: 'signup' })
-    const { token } = await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })
+    await signUp(api, { pin: '111111' })
+    await api.auth.signOut()
+    const { user } = await api.auth.signIn({ email: 'ada@example.com', pin: '111111' })
+    expect(user.email).toBe('ada@example.com')
+  })
 
-    for (const pin of ['111111', '123456', '654321', '1234']) {
-      await expect(api.auth.setPin({ ticket: token, pin, name: 'Ada Okoye' }))
+  test('needs a first and last name, and a six-digit PIN', async () => {
+    const api = newApi()
+    /** A missing name spends the ticket, so each attempt below starts from a fresh one. */
+    const freshTicket = async () => {
+      await api.auth.requestCode({ email: 'ada@example.com', purpose: 'signup' })
+      return (await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })).token
+    }
+
+    const token = await freshTicket()
+    for (const pin of ['', '1234', '12345a']) {
+      await expect(api.auth.setPin({ ticket: token, pin, firstName: 'Ada', lastName: 'Okoye' }))
         .rejects.toMatchObject({ code: 'validation', details: { field: 'pin' } })
     }
     await expect(api.auth.setPin({ ticket: token, pin: PIN }))
-      .rejects.toMatchObject({ code: 'validation', details: { field: 'name' } })
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'firstName' } })
+    await expect(api.auth.setPin({ ticket: await freshTicket(), pin: PIN, firstName: 'Ada' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'lastName' } })
+    await expect(api.auth.setPin({ ticket: await freshTicket(), pin: PIN, firstName: 'Ada', lastName: '  ' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'lastName' } })
   })
 
   test('a verification ticket works only once', async () => {
@@ -73,8 +89,8 @@ describe('mock sign-up', () => {
 
     await api.auth.requestCode({ email: 'zainab@example.com', purpose: 'signup' })
     const { token } = await api.auth.verifyCode({ email: 'zainab@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: token, pin: PIN, name: 'Zainab Bello' })
-    await expect(api.auth.setPin({ ticket: token, pin: '204815', name: 'Zainab Bello' }))
+    await api.auth.setPin({ ticket: token, pin: PIN, firstName: 'Zainab', lastName: 'Bello' })
+    await expect(api.auth.setPin({ ticket: token, pin: '204815', firstName: 'Zainab', lastName: 'Bello' }))
       .rejects.toMatchObject({ code: 'unauthorized' })
   })
 
@@ -182,15 +198,15 @@ describe('mock account', () => {
   test('saves profile changes and validates the phone number', async () => {
     const api = newApi()
     await signUp(api)
-    const updated = await api.auth.updateProfile({ name: 'Ada N. Okoye', phone: '0803 123 4567' })
-    expect(updated).toMatchObject({ name: 'Ada N. Okoye', phone: '0803 123 4567' })
-    expect(await api.auth.me()).toMatchObject({ phone: '0803 123 4567' })
+    const updated = await api.auth.updateProfile({ firstName: 'Ada', lastName: 'Nwosu', phone: '0803 123 4567' })
+    expect(updated).toMatchObject({ firstName: 'Ada', lastName: 'Nwosu', name: 'Ada Nwosu', phone: '0803 123 4567' })
+    expect(await api.auth.me()).toMatchObject({ name: 'Ada Nwosu', phone: '0803 123 4567' })
 
-    expect((await api.auth.updateProfile({ name: 'Ada N. Okoye', phone: '' })).phone).toBeUndefined()
-    await expect(api.auth.updateProfile({ name: 'Ada', phone: '12' }))
-      .rejects.toMatchObject({ code: 'validation' })
-    await expect(api.auth.updateProfile({ name: 'A' }))
-      .rejects.toMatchObject({ code: 'validation' })
+    expect((await api.auth.updateProfile({ firstName: 'Ada', lastName: 'Nwosu', phone: '' })).phone).toBeUndefined()
+    await expect(api.auth.updateProfile({ firstName: 'Ada', lastName: 'Nwosu', phone: '12' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'phone' } })
+    await expect(api.auth.updateProfile({ firstName: 'Ada', lastName: '' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'lastName' } })
   })
 
   test('returns copies, so the caller cannot edit the account in place', async () => {

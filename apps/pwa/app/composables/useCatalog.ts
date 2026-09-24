@@ -2,12 +2,13 @@ import type { TicketProduct } from '@afriff/api'
 
 /**
  * The ticket catalogue. Cached under one key like the programme, and refreshed
- * after a checkout so remaining stock stays honest.
+ * after anything that takes or gives back stock (`useAccountRefresh`) so what is
+ * left stays honest.
  */
 export function useCatalog() {
   const api = useApi()
   return useLazyAsyncData('catalog:products', () => api.catalog.listProducts(), {
-    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+    getCachedData: reuseLoaded,
   })
 }
 

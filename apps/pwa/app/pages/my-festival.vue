@@ -29,9 +29,9 @@ const {
   store: reminderStore,
 } = useReminders()
 
-/** Tickets count towards the plan, so they are fetched once someone is signed in. */
-const { tickets, ensure: ensureTickets } = useMyTickets()
-ensureTickets()
+/** Tickets count towards the plan, so they are checked again every time the page opens. */
+const { tickets, revalidate: revalidateTickets } = useMyTickets()
+revalidateTickets()
 
 const entries = computed(() => buildPlan(timeline.value, tickets.value ?? [], plan.items))
 const days = computed(() => groupPlanByDay(entries.value))

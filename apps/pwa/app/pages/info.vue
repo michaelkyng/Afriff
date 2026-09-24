@@ -25,7 +25,7 @@ const api = useApi()
 const { data: programme } = useProgramme()
 
 const { data: info, status } = useLazyAsyncData('info:all', () => api.info.get(), {
-  getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] ?? nuxtApp.static.data[key],
+  getCachedData: reuseLoaded,
 })
 const loading = computed(() => status.value !== 'success' && status.value !== 'error')
 

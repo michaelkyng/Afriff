@@ -6,12 +6,13 @@ import {
   ClockIcon,
   MapPinIcon,
   ReceiptTextIcon,
-  SendIcon,
+  // SendIcon, (Pass it on, parked)
   SunIcon,
   UserRoundIcon,
 } from 'lucide-vue-next'
 import { ticketIcs, ticketIcsFilename, ticketPayload, ticketState } from '@afriff/api/tickets'
-import type { Ticket, TicketStatus } from '@afriff/api'
+// import type { Ticket } from '@afriff/api' (Pass it on, parked)
+import type { TicketStatus } from '@afriff/api'
 
 /**
  * One ticket, at the door.
@@ -73,16 +74,20 @@ function addToCalendar() {
 
 // ------------------------------------------------------------------ transfer
 
-const transferOpen = ref(false)
-const justTransferred = ref(false)
-
-function onTransferred(updated: Ticket) {
-  ticket.value = updated
-  justTransferred.value = true
-  refresh()
-  // My tickets is cached under its own key, and one of them just changed hands.
-  refreshNuxtData('tickets:mine')
-}
+// "Pass it on" is parked until we decide to ship it; see docs/ROADMAP-attendee-fe.md.
+// The API (`tickets.transfer`) and TicketTransferSheet are still in place, so
+// switching it back on means uncommenting this block and the matching template.
+//
+// const transferOpen = ref(false)
+// const justTransferred = ref(false)
+//
+// function onTransferred(updated: Ticket) {
+//   ticket.value = updated
+//   justTransferred.value = true
+//   refresh()
+//   // My tickets is cached under its own key, and one of them just changed hands.
+//   refreshNuxtData('tickets:mine')
+// }
 </script>
 
 <template>
@@ -105,6 +110,7 @@ function onTransferred(updated: Ticket) {
         <p v-if="ticket.subtitle" class="mt-1.5 text-muted tabular-nums">{{ ticket.subtitle }}</p>
       </header>
 
+      <!-- Pass it on, parked
       <p
         v-if="justTransferred"
         role="status"
@@ -112,6 +118,7 @@ function onTransferred(updated: Ticket) {
       >
         Sent. The new ticket is with {{ ticket.transfer?.toName ?? ticket.transfer?.toEmail }}.
       </p>
+      -->
 
       <!-- The code itself -->
       <section class="card overflow-hidden" aria-labelledby="code-title">
@@ -175,17 +182,21 @@ function onTransferred(updated: Ticket) {
           <CalendarPlusIcon aria-hidden="true" />
           Add to calendar
         </UiButton>
+        <!-- Pass it on, parked
         <UiButton v-if="admits" variant="secondary" @click="transferOpen = true">
           <SendIcon aria-hidden="true" />
           Pass it on
         </UiButton>
+        -->
       </div>
 
       <p class="px-1 text-meta text-muted">
         This ticket works without a connection once the page has loaded, so you can open it in the queue.
       </p>
 
+      <!-- Pass it on, parked
       <TicketTransferSheet v-model:open="transferOpen" :ticket="ticket" @transferred="onTransferred" />
+      -->
     </template>
   </div>
 </template>

@@ -216,6 +216,9 @@ export interface TicketProduct {
 export interface User {
   id: string
   email: string
+  firstName: string
+  lastName: string
+  /** First and last name together, ready to show. */
   name: string
   phone?: string
   createdAt: ISODateTime

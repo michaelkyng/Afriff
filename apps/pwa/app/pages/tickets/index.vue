@@ -22,7 +22,9 @@ const router = useRouter()
 const cart = useCartStore()
 const { isSignedIn } = useAuth()
 const { data: festival } = useFestival()
-const { data: products, pending, error, refresh } = useCatalog()
+const { data: products, error, refresh } = useCatalog()
+/** Skeletons only before the first load; a background refresh keeps the cards up. */
+const productsLoading = computed(() => !products.value && !error.value)
 const { timeline } = useProgramme()
 const { now } = useFestivalClock(festival)
 
@@ -85,13 +87,20 @@ const {
   error: ticketsError,
   loading: ticketsLoading,
   refresh: refreshTickets,
-  ensure: ensureTickets,
+  revalidate: revalidateTickets,
 } = useMyTickets()
 
-// Only fetched once the tab is opened by someone signed in.
-watchEffect(() => {
-  if (view.value === 'mine') ensureTickets()
-})
+// Checked again every time a tab opens, so a purchase or a transfer made
+// elsewhere is on screen without a reload. The cached list shows meanwhile.
+watch(
+  view,
+  (current) => {
+    if (current === 'mine') revalidateTickets()
+    // Stock: the first load is already under way, so only an earlier one needs checking.
+    else if (products.value) refresh()
+  },
+  { immediate: true },
+)
 
 /**
  * What still admits someone comes first: undated passes, then what is coming up.
@@ -150,7 +159,7 @@ const groups = computed(() => {
       </UiEmptyState>
 
       <ul v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <template v-if="pending">
+        <template v-if="productsLoading">
           <li v-for="n in 6" :key="n"><UiSkeleton class="h-72 rounded-card" /></li>
         </template>
         <template v-else>

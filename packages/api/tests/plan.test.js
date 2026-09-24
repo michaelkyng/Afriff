@@ -11,7 +11,7 @@ async function signedIn(email = 'ada@example.com') {
   const api = createMockApi({ latency: 0 })
   await api.auth.requestCode({ email, purpose: 'signup' })
   const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  await api.auth.setPin({ ticket: ticket.token, pin: PIN, name: 'Ada Okoye' })
+  await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName: 'Ada', lastName: 'Okoye' })
   return api
 }
 
@@ -55,7 +55,7 @@ describe('saved', () => {
 
     await api.auth.requestCode({ email: 'bem@example.com', purpose: 'signup' })
     const ticket = await api.auth.verifyCode({ email: 'bem@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: ticket.token, pin: PIN, name: 'Bem Tersoo' })
+    await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName: 'Bem', lastName: 'Tersoo' })
     expect(await api.saved.list()).toHaveLength(0)
   })
 

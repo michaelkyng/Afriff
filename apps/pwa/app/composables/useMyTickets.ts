@@ -1,10 +1,12 @@
 /**
- * The attendee's tickets, fetched once and shared under one key.
+ * The attendee's tickets, shared under one key.
  *
- * Three screens want them — My tickets, My festival and the updates banner —
- * and none of them should trigger a second call. Nothing is fetched until
- * someone asks with `ensure()`, and signing out empties the list rather than
- * leaving one attendee's tickets on screen for the next.
+ * Several places want them. The badge and the updates banner only need them
+ * loaded once, so they `ensure()`. My tickets and My festival are about the
+ * tickets themselves, so they `revalidate()` each time they open. Anything that
+ * changes a ticket refreshes the key through `useAccountRefresh`. Signing out
+ * empties the list rather than leaving one attendee's tickets on screen for the
+ * next.
  */
 /** One sign-in watcher per app, however many screens ask for the tickets. */
 const watched = new WeakSet<object>()
@@ -14,15 +16,18 @@ export function useMyTickets() {
   const nuxtApp = useNuxtApp()
   const { isSignedIn } = useAuth()
 
-  const result = useLazyAsyncData('tickets:mine', () => api.tickets.list(), {
-    immediate: false,
-    default: () => [],
-  })
+  // No default: "not loaded yet" has to look different from "no tickets".
+  const result = useLazyAsyncData('tickets:mine', () => api.tickets.list(), { immediate: false })
 
   /** Fetches on the first ask, and after a sign-in that happened since. */
   function ensure() {
     if (!isSignedIn.value) return
     if (result.status.value === 'idle') result.refresh()
+  }
+
+  /** Fetches again now. What is already loaded stays on screen until the new list lands. */
+  function revalidate() {
+    if (isSignedIn.value) result.refresh()
   }
 
   if (!watched.has(nuxtApp)) {
@@ -31,7 +36,7 @@ export function useMyTickets() {
     effectScope(true).run(() => {
       watch(isSignedIn, (signedIn) => {
         if (signedIn) result.refresh()
-        else result.data.value = []
+        else result.clear()
       })
     })
   }
@@ -41,8 +46,9 @@ export function useMyTickets() {
     status: result.status,
     error: result.error,
     refresh: result.refresh,
-    /** A lazy fetch reports idle before pending, so success or error is what settles it. */
-    loading: computed(() => result.status.value !== 'success' && result.status.value !== 'error'),
+    /** Only true before the first list arrives, so a background refresh does not blank the screen. */
+    loading: computed(() => result.data.value === undefined && result.status.value !== 'error'),
     ensure,
+    revalidate,
   }
 }

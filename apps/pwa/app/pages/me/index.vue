@@ -59,28 +59,34 @@ const clockPresets: { label: string; value: string | null }[] = [
 // ------------------------------------------------------------------ profile
 
 const editing = ref(false)
-const form = reactive({ name: '', phone: '' })
-const formErrors = reactive({ name: '', phone: '' })
+type ProfileField = 'firstName' | 'lastName' | 'phone'
+
+const form = reactive({ firstName: '', lastName: '', phone: '' })
+const formErrors = reactive<Record<ProfileField, string>>({ firstName: '', lastName: '', phone: '' })
 const saving = ref(false)
 
+function clearFormErrors() {
+  for (const field of Object.keys(formErrors) as ProfileField[]) formErrors[field] = ''
+}
+
 function startEditing() {
-  form.name = user.value?.name ?? ''
+  form.firstName = user.value?.firstName ?? ''
+  form.lastName = user.value?.lastName ?? ''
   form.phone = user.value?.phone ?? ''
-  formErrors.name = ''
-  formErrors.phone = ''
+  clearFormErrors()
   editing.value = true
 }
 
 async function saveProfile() {
   saving.value = true
-  formErrors.name = ''
-  formErrors.phone = ''
+  clearFormErrors()
   try {
-    await updateProfile({ name: form.name, phone: form.phone })
+    await updateProfile({ firstName: form.firstName, lastName: form.lastName, phone: form.phone })
     editing.value = false
   }
   catch (error) {
-    const field = isApiError(error) && error.details?.field === 'phone' ? 'phone' : 'name'
+    const named = isApiError(error) ? String(error.details?.field ?? '') : ''
+    const field = (named in formErrors ? named : 'firstName') as ProfileField
     formErrors[field] = isApiError(error) ? error.message : 'We could not save that. Try again.'
   }
   finally {
@@ -137,7 +143,22 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </div>
 
       <form v-if="editing" class="space-y-4 border-t border-line p-4 md:p-5" novalidate @submit.prevent="saveProfile">
-        <UiInput v-model="form.name" label="Name" autocomplete="name" :error="formErrors.name" :disabled="saving" />
+        <div class="grid grid-cols-2 gap-3">
+          <UiInput
+            v-model="form.firstName"
+            label="First name"
+            autocomplete="given-name"
+            :error="formErrors.firstName"
+            :disabled="saving"
+          />
+          <UiInput
+            v-model="form.lastName"
+            label="Last name"
+            autocomplete="family-name"
+            :error="formErrors.lastName"
+            :disabled="saving"
+          />
+        </div>
         <UiInput
           v-model="form.phone"
           label="Phone"

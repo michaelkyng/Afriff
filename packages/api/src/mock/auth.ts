@@ -14,6 +14,7 @@ import type {
   VerifyCodeInput,
 } from '../types'
 import { mockDb } from './db'
+import { sha256Hex } from './sha256'
 
 /**
  * Accounts, PINs, one-time codes and sessions for the mock API.
@@ -98,10 +99,12 @@ function randomCode(): string {
  * PINs are salted and hashed, never stored in the clear: a copy of localStorage
  * should not hand anyone's PIN over, and the real service will do the same.
  */
-async function hashPin(pin: string, salt: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`${salt}:${pin}`)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+function hashPin(pin: string, salt: string): string {
+  return sha256Hex(`${salt}:${pin}`)
+}
+
+function fullName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`
 }
 
 /** The public view of an account: everything to do with the PIN stays behind. */
@@ -177,7 +180,7 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
 
     api: {
       signIn: (input: SignInInput) =>
-        respond(async (): Promise<AuthSession> => {
+        respond((): AuthSession => {
           const parsed = signInSchema.safeParse(input)
           if (!parsed.success) fail(parsed.error.issues, 'Check your email and PIN.')
           const { email, pin } = parsed.data
@@ -199,7 +202,7 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
             )
           }
 
-          if (await hashPin(pin, user.pinSalt) !== user.pinHash) {
+          if (hashPin(pin, user.pinSalt) !== user.pinHash) {
             user.failedPins += 1
             if (user.failedPins >= MAX_PIN_ATTEMPTS) {
               user.failedPins = 0
@@ -275,10 +278,10 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
         }),
 
       setPin: (input: SetPinInput) =>
-        respond(async (): Promise<AuthSession> => {
+        respond((): AuthSession => {
           const parsed = setPinSchema.safeParse(input)
           if (!parsed.success) fail(parsed.error.issues, 'Pick a six-digit PIN.')
-          const { ticket: ticketToken, pin, name } = parsed.data
+          const { ticket: ticketToken, pin, firstName, lastName } = parsed.data
 
           const ticket = tickets.get(ticketToken)
           if (!ticket || ticket.expiresAt < Date.now()) {
@@ -288,7 +291,7 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
           tickets.delete(ticketToken)
 
           const pinSalt = randomId('slt')
-          const pinHash = await hashPin(pin, pinSalt)
+          const pinHash = hashPin(pin, pinSalt)
           const existing = findUser(ticket.email)
           let account: UserRecord
 
@@ -296,15 +299,17 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
             if (existing) {
               throw new ApiError('conflict', 'That email already has an account. Sign in instead.', { field: 'email' })
             }
-            if (!name) {
+            if (!firstName || !lastName) {
               throw new ApiError('validation', 'Tell us your name to finish setting up your account.', {
-                field: 'name',
+                field: firstName ? 'lastName' : 'firstName',
               })
             }
             account = {
               id: randomId('usr'),
               email: ticket.email,
-              name,
+              firstName,
+              lastName,
+              name: fullName(firstName, lastName),
               createdAt: new Date().toISOString(),
               pinHash,
               pinSalt,
@@ -333,7 +338,9 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
           const user = currentUser()
           const parsed = profileSchema.safeParse(input)
           if (!parsed.success) fail(parsed.error.issues, 'Check the details and try again.')
-          user.name = parsed.data.name
+          user.firstName = parsed.data.firstName
+          user.lastName = parsed.data.lastName
+          user.name = fullName(user.firstName, user.lastName)
           const phone = parsed.data.phone?.trim()
           if (phone) user.phone = phone
           else delete user.phone

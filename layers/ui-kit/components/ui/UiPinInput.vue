@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { EyeIcon, EyeOffIcon } from 'lucide-vue-next'
-import { ref, useId, watch } from 'vue'
+import { onMounted, ref, useId, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
   label: string
   error?: string
   disabled?: boolean
   autocomplete?: string
-}>(), { autocomplete: 'current-password' })
+  /** What the show/hide button calls the value, e.g. "Show PIN". */
+  revealLabel?: string
+  /** Focuses the first box once it is on screen. */
+  autofocus?: boolean
+}>(), { autocomplete: 'current-password', revealLabel: 'PIN' })
 
 const model = defineModel<string>({ default: '' })
 const id = useId()
 const digits = ref<string[]>(Array.from({ length: 6 }, (_, index) => model.value[index] ?? ''))
 const inputs = ref<HTMLInputElement[]>([])
 const revealed = ref(false)
+
+onMounted(() => {
+  if (props.autofocus) focus(0)
+})
 
 watch(model, (value) => {
   if (value !== digits.value.join('')) {
@@ -72,7 +80,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
         type="button"
         class="inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-meta text-muted hover:text-ink disabled:opacity-60"
         :disabled="disabled"
-        :aria-label="revealed ? 'Hide PIN' : 'Show PIN'"
+        :aria-label="`${revealed ? 'Hide' : 'Show'} ${revealLabel}`"
         :aria-pressed="revealed"
         @click="revealed = !revealed"
       >

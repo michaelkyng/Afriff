@@ -71,7 +71,7 @@ export interface AttendeeApi {
     verifyCode(input: VerifyCodeInput): Promise<VerificationTicket>
     /**
      * Sets the PIN against a verified email and signs in with it. A sign-up also
-     * needs `name`; a reset ends the account's other sessions.
+     * needs `firstName` and `lastName`; a reset ends the account's other sessions.
      * Throws `ApiError('unauthorized')` when the ticket is spent or expired.
      */
     setPin(input: SetPinInput): Promise<AuthSession>

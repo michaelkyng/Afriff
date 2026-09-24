@@ -99,7 +99,7 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 - Status without a round trip: `valid`, `used`, `transferred`, `void` are stored, and `expired` is worked out from the clock, so a ticket never has to be rewritten to go stale
 - Everything on the page comes from the ticket itself — what it admits to, when, where, the holder — so it holds up in airplane mode once the app shell is cached
 - Add to calendar: an .ics built on the device, with the times in UTC and an alarm an hour before
-- Pass a ticket on to another email: the sender keeps a record of where it went and their copy stops admitting anyone, the recipient gets a new ticket with its own code, and one sent to somebody without an account is waiting the first time they sign in
+- Pass a ticket on to another email: the sender keeps a record of where it went and their copy stops admitting anyone, the recipient gets a new ticket with its own code, and one sent to somebody without an account is waiting the first time they sign in. **Parked:** built, but switched off in the app for now (see [Parked for later](#parked-for-later))
 - Shared API: `tickets.get` and `tickets.transfer` on the contract, `ticketPayload` / `ticketState` / `ticketAdmits` / `ticketIcs` in `@afriff/api/tickets`, transfer schema in `@afriff/validation`
 
 **Done when:** tickets open with airplane mode on, and the entry code renders crisply at full brightness. ✔︎
@@ -149,6 +149,16 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 - Offline states on every screen, update toast behaviour; swap traced logo for official vector artwork when supplied
 - Accessibility pass (keyboard, screen reader, contrast, reduced motion)
 - Performance pass (Lighthouse PWA/perf ≥ 90), bundle review
+
+---
+
+## Parked for later
+
+Built, then switched off until we decide to ship it. The code stays in the repo so it can come back without being rebuilt.
+
+| Feature | What is switched off | What is still in place | To switch it back on |
+|---|---|---|---|
+| **Pass it on** (ticket transfer, F5) | The "Pass it on" button on `/tickets/[id]`, the transfer sheet it opens and the "Sent" confirmation, all commented out in `apps/pwa/app/pages/tickets/[id].vue` (marked `Pass it on, parked`) | `tickets.transfer` on the contract and in the mock, the transfer schema, `TicketTransferSheet`, and the `transferred` status, so any ticket already passed on still shows as "Passed on" and a received one still says who it came from | Uncomment the blocks marked `Pass it on, parked` in the ticket page, including the `SendIcon` and `Ticket` imports |
 
 ---
 

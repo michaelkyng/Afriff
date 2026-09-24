@@ -12,7 +12,7 @@ async function signedIn(email = 'ada@example.com') {
   const api = createMockApi({ latency: 0 })
   await api.auth.requestCode({ email, purpose: 'signup' })
   const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  await api.auth.setPin({ ticket: ticket.token, pin: PIN, name: 'Ada Okoye' })
+  await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName: 'Ada', lastName: 'Okoye' })
   return api
 }
 
@@ -188,7 +188,7 @@ describe('mock checkout', () => {
 
     await api.auth.requestCode({ email: 'zainab@example.com', purpose: 'signup' })
     const ticket = await api.auth.verifyCode({ email: 'zainab@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: ticket.token, pin: '730264', name: 'Zainab Bello' })
+    await api.auth.setPin({ ticket: ticket.token, pin: '730264', firstName: 'Zainab', lastName: 'Bello' })
     expect(await api.orders.list()).toHaveLength(0)
     expect(await api.tickets.list()).toHaveLength(0)
     await expect(api.orders.get(order.id)).rejects.toMatchObject({ code: 'not_found' })
