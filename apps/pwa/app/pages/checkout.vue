@@ -3,7 +3,6 @@ import { LockIcon } from 'lucide-vue-next'
 import { isApiError } from '@afriff/api'
 import type { PaymentDraft } from '~/components/pass/PaymentFields.vue'
 
-definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Checkout' })
 usePageCrumb('Checkout')
 

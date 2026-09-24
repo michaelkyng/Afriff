@@ -26,10 +26,7 @@ export function initialsOf(user: Pick<User, 'name' | 'email'> | null | undefined
 export function useAuthRedirect() {
   const route = useRoute()
 
-  const redirect = computed(() => {
-    const target = route.query.redirect
-    return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') ? target : '/me'
-  })
+  const redirect = computed(() => authRedirect(route.query.redirect))
 
   /** Carries a valid redirect onto the other auth pages; undefined when there is none. */
   const query = computed(() => (route.query.redirect === redirect.value ? { redirect: redirect.value } : undefined))

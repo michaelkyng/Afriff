@@ -90,7 +90,7 @@ async function saveProfile() {
 
 async function signOut() {
   await endSession()
-  await navigateTo('/')
+  await navigateTo('/signin', { replace: true })
 }
 
 const confirmingReset = ref(false)

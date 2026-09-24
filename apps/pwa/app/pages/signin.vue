@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { isApiError } from '@afriff/api'
 
+definePageMeta({ layout: 'auth' })
 useHead({ title: 'Sign in' })
 
 const auth = useAuth()
@@ -16,6 +17,10 @@ async function submit() {
   errors.pin = ''
   if (!form.email.trim()) {
     errors.email = 'Enter your email address.'
+    return
+  }
+  if (!/^\d{6}$/.test(form.pin)) {
+    errors.pin = 'Enter your six-digit PIN.'
     return
   }
   pending.value = true
@@ -41,7 +46,6 @@ watchEffect(() => {
 
 <template>
   <div class="mx-auto flex w-full max-w-sm flex-col py-4 md:min-h-[calc(100dvh-14rem)] md:justify-center md:py-8">
-    <AppBackLink fallback="/me" label="Back" class="md:hidden" />
     <div class="mb-6 md:mb-7">
       <BrandEmblem :size="44" class="mb-4" />
       <h1 class="font-display text-h1 font-semibold">Sign in to AFRIFF</h1>
@@ -62,17 +66,10 @@ watchEffect(() => {
         />
 
         <div>
-          <UiInput
+          <UiPinInput
             v-model="form.pin"
             label="PIN"
-            type="password"
-            inputmode="numeric"
             autocomplete="current-password"
-            :maxlength="6"
-            placeholder="••••••"
-            code
-            reveal
-            reveal-label="PIN"
             :error="errors.pin"
             :disabled="pending"
           />
@@ -101,7 +98,7 @@ watchEffect(() => {
     </p>
 
     <p class="mt-4 text-center text-meta text-muted">
-      Browsing the programme needs no account. You only need one for tickets.
+      Sign in to access the programme, your festival plan and tickets.
       <template v-if="festival?.supportEmail">
         Stuck?
         <a

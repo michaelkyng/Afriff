@@ -23,7 +23,7 @@
     "preview:server": "bun run --filter @afriff/pwa preview",
     "preview:pwa": "bun run --filter @afriff/pwa preview:pwa",
     "typecheck": "bun run --filter '*' typecheck",
-    "test": "bun test packages",
+    "test": "bun test packages apps/pwa/tests",
     "check": "bun run typecheck && bun run test",
     "supabase": "supabase",
     "db:start": "supabase start",

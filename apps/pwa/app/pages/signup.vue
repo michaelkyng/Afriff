@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'auth' })
 useHead({ title: 'Create account' })
 
 const auth = useAuth()
@@ -20,7 +21,6 @@ watchEffect(() => {
 
 <template>
   <div class="mx-auto flex w-full max-w-sm flex-col py-4 md:min-h-[calc(100dvh-14rem)] md:justify-center md:py-8">
-    <AppBackLink v-if="step === 'email'" fallback="/me" label="Back" class="md:hidden" />
     <div class="mb-6 md:mb-7">
       <BrandEmblem :size="44" class="mb-4" />
       <h1 class="font-display text-h1 font-semibold">{{ title }}</h1>

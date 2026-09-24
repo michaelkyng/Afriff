@@ -4,8 +4,6 @@ import { isApiError } from '@afriff/api'
 import type { OrderStatus } from '@afriff/api'
 import type { PaymentDraft } from '~/components/pass/PaymentFields.vue'
 
-definePageMeta({ middleware: 'auth' })
-
 const route = useRoute()
 const api = useApi()
 const { user } = useAuth()

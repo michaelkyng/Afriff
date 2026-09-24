@@ -99,6 +99,11 @@ and tickets later) in `localStorage` through its own `mockDb` module; seed data
 stays read-only. Accounts sign in with an email and a six-digit PIN; PINs are
 stored salted and hashed, never in the clear.
 
+The PWA requires sign-in before any festival page or app navigation is available.
+Only sign-in, account creation and PIN recovery are accessible without a session.
+Protected links return to their original destination after authentication; sign-in
+uses a masked six-box PIN input with keyboard navigation and paste support.
+
 Local dependencies use `workspace:*`. Plain packages expose TypeScript source
 for the consumer's bundler to compile, so no separate package build is needed.
 The Nuxt app checks the UI layer; API and validation have independent type checks.

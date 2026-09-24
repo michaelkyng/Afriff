@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'auth' })
 useHead({ title: 'Reset PIN' })
 
 const { redirect, query } = useAuthRedirect()

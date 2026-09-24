@@ -20,7 +20,6 @@ import type { Ticket, TicketStatus } from '@afriff/api'
  * the phone in airplane mode: the code, what it admits to, and the calendar file
  * are all built here rather than fetched.
  */
-definePageMeta({ middleware: 'auth' })
 
 const route = useRoute()
 const api = useApi()
