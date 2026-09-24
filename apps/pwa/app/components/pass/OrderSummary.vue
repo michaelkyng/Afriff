@@ -15,8 +15,8 @@ defineProps<{
     <ul class="divide-y divide-line">
       <li v-for="line in lines" :key="line.key ?? line.id" class="flex gap-4 px-4 py-3 md:px-5">
         <span class="min-w-0 flex-1">
-          <span class="block truncate font-medium">{{ line.title }}</span>
-          <span class="block text-meta text-pretty text-muted tabular-nums">
+          <span class="block truncate font-semibold">{{ line.title }}</span>
+          <span class="block text-label text-pretty text-muted tabular-nums">
             <template v-if="line.detail">{{ line.detail }} · </template>{{ line.quantity }} ×
             {{ formatMoney(line.unitPrice) }}
           </span>

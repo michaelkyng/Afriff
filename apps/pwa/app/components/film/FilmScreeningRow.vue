@@ -31,9 +31,9 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
       <p class="tabular-nums">
         <span class="sr-only">{{ formatLongDate(item.startsAt) }}, </span>
         <span class="font-semibold" :class="ended && 'text-muted'">{{ formatTime(item.startsAt) }}</span>
-        <span class="text-meta text-muted"> · ends {{ formatTime(item.endsAt) }}</span>
+        <span class="text-label text-muted"> · ends {{ formatTime(item.endsAt) }}</span>
       </p>
-      <p class="truncate text-meta text-muted">
+      <p class="mt-0.5 truncate text-label text-muted">
         <NuxtLink :to="`/venues/${item.venue.slug}`" class="transition-colors hover:text-ink hover:underline">{{
           item.venue.shortName
         }}</NuxtLink>, {{ item.room }}
@@ -61,7 +61,7 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
         :name="`${item.title}, ${formatDay(item.startsAt)} ${formatTime(item.startsAt)}`"
         size="sm"
       />
-      <span v-if="ended" class="text-meta font-medium text-subtle">Screened</span>
+      <span v-if="ended" class="text-label font-medium text-subtle">Screened</span>
       <UiBadge v-else-if="live" tone="accent">Showing now</UiBadge>
       <UiButton v-else-if="item.availability.status === 'sold_out'" size="sm" variant="secondary" disabled>Sold out</UiButton>
       <UiButton v-else-if="isGala" size="sm" to="/tickets">Gala tickets</UiButton>

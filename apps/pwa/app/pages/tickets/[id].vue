@@ -126,10 +126,13 @@ function addToCalendar() {
         <h2 id="code-title" class="sr-only">Entry code</h2>
         <div class="p-4 md:p-5">
           <TicketQrCode :value="payload" :dimmed="!admits" :label="`Entry code ${ticket.code}`" />
-          <p class="mt-4 text-center font-display text-h2 font-semibold tracking-[0.12em] tabular-nums">
-            <span v-for="(group, index) in codeGroups" :key="index">
-              <span v-if="index" class="text-subtle">-</span>{{ group }}
+          <p class="mt-4 flex items-center justify-center gap-1.5">
+            <span class="font-display text-h2 font-semibold tracking-[0.12em] tabular-nums">
+              <span v-for="(group, index) in codeGroups" :key="index">
+                <span v-if="index" class="text-subtle">-</span>{{ group }}
+              </span>
             </span>
+            <UiCopyButton :value="ticket.code" label="entry code" />
           </p>
           <p v-if="admits" class="mt-2 flex items-center justify-center gap-1.5 text-center text-label text-muted">
             <SunIcon class="size-3.5" aria-hidden="true" />

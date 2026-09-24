@@ -11,12 +11,12 @@ defineProps<{ supportEmail?: string; compact?: boolean }>()
     <BrandLockup :emblem-size="compact ? 48 : 72" class="shrink-0 text-ink" />
     <div class="max-w-xl">
       <h2 id="about-title" class="font-semibold" :class="compact ? 'text-h3' : 'font-display text-h2'">About AFRIFF</h2>
-      <p class="mt-1.5 text-muted" :class="'text-micro md:text-body'">
+      <p class="mt-1.5 text-meta text-muted md:text-body">
         The Africa International Film Festival brings filmmakers, industry and audiences together in Lagos every
         November: screenings, masterclasses, the AFRIFF Film &amp; Content Market and the Globe Awards.
       </p>
       <!-- No line breaks inside the sentence: they would render as spaces before the punctuation. -->
-      <p class="mt-3 text-micro text-muted">
+      <p class="mt-3 text-label text-muted">
         Questions about tickets, venues or access?
         <NuxtLink to="/info" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">Info and help</NuxtLink><template v-if="supportEmail">, or email <a :href="`mailto:${supportEmail}`" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">{{ supportEmail }}</a></template>.
       </p>

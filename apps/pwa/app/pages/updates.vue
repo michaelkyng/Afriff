@@ -71,7 +71,7 @@ function markAll() {
             </span>
 
             <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-1.5 text-meta text-muted">
+              <div class="flex flex-wrap items-center gap-1.5 text-label text-muted">
                 <span>{{ kindLabels[update.kind] }}</span>
                 <span aria-hidden="true">·</span>
                 <span class="tabular-nums">{{ formatDay(update.publishedAt) }}, {{ formatTime(update.publishedAt) }}</span>
@@ -101,7 +101,7 @@ function markAll() {
       </li>
     </ul>
 
-    <p class="px-1 text-meta text-muted">
+    <p class="px-1 text-label text-muted">
       What you have read is remembered on this device. Nothing is emailed or pushed while the app is local.
     </p>
   </div>

@@ -100,7 +100,7 @@ const sections = [
             <h3 class="font-semibold">
               <NuxtLink :to="`/venues/${venue.slug}`" class="hover:underline">{{ venue.name }}</NuxtLink>
             </h3>
-            <p class="mt-0.5 flex items-start gap-1.5 text-meta text-muted">
+            <p class="mt-0.5 flex items-start gap-1.5 text-label text-muted">
               <MapPinIcon class="mt-0.5 size-3.5 shrink-0 text-subtle" aria-hidden="true" />
               {{ venue.area }}
             </p>
@@ -204,8 +204,8 @@ const sections = [
         <a :href="`mailto:${info.contact.email}`" class="row-interactive flex items-center gap-3 px-4 py-3.5 md:px-5">
           <MailIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">Email</span>
-            <span class="block truncate text-meta text-muted">{{ info.contact.email }}</span>
+            <span class="block font-semibold">Email</span>
+            <span class="block truncate text-label text-muted">{{ info.contact.email }}</span>
           </span>
           <ArrowUpRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </a>
@@ -216,34 +216,34 @@ const sections = [
         >
           <PhoneIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">Phone</span>
-            <span class="block text-meta text-muted tabular-nums">{{ info.contact.phone }}</span>
+            <span class="block font-semibold">Phone</span>
+            <span class="block text-label text-muted tabular-nums">{{ info.contact.phone }}</span>
           </span>
           <ArrowUpRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </a>
         <p v-if="info.contact.inPerson" class="flex items-start gap-3 px-4 py-3.5 md:px-5">
           <MessageCircleIcon class="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">In person</span>
-            <span class="block text-meta text-muted">{{ info.contact.inPerson }}</span>
+            <span class="block font-semibold">In person</span>
+            <span class="block text-label text-muted">{{ info.contact.inPerson }}</span>
           </span>
         </p>
         <p class="flex items-start gap-3 px-4 py-3.5 md:px-5">
           <ClockIcon class="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">When we answer</span>
-            <span class="block text-meta text-muted">{{ info.contact.hours }}</span>
+            <span class="block font-semibold">When we answer</span>
+            <span class="block text-label text-muted">{{ info.contact.hours }}</span>
           </span>
         </p>
       </UiCard>
 
-      <p class="mt-3 flex items-start gap-2 px-1 text-meta text-muted">
-        <CheckIcon class="mt-0.5 size-3.5 shrink-0 text-success" aria-hidden="true" />
-        Changes during the week are posted to
-        <NuxtLink to="/updates" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">
-          Updates
-        </NuxtLink>
-        , and anything affecting a ticket you hold is flagged in the app.
+      <p class="mt-3 flex items-start gap-2 px-1 text-label text-muted">
+        <CheckIcon class="size-3.5 shrink-0 translate-y-px text-success" aria-hidden="true" />
+        <span>
+          Changes during the week are posted to
+          <NuxtLink to="/updates" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">Updates</NuxtLink>,
+          and anything affecting a ticket you hold is flagged in the app.
+        </span>
       </p>
     </section>
   </div>

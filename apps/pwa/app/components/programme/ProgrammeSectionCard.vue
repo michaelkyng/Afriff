@@ -18,7 +18,7 @@ defineProps<{ section: Section; filmCount: number; films?: Film[] }>()
         aria-hidden="true"
       />
     </span>
-    <span class="mt-1 line-clamp-2 text-meta text-muted">{{ section.description }}</span>
+    <span class="mt-0.5 line-clamp-2 text-label text-muted">{{ section.description }}</span>
     <span class="mt-auto flex items-center gap-2.5 pt-4">
       <span v-if="films?.length" class="flex" aria-hidden="true">
         <FilmPoster

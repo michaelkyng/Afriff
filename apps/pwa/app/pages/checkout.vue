@@ -78,9 +78,9 @@ async function pay() {
     <AppPageHeader title="Checkout" />
 
     <form class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start" novalidate @submit.prevent="pay">
-      <div class="space-y-5">
-        <section aria-labelledby="contact-title" class="space-y-2">
-          <h2 id="contact-title" class="px-1 text-meta font-semibold text-muted">Who the tickets are for</h2>
+      <div class="space-y-8">
+        <section aria-labelledby="contact-title">
+          <UiSectionHeader title="Who the tickets are for" title-id="contact-title" />
           <UiCard class="space-y-4">
             <UiInput v-model="contact.name" label="Full name" autocomplete="name" :error="errors.name" :disabled="paying" />
             <UiInput
@@ -107,8 +107,8 @@ async function pay() {
           </UiCard>
         </section>
 
-        <section aria-labelledby="payment-title" class="space-y-2">
-          <h2 id="payment-title" class="px-1 text-meta font-semibold text-muted">Payment</h2>
+        <section aria-labelledby="payment-title">
+          <UiSectionHeader title="Payment" title-id="payment-title" />
           <UiCard>
             <PaymentFields v-model="payment" :errors="errors" :disabled="paying" />
           </UiCard>
@@ -122,7 +122,7 @@ async function pay() {
           <LockIcon v-if="!paying" aria-hidden="true" />
           {{ paying ? 'Taking payment' : `Pay ${formatMoney(cart.subtotal)}` }}
         </UiButton>
-        <p class="text-center text-meta text-muted">
+        <p class="text-center text-label text-muted">
           This is a local demo build. No card is charged and no money moves.
         </p>
       </div>

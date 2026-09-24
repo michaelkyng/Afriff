@@ -10,7 +10,7 @@ const emit = defineEmits<{ quantity: [number]; remove: [] }>()
   <div class="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 md:px-5">
     <div class="min-w-0 flex-1 basis-48">
       <p class="truncate font-semibold">{{ line.title }}</p>
-      <p class="truncate text-meta text-muted tabular-nums">
+      <p class="truncate text-label text-muted tabular-nums">
         {{ line.productName }}<template v-if="line.detail"> · {{ line.detail }}</template>
       </p>
     </div>

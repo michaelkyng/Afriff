@@ -63,7 +63,7 @@ const methods = [
         />
       </div>
       <div class="rounded-tile border border-line bg-raised px-3.5 py-3 text-meta">
-        <p class="font-medium">Demo mode: no money moves</p>
+        <p class="font-semibold">Demo mode: no money moves</p>
         <p class="mt-1 text-muted">
           Any card works. A number ending
           <span class="font-semibold text-ink tabular-nums">0000</span> is declined, and one ending
@@ -73,7 +73,7 @@ const methods = [
     </template>
 
     <div v-else class="rounded-tile border border-line bg-raised px-3.5 py-3 text-meta">
-      <p class="font-medium">Bank transfer</p>
+      <p class="font-semibold">Bank transfer</p>
       <p class="mt-1 text-muted">
         We show the account details and your reference on the next screen. Your tickets arrive once the
         transfer is confirmed.

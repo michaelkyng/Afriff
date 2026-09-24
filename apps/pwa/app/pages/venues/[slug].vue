@@ -72,15 +72,15 @@ const travelRows = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-8">
-    <AppBackLink fallback="/#venues" label="Back" class="md:hidden" />
+  <div>
+    <AppBackLink fallback="/#venues" label="Back" class="mb-4 md:hidden" />
 
     <div v-if="pending || !venue" class="space-y-4" aria-busy="true">
       <UiSkeleton class="h-10 w-2/3" />
       <UiSkeleton class="h-4 w-1/2 rounded-md" />
     </div>
 
-    <template v-else>
+    <div v-else class="space-y-8">
       <header>
         <h1 class="font-display text-h1 font-semibold md:text-display">{{ venue.name }}</h1>
         <p class="mt-2 flex items-start gap-2 text-muted">
@@ -104,7 +104,7 @@ const travelRows = computed(() => {
             <MonitorPlayIcon class="size-4.5 text-muted" aria-hidden="true" />
             <template v-if="venue.screens.length === 1">{{ venue.screens[0]?.name }}</template>
             <template v-else>{{ venue.screens.length }} screens</template>
-            <span class="ml-auto text-meta font-normal text-muted tabular-nums">{{ totalSeats.toLocaleString('en-NG') }} seats</span>
+            <span class="ml-auto text-label font-normal text-muted tabular-nums">{{ totalSeats.toLocaleString('en-NG') }} seats</span>
           </h2>
           <ul v-if="venue.screens.length > 1" class="mt-2 divide-y divide-line">
             <li v-for="screen in venue.screens" :key="screen.id" class="flex justify-between py-2 text-meta">
@@ -129,29 +129,32 @@ const travelRows = computed(() => {
             {{ venue.accessibilityNote }}
           </p>
         </UiCard>
-      </div>
 
-      <!-- Getting there -->
-      <UiCard v-if="venue.travel" :padded="false">
-        <h2 class="flex items-center gap-2 border-b border-line px-4 py-3.5 font-semibold md:px-5">
-          <RouteIcon class="size-4.5 text-muted" aria-hidden="true" />
-          Getting there
-        </h2>
-        <dl class="divide-y divide-line">
-          <div v-for="row in travelRows" :key="row.label" class="flex items-start gap-3 px-4 py-3 md:px-5">
-            <component :is="row.icon" class="mt-0.5 size-4 shrink-0 text-subtle" aria-hidden="true" />
-            <dt class="w-24 shrink-0 text-meta text-muted">{{ row.label }}</dt>
-            <dd class="min-w-0 flex-1 text-meta">{{ row.value }}</dd>
-          </div>
-        </dl>
-        <p class="border-t border-line px-4 py-3 text-meta text-muted md:px-5">
-          Parking, access and support for every venue are listed together on
-          <NuxtLink to="/info#venues" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">
-            Info and help
-          </NuxtLink>
-          .
-        </p>
-      </UiCard>
+        <!-- Getting there -->
+        <UiCard v-if="venue.travel" :padded="false" class="md:col-span-2">
+          <h2 class="flex items-center gap-2 border-b border-line px-4 py-3.5 font-semibold md:px-5">
+            <RouteIcon class="size-4.5 text-muted" aria-hidden="true" />
+            Getting there
+          </h2>
+          <dl class="divide-y divide-line">
+            <div
+              v-for="row in travelRows"
+              :key="row.label"
+              class="px-4 py-3 sm:grid sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4 md:px-5"
+            >
+              <dt class="flex items-center gap-2 text-label text-muted sm:text-meta">
+                <component :is="row.icon" class="size-4 shrink-0 text-subtle" aria-hidden="true" />
+                {{ row.label }}
+              </dt>
+              <dd class="mt-1 text-meta sm:mt-0">{{ row.value }}</dd>
+            </div>
+          </dl>
+          <p class="border-t border-line px-4 py-3 text-label text-muted md:px-5">
+            Parking, access and support for every venue are listed together on
+            <NuxtLink to="/info#venues" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">Info and help</NuxtLink>.
+          </p>
+        </UiCard>
+      </div>
 
       <section aria-labelledby="whatson-title">
         <UiSectionHeader title="What’s on here" title-id="whatson-title" :meta="`${venueItems.length} listings this festival`" />
@@ -175,6 +178,6 @@ const travelRows = computed(() => {
           description="Pick another day above."
         />
       </section>
-    </template>
+    </div>
   </div>
 </template>

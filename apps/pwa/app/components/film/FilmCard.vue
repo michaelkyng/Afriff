@@ -2,14 +2,19 @@
 import type { Film, Section } from '@afriff/api'
 
 /** Poster with title and one line of meta. Used in carousels and grids. */
-defineProps<{
-  film: Film
-  section?: Section
-  /** Show the premiere label over the poster. */
-  showPremiere?: boolean
-  /** Makes the card a link (defaults to the film's detail page). */
-  to?: string | false
-}>()
+withDefaults(
+  defineProps<{
+    film: Film
+    section?: Section
+    /** Show the premiere label over the poster. */
+    showPremiere?: boolean
+    /** Where the card links (defaults to the film's detail page); `false` for no link. */
+    to?: string | false
+  }>(),
+  // The explicit default matters: Vue casts an absent prop typed with Boolean to `false`,
+  // which would leave every card without its link.
+  { to: undefined },
+)
 </script>
 
 <template>
@@ -24,7 +29,7 @@ defineProps<{
       />
       <span
         v-if="showPremiere && film.premiere"
-        class="absolute bottom-2 left-2 z-[3] rounded-tag bg-navy-950/80 px-1.5 py-0.5 text-micro font-medium text-white"
+        class="pointer-events-none absolute bottom-2 left-2 z-3 rounded-tag bg-navy-950/80 px-1.5 py-0.5 text-micro font-medium text-white"
       >
         {{ film.premiere }}
       </span>

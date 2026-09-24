@@ -93,6 +93,7 @@ const confirmTransfer = () => run(() => api.orders.confirmTransfer(id))
           </span>
           <span class="text-meta font-medium">{{ tone[order.status].title }}</span>
           <span class="text-meta text-muted tabular-nums">· {{ order.reference }}</span>
+          <UiCopyButton :value="order.reference" label="order reference" class="-ml-1.5" />
         </p>
         <h1 class="mt-3 font-display text-h1 font-semibold">{{ headline }}</h1>
         <p class="mt-1.5 text-muted">
@@ -109,10 +110,24 @@ const confirmTransfer = () => run(() => api.orders.confirmTransfer(id))
         <dl class="grid gap-2 text-meta sm:grid-cols-2">
           <div><dt class="text-muted">Bank</dt><dd class="font-medium">Demo Bank Nigeria</dd></div>
           <div><dt class="text-muted">Account name</dt><dd class="font-medium">AFRIFF Tickets Ltd</dd></div>
-          <div><dt class="text-muted">Account number</dt><dd class="font-medium tabular-nums">0123456789</dd></div>
+          <div>
+            <dt class="text-muted">Account number</dt>
+            <dd class="flex items-center gap-1 font-medium tabular-nums">
+              0123456789
+              <UiCopyButton value="0123456789" label="account number" class="-my-1.5" />
+            </dd>
+          </div>
           <div>
             <dt class="text-muted">Reference</dt>
-            <dd class="font-semibold tabular-nums">{{ order.payment.reference }}</dd>
+            <dd class="flex items-center gap-1 font-semibold tabular-nums">
+              {{ order.payment.reference }}
+              <UiCopyButton
+                v-if="order.payment.reference"
+                :value="order.payment.reference"
+                label="payment reference"
+                class="-my-1.5"
+              />
+            </dd>
           </div>
         </dl>
         <p class="text-meta text-muted">

@@ -59,7 +59,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
           <UiSkeleton v-else class="h-16 w-full bg-white/10" />
         </h1>
 
-        <dl class="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-[0.71875rem] text-white/75">
+        <dl class="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-label text-white/75">
           <div class="flex items-center gap-1.5">
             <dt class="sr-only">Dates</dt>
             <CalendarDaysIcon class="size-3.5 text-gold-300" aria-hidden="true" />

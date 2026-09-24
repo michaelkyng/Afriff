@@ -54,22 +54,23 @@ async function shareFilm() {
 </script>
 
 <template>
-  <div class="space-y-10">
-    <AppBackLink fallback="/programme" label="Programme" class="md:hidden" />
+  <div>
+    <AppBackLink fallback="/programme" label="Programme" class="mb-4 md:hidden" />
 
     <!-- Loading -->
-    <div v-if="pending || !film" class="grid gap-8 md:grid-cols-[minmax(0,18rem)_1fr]" aria-busy="true">
-      <UiSkeleton class="mx-auto aspect-[2/3] w-48 md:w-full" />
+    <div v-if="pending || !film" class="grid gap-7 md:grid-cols-[minmax(0,17rem)_1fr] md:gap-10 lg:gap-12" aria-busy="true">
+      <UiSkeleton class="mx-auto aspect-2/3 w-44 md:w-full" />
       <div class="space-y-4">
         <UiSkeleton class="h-4 w-40 rounded-md" />
         <UiSkeleton class="h-10 w-3/4" />
         <UiSkeleton class="h-4 w-1/2 rounded-md" />
+        <UiSkeleton class="h-10 w-64 rounded-full" />
         <UiSkeleton class="h-24 w-full" />
       </div>
     </div>
 
-    <template v-else>
-      <!-- Film header -->
+    <div v-else class="space-y-10 md:space-y-12">
+      <!-- Film header: identity and actions first, then the reading, then the credits. -->
       <article class="grid gap-7 md:grid-cols-[minmax(0,17rem)_1fr] md:gap-10 lg:gap-12">
         <FilmPoster :film="film" size="lg" class="mx-auto w-44 md:w-full" />
 
@@ -83,11 +84,11 @@ async function shareFilm() {
               <span class="size-1.5 rounded-full" :style="{ background: `hsl(${section.hue} 70% 55%)` }" aria-hidden="true" />
               {{ section.name }}
             </NuxtLink>
-            <UiBadge v-if="film.premiere" tone="accent">{{ film.premiere }}</UiBadge>
-            <UiBadge v-if="film.inCompetition" tone="neutral">In competition</UiBadge>
+            <UiBadge v-if="film.premiere" tone="accent" class="self-center!">{{ film.premiere }}</UiBadge>
+            <UiBadge v-if="film.inCompetition" tone="neutral" class="self-center!">In competition</UiBadge>
           </div>
 
-          <h1 class="mt-3 font-display text-display font-semibold md:text-display-lg">{{ film.title }}</h1>
+          <h1 class="mt-3 font-display text-h1 font-semibold md:text-display-lg">{{ film.title }}</h1>
 
           <ul class="mt-3 flex flex-wrap items-center gap-y-1 text-meta text-muted tabular-nums [&>li+li]:ml-3 [&>li+li]:border-l [&>li+li]:border-line-strong [&>li+li]:pl-3">
             <li>{{ film.year }}</li>
@@ -100,39 +101,39 @@ async function shareFilm() {
             <li>{{ film.countries.join(', ') }}</li>
           </ul>
 
-          <p class="mt-6 max-w-[48ch] font-display text-h2 leading-snug italic md:text-[1.375rem] md:leading-8">{{ film.logline }}</p>
-          <p class="mt-3 max-w-[65ch] text-prose text-muted">{{ film.synopsis }}</p>
-
-          <dl class="mt-6 grid max-w-2xl gap-x-8 gap-y-3.5 border-t border-line pt-5 sm:grid-cols-2">
-            <div>
-              <dt class="text-meta text-muted">Director</dt>
-              <dd class="mt-0.5 font-medium">{{ film.director }}</dd>
-            </div>
-            <div v-if="film.cast.length">
-              <dt class="text-meta text-muted">Cast</dt>
-              <dd class="mt-0.5 font-medium">{{ film.cast.join(', ') }}</dd>
-            </div>
-            <div>
-              <dt class="text-meta text-muted">Language</dt>
-              <dd class="mt-0.5 font-medium">{{ film.languages.join(', ') }}</dd>
-            </div>
-            <div>
-              <dt class="text-meta text-muted">Genre</dt>
-              <dd class="mt-0.5 font-medium">{{ film.genres.join(', ') }}</dd>
-            </div>
-          </dl>
-
-          <div class="mt-6 flex flex-wrap gap-2.5">
+          <div class="mt-5 flex flex-wrap gap-2.5">
             <UiButton :to="screenings.length ? '#screenings' : '/tickets'">
               {{ upcomingCount ? `${upcomingCount} ${upcomingCount === 1 ? 'screening' : 'screenings'}` : 'See screenings' }}
             </UiButton>
-            <PlanSaveButton v-if="film" kind="film" :ref-id="film.id" :name="film.title" variant="button" />
-            <UiButton variant="secondary" @click="shareFilm">
+            <PlanSaveButton kind="film" :ref-id="film.id" :name="film.title" variant="button" />
+            <UiButton variant="secondary" :aria-label="copied ? 'Link copied' : `Share ${film.title}`" @click="shareFilm">
               <CheckIcon v-if="copied" aria-hidden="true" />
               <Share2Icon v-else aria-hidden="true" />
-              {{ copied ? 'Link copied' : 'Share' }}
+              <span class="max-sm:sr-only">{{ copied ? 'Link copied' : 'Share' }}</span>
             </UiButton>
           </div>
+
+          <p class="mt-7 max-w-[48ch] font-display text-h4 italic md:text-h2">{{ film.logline }}</p>
+          <p class="mt-3 max-w-[65ch] text-body text-muted">{{ film.synopsis }}</p>
+
+          <dl class="mt-6 max-w-2xl space-y-2 border-t border-line pt-5">
+            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="text-label text-muted">Director</dt>
+              <dd class="font-medium text-meta">{{ film.director }}</dd>
+            </div>
+            <div v-if="film.cast.length" class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="text-label text-muted">Cast</dt>
+              <dd class="font-medium text-meta">{{ film.cast.join(', ') }}</dd>
+            </div>
+            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="text-label text-muted">Language</dt>
+              <dd class="font-medium text-meta">{{ film.languages.join(', ') }}</dd>
+            </div>
+            <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="text-label text-muted">Genre</dt>
+              <dd class="font-medium text-meta">{{ film.genres.join(', ') }}</dd>
+            </div>
+          </dl>
         </div>
       </article>
 
@@ -164,6 +165,6 @@ async function shareFilm() {
           </li>
         </UiCarousel>
       </section>
-    </template>
+    </div>
   </div>
 </template>

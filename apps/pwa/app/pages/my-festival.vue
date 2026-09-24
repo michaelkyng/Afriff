@@ -73,7 +73,7 @@ onMounted(() => {
       title="My festival"
       description="What you have tickets for and what you have saved, in the order it happens."
     >
-      <template #actions>
+      <template v-if="programmePending || entries.length || watchlist.length" #actions>
         <UiButton to="/programme" variant="secondary" size="sm">
           <CalendarDaysIcon aria-hidden="true" />
           Browse the programme
@@ -148,7 +148,7 @@ onMounted(() => {
         />
 
         <section v-for="day in days" :key="day.date" :aria-label="dayLabel(day.date)">
-          <h3 class="mb-2 flex items-baseline gap-2 px-1 font-display text-h3 font-semibold">
+          <h3 class="mb-2 flex items-baseline gap-2 font-display text-h3 font-semibold">
             {{ dayLabel(day.date) }}
             <span v-if="isToday(day.date)" class="text-meta font-medium text-accent-ink">Today</span>
           </h3>
@@ -168,7 +168,7 @@ onMounted(() => {
                 </div>
 
                 <div class="min-w-0 flex-1">
-                  <h4 class="truncate leading-snug font-semibold">
+                  <h4 class="truncate font-semibold">
                     <NuxtLink
                       v-if="entry.item.kind === 'screening'"
                       :to="`/programme/${entry.item.film.slug}`"
@@ -178,7 +178,7 @@ onMounted(() => {
                     </NuxtLink>
                     <template v-else>{{ entry.item.title }}</template>
                   </h4>
-                  <p class="truncate text-meta text-muted">{{ entry.item.venue.shortName }}, {{ entry.item.room }}</p>
+                  <p class="mt-0.5 truncate text-label text-muted">{{ entry.item.venue.shortName }}, {{ entry.item.room }}</p>
                   <div class="mt-1.5 flex flex-wrap gap-1">
                     <UiBadge v-if="entry.source === 'ticket'" tone="success">
                       <TicketCheckIcon aria-hidden="true" />
@@ -225,7 +225,7 @@ onMounted(() => {
           </ul>
         </section>
 
-        <p class="px-1 text-meta text-muted">
+        <p class="px-1 text-label text-muted">
           <template v-if="remindersPermission === 'denied'">
             Reminders are blocked for this site in your browser settings.
           </template>

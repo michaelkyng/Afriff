@@ -146,6 +146,10 @@ const postersByMotif = computed(() =>
           <ArrowRightIcon aria-hidden="true" />
         </UiButton>
       </div>
+      <p class="flex items-center gap-1 font-semibold tabular-nums">
+        AF-7KQ2P
+        <UiCopyButton value="AF-7KQ2P" label="order reference" />
+      </p>
     </section>
 
     <section class="space-y-5">
