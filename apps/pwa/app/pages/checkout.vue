@@ -9,7 +9,7 @@ usePageCrumb('Checkout')
 const api = useApi()
 const cart = useCartStore()
 const { user } = useAuth()
-const { refresh: refreshCatalog } = useCatalog()
+const refreshAccount = useAccountRefresh()
 
 const contact = reactive({ name: '', email: '', phone: '' })
 const payment = reactive<PaymentDraft>({ method: 'card', cardName: '', cardNumber: '', expiry: '', cvv: '' })
@@ -61,7 +61,7 @@ async function pay() {
     })
     placed.value = true
     cart.clear()
-    refreshCatalog()
+    refreshAccount()
     await navigateTo(`/orders/${order.id}`)
   }
   catch (error) {

@@ -24,10 +24,10 @@ const note = computed(() => {
   <NuxtLink :to="`/tickets/${ticket.id}`" class="card card-interactive block overflow-hidden" :class="spent && 'opacity-70'">
     <div class="flex items-start justify-between gap-3 p-4 md:p-5">
       <div class="min-w-0">
-        <p v-if="ticket.productName !== ticket.title" class="text-meta text-muted">{{ ticket.productName }}</p>
-        <h3 class="mt-0.5 text-h3 leading-snug font-semibold">{{ ticket.title }}</h3>
-        <p v-if="ticket.subtitle" class="mt-1 text-meta text-muted tabular-nums">{{ ticket.subtitle }}</p>
-        <p class="mt-2 text-meta text-muted">{{ ticket.holderName }}</p>
+        <p v-if="ticket.productName !== ticket.title" class="text-label text-muted">{{ ticket.productName }}</p>
+        <h3 class="mt-0.5 text-body font-semibold">{{ ticket.title }}</h3>
+        <p v-if="ticket.subtitle" class="mt-0.5 text-label text-muted tabular-nums">{{ ticket.subtitle }}</p>
+        <p class="mt-1.5 text-micro text-muted">{{ ticket.holderName }}</p>
       </div>
       <div
         class="grid size-14 shrink-0 place-items-center rounded-tile border border-line bg-raised text-subtle"

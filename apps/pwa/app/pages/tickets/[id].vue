@@ -78,6 +78,7 @@ function addToCalendar() {
 // The API (`tickets.transfer`) and TicketTransferSheet are still in place, so
 // switching it back on means uncommenting this block and the matching template.
 //
+// const refreshAccount = useAccountRefresh()
 // const transferOpen = ref(false)
 // const justTransferred = ref(false)
 //
@@ -86,7 +87,7 @@ function addToCalendar() {
 //   justTransferred.value = true
 //   refresh()
 //   // My tickets is cached under its own key, and one of them just changed hands.
-//   refreshNuxtData('tickets:mine')
+//   refreshAccount()
 // }
 </script>
 
@@ -130,8 +131,8 @@ function addToCalendar() {
               <span v-if="index" class="text-subtle">-</span>{{ group }}
             </span>
           </p>
-          <p v-if="admits" class="mt-2 flex items-center justify-center gap-1.5 text-center text-meta text-muted">
-            <SunIcon class="size-4" aria-hidden="true" />
+          <p v-if="admits" class="mt-2 flex items-center justify-center gap-1.5 text-center text-label text-muted">
+            <SunIcon class="size-3.5" aria-hidden="true" />
             Turn your brightness up so it scans first time.
           </p>
         </div>
@@ -151,29 +152,29 @@ function addToCalendar() {
         <h2 id="detail-title" class="sr-only">Ticket details</h2>
         <p class="flex items-center gap-3 px-4 py-3 md:px-5">
           <UserRoundIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
-          <span class="min-w-0 flex-1 truncate">{{ ticket.holderName }}</span>
-          <span class="text-meta text-muted">Holder</span>
+          <span class="min-w-0 flex-1 truncate font-medium">{{ ticket.holderName }}</span>
+          <span class="text-label text-muted">Holder</span>
         </p>
         <p v-if="ticket.startsAt" class="flex items-center gap-3 px-4 py-3 md:px-5">
           <ClockIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
-          <span class="min-w-0 flex-1 tabular-nums">
+          <span class="min-w-0 flex-1 font-medium tabular-nums">
             {{ formatLongDate(ticket.startsAt) }}, {{ formatTime(ticket.startsAt) }}
           </span>
-          <span v-if="ticket.endsAt" class="text-meta text-muted tabular-nums">ends {{ formatTime(ticket.endsAt) }}</span>
+          <span v-if="ticket.endsAt" class="text-label text-muted tabular-nums">ends {{ formatTime(ticket.endsAt) }}</span>
         </p>
         <p v-if="ticket.venueName" class="flex items-center gap-3 px-4 py-3 md:px-5">
           <MapPinIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
-          <span class="min-w-0 flex-1 truncate">{{ ticket.venueName }}</span>
-          <span v-if="ticket.roomName" class="text-meta text-muted">{{ ticket.roomName }}</span>
+          <span class="min-w-0 flex-1 truncate font-medium">{{ ticket.venueName }}</span>
+          <span v-if="ticket.roomName" class="text-label text-muted">{{ ticket.roomName }}</span>
         </p>
         <NuxtLink :to="`/orders/${ticket.orderId}`" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
           <ReceiptTextIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
-          <span class="min-w-0 flex-1">Order and receipt</span>
-          <span class="text-meta text-muted">View</span>
+          <span class="min-w-0 flex-1 font-medium">Order and receipt</span>
+          <span class="text-label text-muted">View</span>
         </NuxtLink>
       </section>
 
-      <p v-if="ticket.origin" class="px-1 text-meta text-muted">
+      <p v-if="ticket.origin" class="px-1 text-label text-muted">
         {{ ticket.origin.fromName }} passed this to you on {{ formatDay(ticket.origin.at) }}.
       </p>
 
@@ -190,7 +191,7 @@ function addToCalendar() {
         -->
       </div>
 
-      <p class="px-1 text-meta text-muted">
+      <p class="px-1 text-label text-muted">
         This ticket works without a connection once the page has loaded, so you can open it in the queue.
       </p>
 

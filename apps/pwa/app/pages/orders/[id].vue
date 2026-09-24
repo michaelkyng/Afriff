@@ -7,7 +7,7 @@ import type { PaymentDraft } from '~/components/pass/PaymentFields.vue'
 const route = useRoute()
 const api = useApi()
 const { user } = useAuth()
-const { refresh: refreshCatalog } = useCatalog()
+const refreshAccount = useAccountRefresh()
 const id = String(route.params.id)
 
 const { data: order, status, error: loadError, refresh } = useLazyAsyncData(`order:${id}`, () => api.orders.get(id))
@@ -51,7 +51,8 @@ async function run(action: () => Promise<unknown>) {
   try {
     await action()
     await refresh()
-    refreshCatalog()
+    // A payment that lands issues tickets; one that fails gives the stock back.
+    refreshAccount()
     retrying.value = false
   }
   catch (error) {

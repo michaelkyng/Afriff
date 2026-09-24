@@ -24,13 +24,26 @@ const { mode } = useTheme()
 const { user, isSignedIn, initials, updateProfile, signOut: endSession } = useAuth()
 const api = useApi()
 
-/** Recent orders, for the account section. Only loaded when signed in. */
-const { data: orders } = useLazyAsyncData('me:orders', () => api.orders.list(), {
-  immediate: false,
-})
-watchEffect(() => {
-  if (isSignedIn.value && !orders.value) refreshNuxtData('me:orders')
-})
+/**
+ * Recent orders, for the account section. Fetched on every visit while signed
+ * in, so an order placed since is here without a reload.
+ */
+const {
+  data: orders,
+  status: ordersStatus,
+  refresh: refreshOrders,
+  clear: clearOrders,
+} = useLazyAsyncData('me:orders', () => api.orders.list(), { immediate: false })
+watch(
+  isSignedIn,
+  (signedIn) => {
+    if (signedIn) refreshOrders()
+    else clearOrders()
+  },
+  { immediate: true },
+)
+/** Only before the first list arrives, so "No orders yet" never shows while they load. */
+const ordersLoading = computed(() => orders.value === undefined && ordersStatus.value !== 'error')
 
 const orderTone = { paid: 'success', pending: 'accent', failed: 'danger' } as const
 const prefs = usePrefsStore()
@@ -120,7 +133,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-7">
+  <div class="mx-auto max-w-2xl space-y-8">
     <AppPageHeader title="Me" />
 
     <!-- Account -->
@@ -134,7 +147,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
         </div>
         <div class="min-w-0 flex-1 basis-52">
           <p class="truncate font-semibold">{{ user?.name }}</p>
-          <p class="truncate text-meta text-muted">{{ user?.email }}</p>
+          <p class="truncate text-label text-muted">{{ user?.email }}</p>
         </div>
         <UiButton v-if="!editing" size="sm" variant="secondary" @click="startEditing">
           <PencilIcon aria-hidden="true" />
@@ -187,7 +200,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </dl>
 
       <div class="flex items-center justify-between gap-4 border-t border-line px-4 py-3 md:px-5">
-        <p class="text-meta text-muted">Signed in on this device</p>
+        <p class="text-label text-muted">Signed in on this device</p>
         <UiButton size="sm" variant="ghost" @click="signOut">
           <LogOutIcon aria-hidden="true" />
           Sign out
@@ -201,20 +214,20 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       </div>
       <div class="min-w-0 flex-1 basis-52">
         <p class="font-semibold">Browsing as a guest</p>
-        <p class="text-meta text-muted">Sign in to buy passes and keep your tickets.</p>
+        <p class="text-label text-muted">Sign in to buy passes and keep your tickets.</p>
       </div>
       <UiButton size="sm" to="/signin">Sign in</UiButton>
     </UiCard>
 
     <!-- Your festival -->
-    <section aria-labelledby="yours-title" class="space-y-2">
-      <h2 id="yours-title" class="px-1 text-meta font-semibold text-muted">Yours</h2>
+    <section aria-labelledby="yours-title">
+      <UiSectionHeader title="Yours" title-id="yours-title" />
       <UiCard :padded="false" class="divide-y divide-line">
         <NuxtLink to="/my-festival" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
           <BookmarkIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">My festival</span>
-            <span class="block text-meta text-muted">Your plan, with clashes flagged</span>
+            <span class="block font-semibold">My festival</span>
+            <span class="block text-label text-muted">Your plan, with clashes flagged</span>
           </span>
           <span v-if="plan.count" class="text-meta text-muted tabular-nums">{{ plan.count }}</span>
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
@@ -222,8 +235,8 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
         <NuxtLink to="/updates" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
           <BellIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">Updates</span>
-            <span class="block text-meta text-muted">Schedule changes and festival news</span>
+            <span class="block font-semibold">Updates</span>
+            <span class="block text-label text-muted">Schedule changes and festival news</span>
           </span>
           <span
             v-if="unread"
@@ -234,16 +247,16 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
         <NuxtLink to="/tickets?view=mine" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
           <TicketCheckIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">My tickets</span>
-            <span class="block text-meta text-muted">Everything you have bought</span>
+            <span class="block font-semibold">My tickets</span>
+            <span class="block text-label text-muted">Everything you have bought</span>
           </span>
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </NuxtLink>
         <NuxtLink to="/info" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
           <CircleHelpIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span class="block font-medium">Info and help</span>
-            <span class="block text-meta text-muted">Venues, questions, policies and contact</span>
+            <span class="block font-semibold">Info and help</span>
+            <span class="block text-label text-muted">Venues, questions, policies and contact</span>
           </span>
           <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
         </NuxtLink>
@@ -251,25 +264,30 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
     </section>
 
     <!-- Orders -->
-    <section v-if="isSignedIn" aria-labelledby="orders-title" class="space-y-2">
-      <h2 id="orders-title" class="px-1 text-meta font-semibold text-muted">Orders</h2>
-      <UiCard v-if="orders?.length" :padded="false">
+    <section v-if="isSignedIn" aria-labelledby="orders-title">
+      <UiSectionHeader title="Orders" title-id="orders-title" />
+      <UiSkeleton v-if="ordersLoading" class="h-32 rounded-card" />
+      <UiCard v-else-if="orders?.length" :padded="false">
         <ul class="divide-y divide-line">
           <li v-for="order in orders.slice(0, 5)" :key="order.id">
             <NuxtLink :to="`/orders/${order.id}`" class="row-interactive flex items-center gap-3 px-4 py-3 md:px-5">
               <span class="min-w-0 flex-1">
-                <span class="block truncate font-medium tabular-nums">{{ order.reference }}</span>
-                <span class="block truncate text-meta text-muted tabular-nums">
+                <span class="block truncate font-semibold tabular-nums">{{ order.reference }}</span>
+                <span class="block truncate text-label text-muted tabular-nums">
                   {{ formatDay(order.placedAt) }} · {{ order.lines.length }}
                   {{ order.lines.length === 1 ? 'item' : 'items' }}
                 </span>
               </span>
-              <UiBadge :tone="orderTone[order.status]">{{ order.status }}</UiBadge>
-              <span class="shrink-0 font-medium tabular-nums">{{ formatMoney(order.total) }}</span>
+              <UiBadge :tone="orderTone[order.status]" class="self-center!">{{ order.status }}</UiBadge>
+              <span class="shrink-0 text-meta font-medium tabular-nums">{{ formatMoney(order.total) }}</span>
               <ChevronRightIcon class="size-4 shrink-0 text-subtle" aria-hidden="true" />
             </NuxtLink>
           </li>
         </ul>
+      </UiCard>
+      <UiCard v-else-if="ordersStatus === 'error'" class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-meta text-muted">We couldn’t load your orders.</p>
+        <UiButton size="sm" variant="secondary" @click="refreshOrders()">Try again</UiButton>
       </UiCard>
       <UiCard v-else class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-meta text-muted">No orders yet.</p>
@@ -278,29 +296,25 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
     </section>
 
     <!-- Appearance -->
-    <section aria-labelledby="appearance-title" class="space-y-2">
-      <h2 id="appearance-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
-        Appearance
-      </h2>
+    <section aria-labelledby="appearance-title">
+      <UiSectionHeader title="Appearance" title-id="appearance-title" />
       <UiCard class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="font-medium">Theme</p>
-          <p class="text-meta text-muted">System follows your device setting.</p>
+          <p class="font-semibold">Theme</p>
+          <p class="text-label text-muted">System follows your device setting.</p>
         </div>
         <UiSegmented v-model="mode" :options="themeOptions" label="Theme" />
       </UiCard>
     </section>
 
     <!-- App -->
-    <section aria-labelledby="app-title" class="space-y-2">
-      <h2 id="app-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
-        App
-      </h2>
+    <section aria-labelledby="app-title">
+      <UiSectionHeader title="App" title-id="app-title" />
       <UiCard :padded="false" class="divide-y divide-line">
         <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
-            <p class="font-medium">Install on this device</p>
-            <p class="text-meta text-muted">
+            <p class="font-semibold">Install on this device</p>
+            <p class="text-label text-muted">
               {{ pwa?.isPWAInstalled ? 'Installed. You’re using the app.' : 'Add AFRIFF to your home screen.' }}
             </p>
           </div>
@@ -308,11 +322,11 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
           <UiBadge v-else-if="pwa?.isPWAInstalled" tone="success">Installed</UiBadge>
         </div>
         <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
-          <p class="font-medium">Connection</p>
+          <p class="font-semibold">Connection</p>
           <UiBadge :tone="online ? 'success' : 'neutral'">{{ online ? 'Online' : 'Offline' }}</UiBadge>
         </div>
         <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
-          <p class="font-medium">Ready for offline use</p>
+          <p class="font-semibold">Ready for offline use</p>
           <UiBadge :tone="pwa?.offlineReady || pwa?.swActivated ? 'success' : 'neutral'">
             {{ pwa?.offlineReady || pwa?.swActivated ? 'Yes' : 'Not yet' }}
           </UiBadge>
@@ -321,21 +335,18 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
     </section>
 
     <!-- Developer -->
-    <section aria-labelledby="dev-title" class="space-y-2">
-      <h2 id="dev-title" class="flex items-center gap-2 px-1 text-meta font-semibold text-muted">
-        Developer
-        <UiBadge tone="info">Local build</UiBadge>
-      </h2>
+    <section aria-labelledby="dev-title">
+      <UiSectionHeader title="Developer" title-id="dev-title" meta="Local build" />
       <UiCard :padded="false" class="divide-y divide-line">
         <div class="space-y-2.5 px-4 py-4 md:px-5">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <p class="font-medium">Festival clock</p>
+            <p class="font-semibold">Festival clock</p>
             <p class="text-meta text-muted tabular-nums">
               {{ formatDay(now) }}, {{ formatTime(now) }}
               <UiBadge v-if="isSimulated" tone="info" class="ml-1">Simulated</UiBadge>
             </p>
           </div>
-          <p class="text-meta text-muted">Preview how the app looks at different points in festival week.</p>
+          <p class="text-label text-muted">Preview how the app looks at different points in festival week.</p>
           <div class="flex flex-wrap gap-1.5 pt-1">
             <UiChip
               v-for="preset in clockPresets"
@@ -349,15 +360,15 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
         </div>
         <NuxtLink to="/styleguide" class="row-interactive flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
-            <p class="font-medium">Styleguide</p>
-            <p class="text-meta text-muted">Design tokens and UI components.</p>
+            <p class="font-semibold">Styleguide</p>
+            <p class="text-label text-muted">Design tokens and UI components.</p>
           </div>
           <ChevronRightIcon class="size-4 text-subtle" aria-hidden="true" />
         </NuxtLink>
         <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
-            <p class="font-medium">Reset demo data</p>
-            <p class="text-meta text-muted">Clears mock accounts, orders, tickets and preferences on this device.</p>
+            <p class="font-semibold">Reset demo data</p>
+            <p class="text-label text-muted">Clears mock accounts, orders, tickets and preferences on this device.</p>
           </div>
           <UiButton size="sm" variant="danger" @click="resetDemoData">
             <RotateCcwIcon aria-hidden="true" />

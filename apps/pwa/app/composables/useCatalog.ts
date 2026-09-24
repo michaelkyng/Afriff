@@ -7,9 +7,13 @@ import type { TicketProduct } from '@afriff/api'
  */
 export function useCatalog() {
   const api = useApi()
-  return useLazyAsyncData('catalog:products', () => api.catalog.listProducts(), {
+  const result = useLazyAsyncData('catalog:products', () => api.catalog.listProducts(), {
     getCachedData: reuseLoaded,
   })
+  // Stock moves, so a screen that opens on a cached catalogue checks it again
+  // in the background rather than trusting what was left last time.
+  if (result.data.value) result.refresh()
+  return result
 }
 
 /** Products keep their price in kobo; this is the lowest of them, for "From ₦x". */

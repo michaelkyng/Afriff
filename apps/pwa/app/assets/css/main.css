@@ -2,6 +2,26 @@
 @import "@afriff/ui-kit/styles/theme.css";
 @source "../..";
 
+/* Native-app feel on touch devices: no long-press text selection or iOS callout menu.
+   Form fields stay selectable so typing, cursor placement and paste still work.
+   A specific element can opt back in with the `select-text` utility. */
+@layer base {
+  @media (pointer: coarse) {
+    html {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input,
+    textarea,
+    [contenteditable]:not([contenteditable='false']) {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+  }
+}
+
 /* Route transitions: a quick fade with a short rise. Exit is faster than enter. */
 .page-enter-active {
   transition:

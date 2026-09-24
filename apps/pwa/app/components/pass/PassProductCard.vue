@@ -11,8 +11,8 @@ defineEmits<{ choose: [] }>()
   <article class="card flex h-full flex-col p-4 md:p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <h3 class="text-h3 font-semibold">{{ product.name }}</h3>
-        <p class="mt-0.5 text-meta text-muted">{{ product.summary }}</p>
+        <h3 class="text-body font-semibold">{{ product.name }}</h3>
+        <p class="mt-0.5 text-label text-muted">{{ product.summary }}</p>
       </div>
       <UiBadge v-if="product.badge" tone="accent">{{ product.badge }}</UiBadge>
     </div>

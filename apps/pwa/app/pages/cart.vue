@@ -7,7 +7,8 @@ useHead({ title: 'Cart' })
 const api = useApi()
 const cart = useCartStore()
 const { user } = useAuth()
-const { data: products, refresh: refreshCatalog } = useCatalog()
+const { data: products } = useCatalog()
+const refreshAccount = useAccountRefresh()
 
 const placing = ref(false)
 const message = ref('')
@@ -36,7 +37,7 @@ async function checkout() {
     // Leave first, so the cart does not flash its empty state on the way out.
     await navigateTo(`/orders/${order.id}`)
     cart.clear()
-    refreshCatalog()
+    refreshAccount()
   }
   catch (error) {
     message.value = isApiError(error) ? error.message : 'We could not place that order. Try again.'

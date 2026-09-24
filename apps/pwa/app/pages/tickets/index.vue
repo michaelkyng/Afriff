@@ -90,14 +90,12 @@ const {
   revalidate: revalidateTickets,
 } = useMyTickets()
 
-// Checked again every time a tab opens, so a purchase or a transfer made
+// Checked again every time the tab opens, so a purchase or a transfer made
 // elsewhere is on screen without a reload. The cached list shows meanwhile.
 watch(
   view,
   (current) => {
     if (current === 'mine') revalidateTickets()
-    // Stock: the first load is already under way, so only an earlier one needs checking.
-    else if (products.value) refresh()
   },
   { immediate: true },
 )
@@ -169,7 +167,7 @@ const groups = computed(() => {
         </template>
       </ul>
 
-      <p class="text-meta text-muted">
+      <p class="text-label text-muted">
         Prices include VAT. Tickets are held for you as soon as a payment goes through, and they appear under
         My tickets.
       </p>

@@ -168,7 +168,7 @@ function addToCart() {
             >
               <span class="min-w-0 flex-1">
                 <span class="block truncate font-semibold">{{ item.title }}</span>
-                <span class="block truncate text-meta text-muted tabular-nums">
+                <span class="block truncate text-label text-muted tabular-nums">
                   {{ formatDay(item.startsAt) }}, {{ formatTime(item.startsAt) }} · {{ item.venue.shortName }}
                 </span>
               </span>
@@ -200,7 +200,7 @@ function addToCart() {
             >
               <span class="min-w-0 flex-1">
                 <span class="block truncate font-semibold">{{ item.title }}</span>
-                <span class="block truncate text-meta text-muted tabular-nums">
+                <span class="block truncate text-label text-muted tabular-nums">
                   {{ formatDay(item.startsAt) }}, {{ formatTime(item.startsAt) }} · {{ item.venue.name }}
                 </span>
               </span>
@@ -209,15 +209,15 @@ function addToCart() {
         </ul>
       </fieldset>
 
-      <div v-else-if="chosen?.detail" class="rounded-tile border border-line bg-raised px-3.5 py-3 text-meta">
-        <p class="font-medium">{{ chosen.title }}</p>
-        <p class="mt-0.5 text-muted tabular-nums">{{ chosen.detail }}</p>
+      <div v-else-if="chosen?.detail" class="rounded-tile border border-line bg-raised px-3.5 py-3">
+        <p class="font-semibold">{{ chosen.title }}</p>
+        <p class="mt-0.5 text-label text-muted tabular-nums">{{ chosen.detail }}</p>
       </div>
 
       <div class="flex items-center justify-between gap-4">
         <div>
-          <p class="font-medium">How many</p>
-          <p class="text-meta text-muted">Up to {{ maxQuantity }} per order.</p>
+          <p class="font-semibold">How many</p>
+          <p class="text-label text-muted">Up to {{ maxQuantity }} per order.</p>
         </div>
         <UiStepper v-model="quantity" label="ticket" :max="maxQuantity" />
       </div>
