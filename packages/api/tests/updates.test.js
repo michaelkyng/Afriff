@@ -115,6 +115,17 @@ describe('refsFromTickets and mergeRefs', () => {
     expect([...result.venueIds]).toEqual(['ven_landmark'])
   })
 
+  test('a void ticket still ties them to its slot, so a cancellation notice reaches them; a used one does not', () => {
+    const result = refsFromTickets(
+      [
+        { id: 't1', status: 'void', selection: { screeningId: 'scn_cancelled' } },
+        { id: 't2', status: 'used', selection: { screeningId: 'scn_seen' } },
+      ],
+      () => undefined,
+    )
+    expect([...result.screeningIds]).toEqual(['scn_cancelled'])
+  })
+
   test('merges a plan and a pile of tickets into one set of ids', () => {
     const merged = mergeRefs(
       refs({ screeningIds: new Set(['a']) }),

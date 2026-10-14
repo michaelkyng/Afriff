@@ -5,6 +5,7 @@
  *   (HTTPS, called by Paystack) and `expireOrders` (every 10 minutes).
  * - Tickets: `transferTicket`, `claimTickets` (callable).
  * - The door: `checkIn` (callable, festival staff only).
+ * - The Ops Console: `ops` (callable, ops and admin staff only).
  * - Email: `sendMail` delivers the `mail` outbox through Brevo.
  */
 import './env'
@@ -14,4 +15,5 @@ export { paystackWebhook } from './webhook'
 export { expireOrders } from './expire'
 export { transferTicket, claimTickets } from './tickets'
 export { checkIn } from './door'
+export { ops } from './ops'
 export { sendMail } from './mail/outbox'

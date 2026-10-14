@@ -72,11 +72,15 @@ export function unreadCount(updates: FestivalUpdate[], readIds: Iterable<string>
 /**
  * What a ticket ties an attendee to: the screening or event it admits them to,
  * and the venue that is at. Passes tie them to nothing in particular.
+ *
+ * A void ticket still counts: when a screening is cancelled its tickets are
+ * voided, and the notice about it is exactly what their holders need to see.
+ * A ticket passed on, or already used, ties them to nothing any more.
  */
 export function refsFromTickets(tickets: Ticket[], venueIdOf: (ticket: Ticket) => string | undefined): AttendeeRefs {
   const refs = emptyRefs()
   for (const ticket of tickets) {
-    if (ticket.status !== 'valid') continue
+    if (ticket.status !== 'valid' && ticket.status !== 'void') continue
     if (ticket.selection?.screeningId) refs.screeningIds.add(ticket.selection.screeningId)
     if (ticket.selection?.eventId) refs.eventIds.add(ticket.selection.eventId)
     const venueId = venueIdOf(ticket)

@@ -7,6 +7,7 @@ TypeScript packages, on a Firebase backend with Paystack payments and Brevo emai
 apps/
   pwa/                   @afriff/pwa — attendee PWA
   scanner/               @afriff/scanner — AFRIFF Door, the ticket scanner for festival staff
+  ops/                   @afriff/ops — AFRIFF Ops, the festival team's console
   functions/             @afriff/functions — Cloud Functions: checkout, Paystack, tickets, Brevo email
 layers/
   ui-kit/                @afriff/ui-kit — shared Nuxt design-system layer
@@ -24,6 +25,7 @@ packages/
     src/contract.ts
     src/orders.ts        order rules shared by the mock and the Cloud Functions
     src/door.ts          door rules and the DoorApi contract, shared the same way
+    src/ops.ts           Ops rules and the OpsApi contract, shared the same way
     src/mock/            local adapter, fixtures and mock storage
     src/firebase/        Firebase adapter and the shared Firestore schema
     src/index.ts
@@ -34,15 +36,15 @@ firebase.json            Firebase CLI: emulators, rules, functions, hosting
 brand/                   source artwork and asset generator
 ```
 
-Two apps are built: the attendee PWA and the door scanner
-([`apps/scanner`](apps/scanner/README.md)). The Ops Console will be the next app
-under `apps/`.
+Three apps are built: the attendee PWA, the door scanner
+([`apps/scanner`](apps/scanner/README.md)) and the Ops Console
+([`apps/ops`](apps/ops/README.md)).
 
-Both apps run in one of two modes, chosen by `NUXT_PUBLIC_API_MODE`:
+All three run in one of two modes, chosen by `NUXT_PUBLIC_API_MODE`:
 
 - **`mock`** (the default): everything runs in the browser on placeholder data,
-  with a stand-in for Paystack's checkout, and a demo door with tickets of every
-  kind to scan. No backend, no network.
+  with a stand-in for Paystack's checkout, a demo door with tickets of every
+  kind to scan, and a demo console with orders to work with. No backend, no network.
 - **`firebase`**: Firebase Auth (email and password), Firestore, and Cloud
   Functions for checkout, Paystack payments, tickets and Brevo email. Run it
   locally against the Emulator Suite with `bun run emulators`.
@@ -68,6 +70,7 @@ Install at the root and keep a single `bun.lock` for all three workspace groups:
 | --- | --- |
 | `bun run dev` / `bun run dev:pwa` | Run the attendee PWA (localhost:3000) |
 | `bun run dev:scanner` | Run the door scanner (localhost:3001) |
+| `bun run dev:ops` | Run the Ops Console (localhost:3002) |
 | `bun run build` / `bun run build:pwa` | Build with Nitro |
 | `bun run generate` / `bun run generate:pwa` | Generate static PWA output |
 | `bun run preview:server` | Preview an existing Nitro build |
@@ -85,8 +88,8 @@ Stop the app's dev server before building: both commands write to `.nuxt`.
 For static deployment, run `bun run generate:pwa` from the root and publish
 `apps/pwa/.output/public` with an SPA fallback to `index.html` (`firebase.json`
 does this for Firebase Hosting). CI installs using `bun install --frozen-lockfile`,
-checks the workspaces, bundles the Cloud Functions and generates the PWA and the
-scanner; a second job runs the Firestore rules tests on the emulator.
+checks the workspaces, bundles the Cloud Functions and generates all three apps;
+a second job runs the Firestore rules tests on the emulator.
 The [GitHub Actions workflow](.github/workflows/check.yml) runs on pushes, pull
 requests, and manual dispatch. It reads Node from `.nvmrc` and Bun from the root
 `packageManager` field, reports type checks, tests and generation as separate

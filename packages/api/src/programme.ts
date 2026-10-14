@@ -11,7 +11,7 @@ import type {
 
 // ------------------------------------------------------------------ availability
 
-export type AvailabilityStatus = 'available' | 'selling_fast' | 'sold_out'
+export type AvailabilityStatus = 'available' | 'selling_fast' | 'sold_out' | 'cancelled'
 
 export interface Availability {
   status: AvailabilityStatus
@@ -19,7 +19,8 @@ export interface Availability {
 }
 
 /** Seats left and a status label. "Selling fast" kicks in at 12% or fewer seats left. */
-export function availabilityOf(screening: Pick<Screening, 'capacity' | 'sold'>): Availability {
+export function availabilityOf(screening: Pick<Screening, 'capacity' | 'sold' | 'cancelled'>): Availability {
+  if (screening.cancelled) return { status: 'cancelled', seatsLeft: 0 }
   const seatsLeft = Math.max(0, screening.capacity - screening.sold)
   if (seatsLeft === 0) return { status: 'sold_out', seatsLeft }
   if (seatsLeft / screening.capacity <= 0.12) return { status: 'selling_fast', seatsLeft }

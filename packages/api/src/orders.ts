@@ -146,12 +146,12 @@ export function resolveLine(
       if (!screening) {
         throw new ApiError('validation', 'Choose which screening this ticket is for.', { field: 'selection.screeningId' })
       }
-      const film = catalog.film(screening.filmId)
-      const venue = catalog.venue(screening.venueId)
-      const screen = venue?.screens.find((item) => item.id === screening.screenId)
+      if (screening.cancelled) {
+        throw new ApiError('conflict', 'That screening has been cancelled.', { field: 'selection.screeningId', screeningId: screening.id })
+      }
       line.selection = { screeningId: screening.id }
-      line.title = film?.title ?? product.name
-      line.detail = `${formatDay(screening.startsAt)}, ${formatTime(screening.startsAt)} · ${venue?.shortName ?? ''}${screen ? `, ${screen.name}` : ''}`
+      line.title = catalog.film(screening.filmId)?.title ?? product.name
+      line.detail = screeningDetail(screening, catalog.venue(screening.venueId))
       break
     }
     case 'event': {
@@ -168,6 +168,12 @@ export function resolveLine(
   }
 
   return line
+}
+
+/** Where and when a screening is, ready to show: "Tue 3 Nov, 18:30 · Landmark, Cinema 1". */
+export function screeningDetail(screening: Pick<Screening, 'startsAt' | 'screenId'>, venue: Venue | undefined): string {
+  const screen = venue?.screens.find((item) => item.id === screening.screenId)
+  return `${formatDay(screening.startsAt)}, ${formatTime(screening.startsAt)} · ${venue?.shortName ?? ''}${screen ? `, ${screen.name}` : ''}`
 }
 
 export function orderTotal(lines: readonly OrderLine[]): Money {

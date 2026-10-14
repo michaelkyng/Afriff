@@ -1,5 +1,6 @@
 import type { ApiErrorCode } from '../contract'
-import type { CheckInInput, CheckInResult, DoorCount, SessionRef } from '../door'
+import type { CheckInInput, CheckInResult, DoorCount, SessionRef, StaffRole } from '../door'
+import type { AuditTarget, OpsActionName, OpsActions } from '../ops'
 import type {
   CheckoutInput,
   FestivalInfo,
@@ -26,6 +27,9 @@ import type {
  *   Functions. Attendees can read their own orders and tickets, nothing else.
  * - Check-ins are written only by the `checkIn` function; door staff (a `role`
  *   claim) can read the running counts.
+ * - Ops and admin staff can read orders, tickets, profiles, mail, check-ins
+ *   and the activity log; every change they make goes through the `ops`
+ *   function, which records it in `audit`.
  */
 
 /** Where callable functions run. Keep `apps/functions` and `NUXT_PUBLIC_FIREBASE_FUNCTIONS_REGION` in step. */
@@ -52,6 +56,10 @@ export const COLLECTIONS = {
   checkins: 'checkins',
   /** `doorStats/{sessionKey}`: the running count every door adds to. */
   doorStats: 'doorStats',
+  /** `audit/{id}`: every change made in Ops, by whom. */
+  audit: 'audit',
+  /** `staff/{uid}`: who has a staff role, so Ops can list them without scanning every account. */
+  staff: 'staff',
 } as const
 
 /** The one document in `festival` and `info`: this edition. */
@@ -130,7 +138,7 @@ export interface TicketDoc extends Ticket {
   claimEmail?: string
 }
 
-export type MailTemplate = 'order_paid' | 'ticket_received'
+export type MailTemplate = 'order_paid' | 'ticket_received' | 'update_notice' | 'staff_invite'
 
 /**
  * `mail/{id}`: the outbox. Cloud Functions write a message here in the same
@@ -140,6 +148,8 @@ export type MailTemplate = 'order_paid' | 'ticket_received'
 export interface MailDoc {
   template: MailTemplate
   to: { email: string; name?: string }
+  /** What it is about, so Ops can show an order's emails. */
+  orderId?: string
   params: Record<string, unknown>
   status: 'queued' | 'sending' | 'sent' | 'failed'
   attempts: number
@@ -167,6 +177,29 @@ export interface DoorStatsDoc extends DoorCount {
   updatedAt: string
 }
 
+/** `audit/{id}`. Written only by the `ops` function. */
+export interface AuditDoc {
+  at: string
+  byUid: string
+  byName: string
+  action: OpsActionName
+  summary: string
+  target?: AuditTarget
+  /** The fields that changed, before and after, for the record. */
+  before?: Record<string, unknown>
+  after?: Record<string, unknown>
+}
+
+/** `staff/{uid}`. Kept in step with the `role` claim by the `ops` function and `bun run staff`. */
+export interface StaffDoc {
+  email: string
+  name: string
+  role: StaffRole | null
+  active: boolean
+  updatedAt: string
+  updatedBy: string
+}
+
 // ------------------------------------------------------------------ callables
 
 /** Callable names, and what each takes and returns. */
@@ -177,6 +210,7 @@ export interface CallableContract {
   transferTicket: { request: TicketTransferInput & { ticketId: string }; response: Ticket }
   claimTickets: { request: Record<string, never>; response: { claimed: number } }
   checkIn: { request: CheckInInput; response: CheckInResult }
+  ops: { request: { [A in OpsActionName]: { action: A } & OpsActions[A]['input'] }[OpsActionName]; response: unknown }
 }
 
 export type CallableName = keyof CallableContract

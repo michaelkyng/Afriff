@@ -1,6 +1,7 @@
 import type { MailDoc, MailTemplate, OrderDoc } from '@afriff/api/firebase/schema'
 import { formatMoney } from '@afriff/api/format'
-import type { Money } from '@afriff/api/types'
+import type { StaffRole } from '@afriff/api/door'
+import type { FestivalUpdate, Money } from '@afriff/api/types'
 
 /**
  * Festival email, written here rather than in Brevo's editor so it is versioned,
@@ -31,7 +32,25 @@ export interface TicketReceivedParams {
   hasAccount: boolean
 }
 
-type Draft = Pick<MailDoc, 'template' | 'to' | 'params'>
+export interface UpdateNoticeParams {
+  name?: string
+  title: string
+  body: string
+  /** A path in the app, from the update's link. */
+  link?: string
+}
+
+export interface StaffInviteParams {
+  name: string
+  role: StaffRole
+  setPasswordUrl: string
+  /** Where to sign in once the password is set; empty when the address is not configured. */
+  signInUrl: string
+  invitedBy: string
+  newAccount: boolean
+}
+
+type Draft = Pick<MailDoc, 'template' | 'to' | 'params' | 'orderId'>
 
 export function orderPaidMail(order: Pick<OrderDoc, 'id' | 'reference' | 'contact' | 'lines' | 'total'>, ticketCount: number): Draft {
   const params: OrderPaidParams = {
@@ -48,11 +67,20 @@ export function orderPaidMail(order: Pick<OrderDoc, 'id' | 'reference' | 'contac
     })),
     total: order.total,
   }
-  return { template: 'order_paid', to: { email: order.contact.email, name: order.contact.name }, params: { ...params } }
+  return { template: 'order_paid', to: { email: order.contact.email, name: order.contact.name }, params: { ...params }, orderId: order.id }
 }
 
 export function ticketReceivedMail(to: { email: string; name?: string }, params: TicketReceivedParams): Draft {
   return { template: 'ticket_received', to, params: { ...params } }
+}
+
+export function updateNoticeMail(to: { email: string; name?: string }, update: Pick<FestivalUpdate, 'title' | 'body' | 'link'>): Draft {
+  const params: UpdateNoticeParams = { ...(to.name ? { name: to.name } : {}), title: update.title, body: update.body, ...(update.link ? { link: update.link } : {}) }
+  return { template: 'update_notice', to, params: { ...params } }
+}
+
+export function staffInviteMail(to: { email: string; name?: string }, params: StaffInviteParams): Draft {
+  return { template: 'staff_invite', to, params: { ...params } }
 }
 
 // ------------------------------------------------------------------ rendering
@@ -210,8 +238,55 @@ function renderTicketReceived(params: TicketReceivedParams, appUrl: string): Ren
   }
 }
 
+function renderUpdateNotice(params: UpdateNoticeParams, appUrl: string): RenderedMail {
+  const url = `${appUrl}${params.link ?? '/updates'}`
+  return {
+    subject: params.title,
+    html: layout({
+      preheader: params.body.slice(0, 120),
+      heading: params.title,
+      body: [
+        paragraph(`Hi ${escapeHtml(firstName(params.name))}, this is about a ticket you hold.`),
+        paragraph(escapeHtml(params.body)),
+      ].join('\n'),
+      cta: { label: 'Open AFRIFF', url },
+    }),
+    text: [`Hi ${firstName(params.name)}, this is about a ticket you hold.`, '', params.body, '', `Open AFRIFF: ${url}`].join('\n'),
+  }
+}
+
+const ROLE_WORDS: Record<StaffRole, string> = {
+  door: 'checking tickets at the door, with AFRIFF Door',
+  ops: 'running the festival in the Ops Console',
+  admin: 'running the festival in the Ops Console, as an admin',
+}
+
+function renderStaffInvite(params: StaffInviteParams): RenderedMail {
+  const where = params.signInUrl
+    ? `Then sign in at ${params.signInUrl} with this email address.`
+    : 'Then ask the festival team for the address to sign in at.'
+  const opening = params.newAccount
+    ? `${params.invitedBy} has set you up for ${ROLE_WORDS[params.role]}. Choose a password to get started.`
+    : `${params.invitedBy} has given your AFRIFF account access for ${ROLE_WORDS[params.role]}. If you already know your password, you can sign in straight away.`
+  return {
+    subject: 'You are on the AFRIFF team',
+    html: layout({
+      preheader: `Access for ${ROLE_WORDS[params.role]}.`,
+      heading: 'You are on the team',
+      body: [paragraph(`Hi ${escapeHtml(firstName(params.name))}, ${escapeHtml(opening)}`), paragraph(escapeHtml(where))].join('\n'),
+      cta: { label: params.newAccount ? 'Choose a password' : 'Set a new password', url: params.setPasswordUrl },
+      after: paragraph(`<span style="color:${COLOURS.muted};">The link works once and expires. If it has, ask the person who invited you to send another.</span>`),
+    }),
+    text: [`Hi ${firstName(params.name)},`, '', opening, where, '', `Set your password: ${params.setPasswordUrl}`].join('\n'),
+  }
+}
+
 export function renderMail(template: MailTemplate, params: Record<string, unknown>, context: { appUrl: string }): RenderedMail {
   switch (template) {
+    case 'update_notice':
+      return renderUpdateNotice(params as unknown as UpdateNoticeParams, context.appUrl)
+    case 'staff_invite':
+      return renderStaffInvite(params as unknown as StaffInviteParams)
     case 'order_paid':
       return renderOrderPaid(params as unknown as OrderPaidParams, context.appUrl)
     case 'ticket_received':

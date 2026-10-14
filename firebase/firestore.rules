@@ -23,9 +23,15 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
-    // Festival staff carry a `role` claim, set by `bun run staff`.
+    // Festival staff carry a `role` claim, set by `bun run staff` or Ops.
     function isStaff() {
       return signedIn() && request.auth.token.role in ['admin', 'ops', 'door'];
+    }
+
+    // The Ops Console's people: they can read what support needs, and change
+    // things only through the `ops` function. Door staff are not among them.
+    function isOps() {
+      return signedIn() && request.auth.token.role in ['admin', 'ops'];
     }
 
     function incoming() {
@@ -76,7 +82,7 @@ service cloud.firestore {
     // ------------------------------------------------------------ accounts
 
     match /users/{uid} {
-      allow get: if isUser(uid);
+      allow get: if isUser(uid) || isOps();
 
       // Written once, straight after sign-up: the email on the sign-in itself,
       // and the server's clock rather than the device's.
@@ -117,11 +123,11 @@ service cloud.firestore {
     // tickets; a list has to ask for them by `userId`.
 
     match /orders/{orderId} {
-      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow read: if (signedIn() && resource.data.userId == request.auth.uid) || isOps();
     }
 
     match /tickets/{ticketId} {
-      allow read: if signedIn() && (
+      allow read: if isOps() || signedIn() && (
         resource.data.userId == request.auth.uid
         // Passed on to this email before it had an account. Only a confirmed
         // address may see it: anyone can sign up with any email.
@@ -139,7 +145,15 @@ service cloud.firestore {
       allow read: if isStaff();
     }
 
-    // mail/{id}, paymentEvents/{id} and checkins/{id} have no rules on purpose:
-    // they are for the functions and the team, never for the apps.
+    // ------------------------------------------------------------ ops
+    // Read-only, for the people answering "did I pay?" and "where is my
+    // ticket?". Every change goes through the `ops` function and lands in
+    // `audit`, which nobody can write from an app either.
+
+    match /mail/{id} { allow read: if isOps(); }
+    match /paymentEvents/{id} { allow read: if isOps(); }
+    match /checkins/{id} { allow read: if isOps(); }
+    match /audit/{id} { allow read: if isOps(); }
+    match /staff/{uid} { allow read: if isOps(); }
   }
 }

@@ -78,6 +78,8 @@ beforeEach(async () => {
       setDoc(doc(db, 'paymentEvents/charge.success_AF-1'), { reference: 'AF-1' }),
       setDoc(doc(db, 'doorStats/screening_scr_1'), { admitted: 3, passAdmitted: 1, updatedAt: '2026-11-03T18:00:00Z' }),
       setDoc(doc(db, 'checkins/screening_scr_1_tkt_ada'), { ticketId: 'tkt_ada', byUid: 'door1' }),
+      setDoc(doc(db, 'audit/a_1'), { action: 'moveScreening', byUid: 'ops1' }),
+      setDoc(doc(db, 'staff/door1'), { email: 'door1@afriff.test', role: 'door', active: true }),
     ])
   })
 })
@@ -88,6 +90,8 @@ const bem = () => env.authenticatedContext('bem', { email: 'bem@example.com', em
 const guest = () => env.unauthenticatedContext().firestore()
 /** Door staff: an account with a `role` claim. */
 const door = () => env.authenticatedContext('door1', { email: 'door1@afriff.test', email_verified: true, role: 'door' }).firestore()
+/** Ops staff, who run the console. */
+const ops = () => env.authenticatedContext('ops1', { email: 'ops1@afriff.test', email_verified: true, role: 'ops' }).firestore()
 
 const profile = (overrides = {}) => ({
   email: 'ada@example.com',
@@ -295,5 +299,41 @@ describe('the door', () => {
   test('staff do not read attendees’ tickets or orders directly', async () => {
     await assertFails(getDoc(doc(door(), 'tickets/tkt_ada')))
     await assertFails(getDoc(doc(door(), 'orders/ord_ada')))
+  })
+})
+
+describe('the Ops Console', () => {
+  test('ops staff read what support needs: any order, ticket, profile, email, check-in and the log', async () => {
+    await assertSucceeds(getDoc(doc(ops(), 'orders/ord_ada')))
+    await assertSucceeds(getDocs(query(collection(ops(), 'orders'), where('status', '==', 'paid'))))
+    await assertSucceeds(getDocs(collection(ops(), 'orders')))
+    await assertSucceeds(getDoc(doc(ops(), 'tickets/tkt_bem')))
+    await assertSucceeds(getDocs(query(collection(ops(), 'tickets'), where('code', '==', 'AF-AAAA-AAAA'))))
+    await assertSucceeds(getDoc(doc(ops(), 'users/bem')))
+    await assertSucceeds(getDoc(doc(ops(), 'mail/m_1')))
+    await assertSucceeds(getDoc(doc(ops(), 'paymentEvents/charge.success_AF-1')))
+    await assertSucceeds(getDoc(doc(ops(), 'checkins/screening_scr_1_tkt_ada')))
+    await assertSucceeds(getDocs(collection(ops(), 'audit')))
+    await assertSucceeds(getDocs(collection(ops(), 'staff')))
+  })
+
+  test('but change nothing directly: every change goes through the ops function', async () => {
+    await assertFails(updateDoc(doc(ops(), 'orders/ord_ada'), { refundDue: false }))
+    await assertFails(updateDoc(doc(ops(), 'tickets/tkt_ada'), { status: 'void' }))
+    await assertFails(updateDoc(doc(ops(), 'screenings/scr_1'), { cancelled: true }))
+    await assertFails(setDoc(doc(ops(), 'updates/upd_2'), { id: 'upd_2', title: 'Hello' }))
+    await assertFails(setDoc(doc(ops(), 'audit/a_2'), { action: 'moveScreening' }))
+    await assertFails(deleteDoc(doc(ops(), 'audit/a_1')))
+    await assertFails(setDoc(doc(ops(), 'staff/ops1'), { role: 'admin' }))
+  })
+
+  test('door staff and attendees see none of it', async () => {
+    for (const db of [door(), ada()]) {
+      await assertFails(getDocs(collection(db, 'audit')))
+      await assertFails(getDocs(collection(db, 'staff')))
+      await assertFails(getDoc(doc(db, 'mail/m_1')))
+      await assertFails(getDocs(collection(db, 'orders')))
+    }
+    await assertFails(getDoc(doc(door(), 'users/bem')))
   })
 })

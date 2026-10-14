@@ -40,6 +40,10 @@ export const MAIL_REPLY_TO = defineString('MAIL_REPLY_TO', { default: '' })
 /** `log` writes email to the logs instead of sending it: for the emulators, or staging without Brevo. */
 export const MAIL_TRANSPORT = defineString('MAIL_TRANSPORT', { default: 'brevo' })
 
+/** Where staff sign in, for invitation emails. Optional: without them the email says to ask the team. */
+export const OPS_URL = defineString('OPS_URL', { default: '' })
+export const DOOR_URL = defineString('DOOR_URL', { default: '' })
+
 /** The app's address, however the parameter was typed. */
 export function appUrl(): string {
   return APP_URL.value().trim().replace(/\/+$/, '')

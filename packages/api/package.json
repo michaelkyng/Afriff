@@ -16,12 +16,15 @@
     "./filters": "./src/filters.ts",
     "./orders": "./src/orders.ts",
     "./door": "./src/door.ts",
+    "./ops": "./src/ops.ts",
     "./mock": "./src/mock/index.ts",
     "./mock/db": "./src/mock/db.ts",
     "./mock/door": "./src/mock/door.ts",
+    "./mock/ops": "./src/mock/ops.ts",
     "./seed": "./src/mock/seed/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./firebase/door": "./src/firebase/door.ts",
+    "./firebase/ops": "./src/firebase/ops.ts",
     "./firebase/schema": "./src/firebase/schema.ts"
   },
   "scripts": {
@@ -29,7 +32,8 @@
   },
   "dependencies": {
     "@afriff/validation": "workspace:*",
-    "firebase": "12.19.0"
+    "firebase": "12.19.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "typescript": "~6.0.3"

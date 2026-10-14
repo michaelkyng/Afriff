@@ -6,12 +6,12 @@ import { computed, onMounted, ref, useId, useTemplateRef } from 'vue'
 const props = withDefaults(
   defineProps<{
     label: string
-    type?: 'text' | 'email' | 'tel' | 'password'
+    type?: 'text' | 'email' | 'tel' | 'password' | 'number' | 'datetime-local'
     hint?: string
     error?: string
     placeholder?: string
     autocomplete?: string
-    inputmode?: 'text' | 'email' | 'tel' | 'numeric'
+    inputmode?: 'text' | 'email' | 'tel' | 'numeric' | 'decimal'
     maxlength?: number
     name?: string
     disabled?: boolean

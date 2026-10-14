@@ -49,6 +49,7 @@ const duration = computed(() =>
 /** Right-hand status: seats for screenings, price or access for events. */
 const status = computed<{ text: string; tone: string } | null>(() => {
   const item = props.item
+  if (item.kind === 'screening' && item.availability.status === 'cancelled') return { text: 'Cancelled', tone: 'text-danger' }
   if (ended.value) return { text: 'Ended', tone: 'text-subtle' }
   if (item.kind === 'screening') {
     if (item.availability.status === 'sold_out') return { text: 'Sold out', tone: 'text-danger' }

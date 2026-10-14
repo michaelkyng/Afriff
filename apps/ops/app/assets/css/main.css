@@ -1,0 +1,33 @@
+@import "tailwindcss" source(none);
+@import "@afriff/ui-kit/styles/theme.css";
+@source "../..";
+
+@layer components {
+  /* Data tables: hairlines between rows, muted headers, numbers lined up. */
+  .ops-table {
+    @apply w-full border-collapse text-meta;
+  }
+  .ops-table th {
+    @apply border-b border-line px-4 py-2.5 text-left text-label font-medium whitespace-nowrap text-muted;
+  }
+  .ops-table td {
+    @apply border-b border-line px-4 py-3 align-top;
+  }
+  .ops-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .ops-table .num {
+    @apply text-right tabular-nums;
+  }
+}
+
+.page-enter-active {
+  transition: opacity 160ms var(--ease-out);
+}
+.page-leave-active {
+  transition: opacity 90ms var(--ease-out);
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}

@@ -97,7 +97,8 @@ export function doorSessions(data: {
   const films = new Map(data.films.map((film) => [film.id, film]))
   const venues = new Map(data.venues.map((venue) => [venue.id, venue]))
 
-  const screenings = data.screenings.map((screening): DoorSession => {
+  // A cancelled screening admits nobody, so it is not offered to the door at all.
+  const screenings = data.screenings.filter((screening) => !screening.cancelled).map((screening): DoorSession => {
     const venue = venues.get(screening.venueId)
     const screen = venue?.screens.find((item) => item.id === screening.screenId)
     return {

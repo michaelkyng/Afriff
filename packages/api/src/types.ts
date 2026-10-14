@@ -155,8 +155,10 @@ export interface Screening {
   /** Director / cast Q&A after the screening. */
   hasQa: boolean
   capacity: number
-  /** Seats already taken. Mock availability until the inventory service exists. */
+  /** Seats already taken. Kept by the server as tickets are sold. */
   sold: number
+  /** Set by the festival team in Ops. A cancelled screening sells nothing and admits nobody. */
+  cancelled?: boolean
 }
 
 export type EventKind = 'gala' | 'masterclass' | 'panel' | 'awards' | 'social'
@@ -383,6 +385,8 @@ export interface Ticket {
   issuedAt: ISODateTime
   /** When it was scanned in, for a ticket that admits once. Passes are never used up. */
   usedAt?: ISODateTime
+  /** Why a void ticket was cancelled, in words for the holder: "The screening was cancelled." */
+  voidReason?: string
   /** Set once this ticket has been passed on; it stops admitting anyone. */
   transfer?: TicketTransfer
   /** Set on a ticket that arrived from someone else. */

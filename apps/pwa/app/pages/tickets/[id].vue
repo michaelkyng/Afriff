@@ -55,6 +55,8 @@ const current = computed(() => {
   // The door records when it let the ticket in; say so, in case anyone asks.
   const usedAt = ticket.value?.usedAt
   if (state.value === 'used' && usedAt) return { ...line, note: `Scanned in on ${formatDay(usedAt)} at ${formatTime(usedAt)}.` }
+  // Ops says why when it cancels a ticket: a cancelled screening, a replacement code.
+  if (state.value === 'void' && ticket.value?.voidReason) return { ...line, note: ticket.value.voidReason }
   return line
 })
 

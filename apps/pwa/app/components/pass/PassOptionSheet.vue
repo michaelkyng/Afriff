@@ -32,7 +32,7 @@ const validity = computed(() => props.product.validity)
 const screeningOptions = computed(() => {
   const term = search.value.trim().toLowerCase()
   return props.screenings
-    .filter((item) => item.availability.status !== 'sold_out')
+    .filter((item) => item.availability.status !== 'sold_out' && item.availability.status !== 'cancelled')
     .filter((item) => !term || `${item.title} ${item.venue.shortName}`.toLowerCase().includes(term))
     .slice(0, 40)
 })

@@ -36,6 +36,7 @@ async function loadSession(ref: SessionRef): Promise<{ session: DoorSession; eve
   }
 
   const screening = sessionSnapshot.data() as Screening
+  if (screening.cancelled) throw new ApiError('conflict', 'That screening was cancelled. Pick another door.')
   const [film, venue] = await Promise.all([
     db.collection(COLLECTIONS.films).doc(screening.filmId).get(),
     db.collection(COLLECTIONS.venues).doc(screening.venueId).get(),

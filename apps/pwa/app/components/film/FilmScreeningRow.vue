@@ -13,6 +13,7 @@ const parts = computed(() => {
 const ended = computed(() => hasEnded(props.item, props.now))
 const live = computed(() => isLive(props.item, props.now))
 const isGala = computed(() => props.item.screening.format === 'Gala')
+const cancelled = computed(() => props.item.availability.status === 'cancelled')
 </script>
 
 <template>
@@ -30,7 +31,7 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
     <div class="min-w-0 flex-1">
       <p class="tabular-nums">
         <span class="sr-only">{{ formatLongDate(item.startsAt) }}, </span>
-        <span class="font-semibold" :class="ended && 'text-muted'">{{ formatTime(item.startsAt) }}</span>
+        <span class="font-semibold" :class="(ended || cancelled) && 'text-muted line-through decoration-1'">{{ formatTime(item.startsAt) }}</span>
         <span class="text-label text-muted"> · ends {{ formatTime(item.endsAt) }}</span>
       </p>
       <p class="mt-0.5 truncate text-label text-muted">
@@ -55,13 +56,14 @@ const isGala = computed(() => props.item.screening.format === 'Gala')
 
     <div class="flex shrink-0 items-center gap-2">
       <PlanSaveButton
-        v-if="!ended"
+        v-if="!ended && !cancelled"
         kind="screening"
         :ref-id="item.screening.id"
         :name="`${item.title}, ${formatDay(item.startsAt)} ${formatTime(item.startsAt)}`"
         size="sm"
       />
-      <span v-if="ended" class="text-label font-medium text-subtle">Screened</span>
+      <UiBadge v-if="cancelled" tone="danger">Cancelled</UiBadge>
+      <span v-else-if="ended" class="text-label font-medium text-subtle">Screened</span>
       <UiBadge v-else-if="live" tone="accent">Showing now</UiBadge>
       <UiButton v-else-if="item.availability.status === 'sold_out'" size="sm" variant="secondary" disabled>Sold out</UiButton>
       <UiButton v-else-if="isGala" size="sm" to="/tickets">Gala tickets</UiButton>

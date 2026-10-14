@@ -2,11 +2,12 @@
 
 AFRIFF runs on Firebase: **Auth** for accounts (email and password), **Firestore**
 for data, **Cloud Functions** (2nd gen) for everything that moves money or stock,
-**Paystack** for payment and **Brevo** for email. Two apps use it: the attendee
-PWA (`apps/pwa`) and the door scanner (`apps/scanner`). Both can still run
-entirely on the local mock (`NUXT_PUBLIC_API_MODE=mock`); each talks to one
-contract (`AttendeeApi`, `DoorApi`) with a mock and a Firebase adapter, so no page
-knows which one it is talking to.
+**Paystack** for payment and **Brevo** for email. Three apps use it: the attendee
+PWA (`apps/pwa`), the door scanner (`apps/scanner`) and the Ops Console
+(`apps/ops`). Each can still run entirely on the local mock
+(`NUXT_PUBLIC_API_MODE=mock`); each talks to one contract (`AttendeeApi`,
+`DoorApi`, `OpsApi`) with a mock and a Firebase adapter, so no page knows which
+one it is talking to.
 
 ```text
 firebase.json               emulators, rules, indexes, functions source, hosting
@@ -21,12 +22,13 @@ apps/functions/             @afriff/functions: the Cloud Functions
   src/expire.ts             expireOrders (every 10 minutes)
   src/tickets.ts            transferTicket, claimTickets
   src/door.ts               checkIn (staff only)
+  src/ops/                  ops: every change the Ops Console makes, with the activity log
   src/mail/                 Brevo client, templates, the outbox trigger
   scripts/seed.ts           loads the catalogue into Firestore
   scripts/staff.ts          gives festival staff a role (until the Ops Console can)
   build.ts                  bundles into dist/ (what deploys)
 packages/firebase/          @afriff/firebase: browser SDK set-up and emulator wiring
-packages/api/src/firebase/  the AttendeeApi and DoorApi adapters, and the shared Firestore schema
+packages/api/src/firebase/  the AttendeeApi, DoorApi and OpsApi adapters, and the shared Firestore schema
 ```
 
 ## How a request travels
@@ -39,6 +41,9 @@ PWA page → useApi() → Firebase adapter ─┬─ Firebase Auth             a
 Scanner → useDoor() → Firebase door adapter ─┬─ Auth (staff `role` claim)
                                              ├─ Firestore doorStats ─── live count
                                              └─ checkIn ─────────────── judges each scan
+                                                 │
+Ops → useOps() → Firebase ops adapter ───────┬─ Firestore (ops/admin may read orders, tickets, mail, audit)
+                                             └─ ops ─────────────────── every change, checked and logged
                                                  │
 Paystack ── webhook ─→ paystackWebhook ──────────┤   (Admin SDK: rules do not apply, so every write is checked here)
                                                  └─→ mail/{id} ─→ sendMail ─→ Brevo
@@ -56,18 +61,20 @@ They allow exactly this, and deny everything else:
 | Collection | Read | Write |
 | --- | --- | --- |
 | `festival`, `venues`, `sections`, `films`, `screenings`, `events`, `products`, `info`, `updates` | anyone | Admin SDK only (seed script; functions for stock) |
-| `users/{uid}` | the owner | create once (email must match the sign-in, names consistent, server timestamps); update names and phone only |
+| `users/{uid}` | the owner; ops | create once (email must match the sign-in, names consistent, server timestamps); update names and phone only |
 | `users/{uid}/saved/{kind_refId}` | the owner | create if the film, screening or event exists; delete; never update |
-| `orders/{id}` | the owner, by id or `where userId ==` | functions only |
-| `tickets/{id}` | the owner; or a **confirmed** email it is waiting for | functions only |
+| `orders/{id}` | the owner, by id or `where userId ==`; ops | functions only |
+| `tickets/{id}` | the owner; a **confirmed** email it is waiting for; ops | functions only |
 | `doorStats/{sessionKey}` | staff (a `role` claim) | functions only |
-| `checkins`, `mail`, `paymentEvents` | nobody | functions only |
+| `checkins`, `mail`, `paymentEvents`, `audit`, `staff` | ops | functions only |
+
+"Ops" means a `role` claim of `ops` or `admin`. Door staff read only the counts.
 
 Prices, stock, payment outcomes and tickets are decided only on the server. The
 app never sees a card number: attendees pay in Paystack's checkout. A Firebase web
 config is public by design; what protects the data is the rules and the functions.
 
-`bun run test:rules` runs 27 tests against the emulator, including the attacks that
+`bun run test:rules` runs 30 tests against the emulator, including the attacks that
 matter: editing stock, marking an order paid, claiming someone else's waiting
 ticket with an unconfirmed address, writing to the mail outbox, a made-up staff
 role, and staff writing check-ins or reading attendees' tickets directly.
@@ -139,6 +146,31 @@ In the emulators only, `checkIn` honours the scanner's rehearsal clock (`at`),
 so festival week can be practised before it happens. A deployed function always
 uses its own clock.
 
+## The Ops Console
+
+Ops reads straight from Firestore and makes every change through one callable,
+`ops`, which validates the request with the shared schemas
+(`opsActionSchema`), checks the caller's role (staff changes are admin-only,
+and nobody can change their own role), applies it, and writes an entry to
+`audit` with who did it. See `apps/ops/README.md` for what each page does.
+
+- **Moving a screening** updates the screening and every ticket for it (tickets
+  carry a copy of the time and place). **Cancelling** voids its single tickets
+  with a reason the holder sees and sets `refundDue` on their orders. Both
+  return a drafted, urgent update about the screening; publishing it can also
+  queue an `update_notice` email to each order holding a ticket for it.
+- **Staff** live in `staff/{uid}`, kept in step with the claim by the function
+  and by `bun run staff`. Inviting someone makes their account if needed and
+  emails a set-password link (`staff_invite`); set `OPS_URL` and `DOOR_URL` in
+  the functions' parameters so the email says where to sign in.
+- **Refunds** are made in the Paystack dashboard, then marked in Ops with a note.
+
+The first admin has to come from the script, since only an admin can make another:
+
+```sh
+bun run staff -- --email you@afriff.com --role admin --project <id> --yes
+```
+
 ## Local development
 
 Needs Java 21+ for the Firestore emulator (`java -version`).
@@ -160,9 +192,10 @@ NUXT_PUBLIC_FIREBASE_PROJECT_ID=demo-afriff
 NUXT_PUBLIC_FIREBASE_EMULATOR_HOST=127.0.0.1
 ```
 
-and `bun run dev:pwa`. For the scanner, do the same in `apps/scanner/.env`, give
-yourself a door account (`bun run staff -- --email door@afriff.test --role door`)
-and run `bun run dev:scanner`. Notes:
+and `bun run dev:pwa`. For the scanner and the Ops Console, do the same in
+`apps/scanner/.env` and `apps/ops/.env`, give yourself accounts
+(`bun run staff -- --email door@afriff.test --role door`, and `--role admin` with
+`--password` for Ops), and run `bun run dev:scanner` or `bun run dev:ops`. Notes:
 
 - `demo-afriff` is an emulator-only project: nothing reaches Google, and the CLI
   refuses to deploy to it.
@@ -209,13 +242,15 @@ outbound calls need the Blaze plan.
     loads the placeholder data. Production gets the real edition the same way,
     from its own data. Seeding resets stock, so it refuses a project with orders
     unless `--force` is added.
-11. **Staff:** give each door team member a role with `bun run staff` (above).
-12. **Hosting (optional):** `firebase.json` has two targets, `attendee` (the PWA)
-    and `door` (the scanner), on separate sites. Create a second site in the
-    console, then map them once per project:
+11. **Staff:** make the first admin with `bun run staff` (above); they add
+    everyone else from the Ops Console's Staff page.
+12. **Hosting (optional):** `firebase.json` has three targets, `attendee` (the
+    PWA), `door` (the scanner) and `ops` (the console), each on its own site.
+    Create the extra sites in the console, then map them once per project:
     ```sh
     bun run firebase target:apply hosting attendee <attendee-site-id> --project <id>
     bun run firebase target:apply hosting door <door-site-id> --project <id>
+    bun run firebase target:apply hosting ops <ops-site-id> --project <id>
     ```
     Set each app's environment, then `bun run firebase deploy --only hosting --project <id>`.
     The builds bake the environment in, so build once per project.
@@ -233,9 +268,10 @@ alias) fails instead of reaching the wrong project.
 | `bun run test:rules` | Firestore rules tests against the emulator (needs Java) |
 | `bun run staff -- --email … --role door` | Give someone a staff role (emulator by default) |
 | `bun run dev:scanner` | The door scanner on localhost:3001 |
+| `bun run dev:ops` | The Ops Console on localhost:3002 |
 | `bun run deploy:rules` | Deploy rules and indexes |
 | `bun run deploy:functions` | Deploy the functions (builds first) |
-| `bun run deploy:hosting` | Generate and deploy the PWA and the scanner |
+| `bun run deploy:hosting` | Generate and deploy the PWA, the scanner and the console |
 | `bun run firebase <command>` | The pinned Firebase CLI |
 
 Pass `--project <id>` (or use an alias) to every deploy.

@@ -1,6 +1,6 @@
 # AFRIFF Roadmap
 
-What is built, what is in progress, and the order for the rest. Marked against the code on **14 October 2026**: commit `adf95c8`, plus the Firebase backend and the scanner in the working tree, which have not been committed yet.
+What is built, what is in progress, and the order for the rest. Marked against the code on **14 October 2026**: commit `76d02cd`, plus the Ops Console in the working tree, which has not been committed yet.
 
 The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-attendee-fe.md).
 
@@ -14,7 +14,7 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 |---|---|---|
 | Attendee PWA | Programme, tickets, checkout, My Festival, updates and info for festival-goers | `apps/pwa` |
 | Scanner | Door staff check tickets in | `apps/scanner` |
-| Ops Console | The festival team runs the programme, orders, tickets and updates | `apps/ops` (planned) |
+| Ops Console | The festival team runs the programme, orders, tickets and updates | `apps/ops` |
 | Backend | Firebase Auth, Firestore and Cloud Functions | `apps/functions` and `firebase/`. The browser side is in `packages/api/src/firebase` and `packages/firebase` |
 | Shared | Types, API contract, mock adapter, order and ticket rules, validation, UI kit | `packages/api`, `packages/validation`, `layers/ui-kit` |
 
@@ -46,12 +46,12 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 | Phase | Status |
 |---|---|
 | 1. Attendee PWA on mock data | ✅ |
-| 2. Shared layer on Firebase and Paystack | 🟡 Passing, waiting to be committed |
+| 2. Shared layer on Firebase and Paystack | ✅ |
 | 3. PWA on the new contract | ✅ |
 | 4. Firebase backend | 🟡 Built and verified on the emulators. A run against Paystack's real test mode needs the test keys (phase 5) |
 | 5. Attendees live | ⬜ Needs the Firebase projects, the Paystack and Brevo accounts, and real content |
 | 6. Scanner | ✅ Built and verified on the emulators. Not yet tried on the door phones |
-| 7. Ops Console | ⬜ |
+| 7. Ops Console | ✅ Built and verified on the emulators. Editing films, venues and events is not in it yet |
 | 8. Push notifications | ⬜ |
 | 9. Live ops and offline scanning | ⬜ |
 | 10. Hardening and launch | ⬜ |
@@ -61,11 +61,11 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 
 ## Next up
 
-1. **Commit** phases 2 to 4 and 6, which are in the working tree.
+1. **Commit** phase 7, the Ops Console, which is in the working tree.
 2. **Phase 5 set-up**, which needs the festival's accounts: staging and production Firebase projects, the Paystack test and live keys, a Brevo sender domain, then the checklist in [firebase/README.md](../firebase/README.md#setting-up-a-project). A run on staging with a Paystack test card closes phase 4.
-3. **Try the scanner on the door phones**, over HTTPS, in the venues' light.
+3. **Try the scanner on the door phones**, over HTTPS, in the venues' light, and the console with the festival team.
 4. **Settle the open questions** below before phase 5 goes live.
-5. **Phase 7, the Ops Console**, is the next build. Until it exists, staff roles are given with `bun run staff` and the programme is changed with the seed script.
+5. **Phase 8, push notifications**, is the next build. Updates already reach attendees in the app and, for ticket holders, by email.
 
 ## Open questions
 
@@ -94,7 +94,7 @@ Built and reviewed feature by feature (F0 to F8). Details are in the [feature lo
 - ✅ **Dev tools** on Me: festival clock presets, Reset demo data, `/styleguide`.
 - Parked: ticket transfer ("Pass it on") is built but switched off.
 
-### 2. Shared layer on Firebase and Paystack 🟡
+### 2. Shared layer on Firebase and Paystack ✅
 
 The API contract the PWA talks to has been reshaped for Firebase and Paystack. Both adapters, mock and Firebase, implement it.
 
@@ -107,7 +107,7 @@ The API contract the PWA talks to has been reshaped for Firebase and Paystack. B
 - ✅ **Firestore layout and callable contract** (`firebase/schema.ts`), shared with the future functions and seed script.
 - ✅ **`@afriff/firebase`:** creates the client, checks its settings, connects to the emulators, and keeps the session and Firestore cache in IndexedDB so tickets open offline.
 - ✅ **Installed and tested:** `bun run check` passes across every workspace. The mock suites were rewritten for passwords and Paystack-style checkout, with tests for the shared order rules and the Firebase error mapping.
-- **Done when** `bun run check` passes (✅) and the work is committed (not yet).
+- **Done when** `bun run check` passes and the work is committed. ✅
 
 ### 3. PWA on the new contract ✅
 
@@ -161,19 +161,19 @@ The API contract the PWA talks to has been reshaped for Firebase and Paystack. B
 - **Done when** scanning gives the right result for every rule and the attendee's ticket turns to Used. ✅ Verified against the emulators, including two doors scanning one ticket at once; the attendee's ticket page now says when it was scanned in.
 - Still to do: try it on the door phones, in the venues' light.
 
-### 7. Ops Console ⬜
+### 7. Ops Console ✅
 
-A new app at `apps/ops`.
+`apps/ops`. Details are in [its README](../apps/ops/README.md). Reads come from Firestore; every change goes through one `ops` function that checks the caller's role and records it in the activity log.
 
-- ⬜ **Programme:** festival details, venues, sections, films, screenings and events. Move or cancel a screening.
-- ⬜ **Products:** prices, stock and per-order limits.
-- ⬜ **Updates composer:** kind, urgent or normal, what it is about (screening, event, venue or film), and when it publishes. Offered automatically when a screening moves or is cancelled.
-- ⬜ **Orders and tickets:** find by email or order reference, resend the email, void and reissue a ticket.
-- ⬜ **Refunds:** orders the server flagged, and refunds when a paid screening is cancelled.
-- ⬜ **Sales view:** orders and payment status.
-- ⬜ **Staff:** invite, set role, switch off.
-- ⬜ **Audit log:** who changed what, and when.
-- **Done when** a screening moved in Ops shows up in the PWA, with an update reaching the attendees it affects.
+- ✅ **Programme:** screenings by day; move one (new time or screen, its tickets follow) or cancel one (its single tickets are voided with a reason, their orders flagged for refunds). 🟡 Festival details, venues, sections, films and events are still loaded by the seed script.
+- ✅ **Products:** prices, stock left and per-order limits.
+- ✅ **Updates composer:** kind, urgent or normal, a link in the app, and now or a set time. Offered with a drafted text when a screening moves or is cancelled, about that screening, with the option to email its ticket holders.
+- ✅ **Orders and tickets:** find by email, order reference or ticket code; resend the confirmation; void a ticket (with a reason the holder sees, and a refund if wanted) or give it a new code.
+- ✅ **Refunds:** orders the server flagged, cancellations and voided tickets, marked done with a note once refunded in Paystack's dashboard. 🟡 Refunding through Paystack's API from Ops is not built (see the open question on refunds).
+- ✅ **Sales view:** paid orders, takings, tickets issued, payments in progress and refunds due, counted on the server.
+- ✅ **Staff:** admins invite people (they get a link to set their password), change roles and take access away. Nobody can change their own role.
+- ✅ **Audit log:** every change, by whom and when, written by the function in the same step as the change.
+- **Done when** a screening moved in Ops shows up in the PWA, with an update reaching the attendees it affects. ✅ Verified against the emulators: the attendee's tickets took the new time, and the drafted update showed as a banner in their app and arrived by email. The same for a cancellation.
 
 ### 8. Push notifications ⬜
 

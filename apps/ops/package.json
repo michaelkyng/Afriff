@@ -1,0 +1,34 @@
+{
+  "name": "@afriff/ops",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AFRIFF Ops Console: the programme, updates, orders, products and staff, for the festival team.",
+  "scripts": {
+    "dev": "nuxt dev --port 3002",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@afriff/api": "workspace:*",
+    "@afriff/firebase": "workspace:*",
+    "@afriff/ui-kit": "workspace:*",
+    "@vueuse/core": "^15.0.0",
+    "@vueuse/nuxt": "^15.0.0",
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.5.2",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vue-tsc": "^3.3.11"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
