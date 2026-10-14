@@ -1,0 +1,31 @@
+@import "tailwindcss" source(none);
+@import "@afriff/ui-kit/styles/theme.css";
+@source "../..";
+
+/* A tool held in one hand at a door: no text selection or callouts on long-press,
+   except in fields. */
+@layer base {
+  @media (pointer: coarse) {
+    html {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+  }
+}
+
+.page-enter-active {
+  transition: opacity 180ms var(--ease-out);
+}
+.page-leave-active {
+  transition: opacity 100ms var(--ease-out);
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}

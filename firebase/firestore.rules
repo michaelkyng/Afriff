@@ -3,9 +3,9 @@ rules_version = '2';
 // AFRIFF Firestore security rules.
 //
 // The attendee app reads Firestore directly, and writes only two things itself:
-// its own profile and its own saved list. Everything that moves money or stock
-// (orders, tickets, mail, payment events, catalogue stock) is written by Cloud
-// Functions with the Admin SDK, which these rules do not apply to.
+// its own profile and its own saved list. Everything that moves money, stock or
+// people (orders, tickets, check-ins, mail, payment events, catalogue stock) is
+// written by Cloud Functions with the Admin SDK, which these rules do not apply to.
 //
 // Anything not allowed below is denied. Shapes mirror
 // packages/api/src/firebase/schema.ts and the Zod schemas in packages/validation;
@@ -21,6 +21,11 @@ service cloud.firestore {
 
     function isUser(uid) {
       return signedIn() && request.auth.uid == uid;
+    }
+
+    // Festival staff carry a `role` claim, set by `bun run staff`.
+    function isStaff() {
+      return signedIn() && request.auth.token.role in ['admin', 'ops', 'door'];
     }
 
     function incoming() {
@@ -126,7 +131,15 @@ service cloud.firestore {
       );
     }
 
-    // mail/{id} and paymentEvents/{id} have no rules on purpose: they are for
-    // the functions and the team, never for the app.
+    // ------------------------------------------------------------ the door
+    // Check-ins are written only by the `checkIn` function. Staff can follow
+    // the running count of a session, which every door adds to.
+
+    match /doorStats/{sessionKey} {
+      allow read: if isStaff();
+    }
+
+    // mail/{id}, paymentEvents/{id} and checkins/{id} have no rules on purpose:
+    // they are for the functions and the team, never for the apps.
   }
 }

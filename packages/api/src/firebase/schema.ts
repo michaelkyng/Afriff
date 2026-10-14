@@ -1,9 +1,11 @@
 import type { ApiErrorCode } from '../contract'
+import type { CheckInInput, CheckInResult, DoorCount, SessionRef } from '../door'
 import type {
   CheckoutInput,
   FestivalInfo,
   Order,
   PaymentIntent,
+  ProductKind,
   SavedKind,
   Ticket,
   TicketTransferInput,
@@ -22,6 +24,8 @@ import type {
  * - An attendee writes their own profile and saved list, checked by the rules.
  * - Orders, tickets, mail and payment events are written only by Cloud
  *   Functions. Attendees can read their own orders and tickets, nothing else.
+ * - Check-ins are written only by the `checkIn` function; door staff (a `role`
+ *   claim) can read the running counts.
  */
 
 /** Where callable functions run. Keep `apps/functions` and `NUXT_PUBLIC_FIREBASE_FUNCTIONS_REGION` in step. */
@@ -44,6 +48,10 @@ export const COLLECTIONS = {
   tickets: 'tickets',
   mail: 'mail',
   paymentEvents: 'paymentEvents',
+  /** `checkins/{sessionKey}_{ticketId}`: one per ticket per session, so a second scan finds the first. */
+  checkins: 'checkins',
+  /** `doorStats/{sessionKey}`: the running count every door adds to. */
+  doorStats: 'doorStats',
 } as const
 
 /** The one document in `festival` and `info`: this edition. */
@@ -141,6 +149,24 @@ export interface MailDoc {
   error?: string
 }
 
+/** `checkins/{sessionKey}_{ticketId}`. Written only by the `checkIn` function. */
+export interface CheckInDoc {
+  ticketId: string
+  ticketCode: string
+  session: SessionRef
+  holderName: string
+  kind: ProductKind
+  pass: boolean
+  at: string
+  byUid: string
+  byName: string
+}
+
+/** `doorStats/{sessionKey}`. Written only by the `checkIn` function; read by door staff. */
+export interface DoorStatsDoc extends DoorCount {
+  updatedAt: string
+}
+
 // ------------------------------------------------------------------ callables
 
 /** Callable names, and what each takes and returns. */
@@ -150,6 +176,7 @@ export interface CallableContract {
   verifyOrder: { request: { orderId: string }; response: Order }
   transferTicket: { request: TicketTransferInput & { ticketId: string }; response: Ticket }
   claimTickets: { request: Record<string, never>; response: { claimed: number } }
+  checkIn: { request: CheckInInput; response: CheckInResult }
 }
 
 export type CallableName = keyof CallableContract

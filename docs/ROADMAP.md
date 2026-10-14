@@ -1,6 +1,6 @@
 # AFRIFF Roadmap
 
-What is built, what is in progress, and the order for the rest. Marked against the code on **13 October 2026**: commit `adf95c8`, plus the Firebase work in the working tree that has not been committed yet.
+What is built, what is in progress, and the order for the rest. Marked against the code on **14 October 2026**: commit `adf95c8`, plus the Firebase backend and the scanner in the working tree, which have not been committed yet.
 
 The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-attendee-fe.md).
 
@@ -13,9 +13,9 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 | Part | What it does | Where |
 |---|---|---|
 | Attendee PWA | Programme, tickets, checkout, My Festival, updates and info for festival-goers | `apps/pwa` |
-| Scanner | Door staff check tickets in | `apps/scanner` (planned) |
+| Scanner | Door staff check tickets in | `apps/scanner` |
 | Ops Console | The festival team runs the programme, orders, tickets and updates | `apps/ops` (planned) |
-| Backend | Firebase Auth, Firestore and Cloud Functions | `apps/functions` and `firebase/` (planned). The browser side is in `packages/api/src/firebase` and `packages/firebase` |
+| Backend | Firebase Auth, Firestore and Cloud Functions | `apps/functions` and `firebase/`. The browser side is in `packages/api/src/firebase` and `packages/firebase` |
 | Shared | Types, API contract, mock adapter, order and ticket rules, validation, UI kit | `packages/api`, `packages/validation`, `layers/ui-kit` |
 
 **Third-party services**
@@ -46,11 +46,11 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 | Phase | Status |
 |---|---|
 | 1. Attendee PWA on mock data | ✅ |
-| 2. Shared layer on Firebase and Paystack | 🟡 Written, not yet installed or passing tests |
-| 3. PWA on the new contract | ⬜ |
-| 4. Firebase backend | ⬜ |
-| 5. Attendees live | ⬜ |
-| 6. Scanner | ⬜ |
+| 2. Shared layer on Firebase and Paystack | 🟡 Passing, waiting to be committed |
+| 3. PWA on the new contract | ✅ |
+| 4. Firebase backend | 🟡 Built and verified on the emulators. A run against Paystack's real test mode needs the test keys (phase 5) |
+| 5. Attendees live | ⬜ Needs the Firebase projects, the Paystack and Brevo accounts, and real content |
+| 6. Scanner | ✅ Built and verified on the emulators. Not yet tried on the door phones |
 | 7. Ops Console | ⬜ |
 | 8. Push notifications | ⬜ |
 | 9. Live ops and offline scanning | ⬜ |
@@ -61,10 +61,11 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 
 ## Next up
 
-1. **Finish phase 2.** Run `bun install` so `firebase` lands in `bun.lock`, rewrite the failing tests for passwords and the new checkout, and commit.
-2. **Phase 3, in mock mode.** The PWA can move to the new contract now, before any server exists, because the mock adapter already implements it.
-3. **Phase 4.** Emulators, security rules, Cloud Functions and the seed script, then point the PWA at the emulators.
-4. **Settle the open questions** below before phase 5.
+1. **Commit** phases 2 to 4 and 6, which are in the working tree.
+2. **Phase 5 set-up**, which needs the festival's accounts: staging and production Firebase projects, the Paystack test and live keys, a Brevo sender domain, then the checklist in [firebase/README.md](../firebase/README.md#setting-up-a-project). A run on staging with a Paystack test card closes phase 4.
+3. **Try the scanner on the door phones**, over HTTPS, in the venues' light.
+4. **Settle the open questions** below before phase 5 goes live.
+5. **Phase 7, the Ops Console**, is the next build. Until it exists, staff roles are given with `bun run staff` and the programme is changed with the seed script.
 
 ## Open questions
 
@@ -89,7 +90,7 @@ Built and reviewed feature by feature (F0 to F8). Details are in the [feature lo
 - ✅ **My Festival:** saved films, screenings and events, clash and tight-gap warnings, reminders while the app is open.
 - ✅ **Updates:** inbox released by the festival clock, "Affects you" mark, unread badge, urgent banner.
 - ✅ **Info:** venues and getting there, FAQs, policies, contact.
-- ✅ **Accounts:** PIN-based. Being replaced in phases 2 and 3.
+- ✅ **Accounts:** PIN-based at first; replaced by email and password in phase 3.
 - ✅ **Dev tools** on Me: festival clock presets, Reset demo data, `/styleguide`.
 - Parked: ticket transfer ("Pass it on") is built but switched off.
 
@@ -105,34 +106,29 @@ The API contract the PWA talks to has been reshaped for Firebase and Paystack. B
 - ✅ **Firebase adapter** (`@afriff/api/firebase`): reads the catalogue, orders, tickets and saved items from Firestore, calls Cloud Functions for checkout, payment, verification, transfer and claiming, and turns Firebase errors into the app's messages.
 - ✅ **Firestore layout and callable contract** (`firebase/schema.ts`), shared with the future functions and seed script.
 - ✅ **`@afriff/firebase`:** creates the client, checks its settings, connects to the emulators, and keeps the session and Firestore cache in IndexedDB so tickets open offline.
-- 🟡 **Install:** `firebase` is declared as a dependency but is not in `bun.lock`, so `packages/api` and `packages/firebase` don't typecheck until `bun install` runs.
-- 🟡 **Tests:** 39 of 107 fail because they still test PIN sign-in and the old card and transfer checkout. The Firebase client tests are written but can't load until `firebase` is installed.
-- **Done when** `bun run check` passes and the work is committed.
+- ✅ **Installed and tested:** `bun run check` passes across every workspace. The mock suites were rewritten for passwords and Paystack-style checkout, with tests for the shared order rules and the Firebase error mapping.
+- **Done when** `bun run check` passes (✅) and the work is committed (not yet).
 
-### 3. PWA on the new contract ⬜
+### 3. PWA on the new contract ✅
 
-This can be done now against the mock adapter, before any server exists.
+- ✅ **Accounts:** sign in and sign up with a password, "Forgot password" sends a link, a page that opens reset and confirm-email links, a "Confirm your email" prompt on Me, and `useAuth` rebuilt on `restore` and `onSessionChange`. Retire the PIN pieces (`AuthPinStep`, `AuthCodeStep`, `usePinSetup`, `/reset-pin`).
+- ✅ **Checkout:** replace the card and transfer fields with Paystack's checkout, opened with the payment's access code. In mock mode, a stand-in checkout sheet with Pay and Fail.
+- ✅ **Order page:** hold countdown, "Pay now" for an unpaid order, verify on return from Paystack, and the message for an expired hold.
+- ✅ **Firebase wiring:** a client-only plugin that creates the Firebase client and adapter, an `apiMode` of `firebase`, and the `NUXT_PUBLIC_FIREBASE_*` settings in `.env.example`.
+- ✅ **Docs:** the app README and the feature log describe passwords and Paystack.
+- **Done when** every flow works in mock mode and the PWA typechecks. ✅ Every flow was also driven in a browser, in mock mode and against the emulators.
 
-- ⬜ **Accounts:** sign in and sign up with a password, "Forgot password" sends a link, a page that opens reset and confirm-email links, a "Confirm your email" prompt on Me, and `useAuth` rebuilt on `restore` and `onSessionChange`. Retire the PIN pieces (`AuthPinStep`, `AuthCodeStep`, `usePinSetup`, `/reset-pin`).
-- ⬜ **Checkout:** replace the card and transfer fields with Paystack's checkout, opened with the payment's access code. In mock mode, a stand-in checkout sheet with Pay and Fail.
-- ⬜ **Order page:** hold countdown, "Pay now" for an unpaid order, verify on return from Paystack, and the message for an expired hold.
-- ⬜ **Firebase wiring:** a client-only plugin that creates the Firebase client and adapter, an `apiMode` of `firebase`, and the `NUXT_PUBLIC_FIREBASE_*` settings in `.env.example`.
-- ⬜ **Docs:** the app README and the feature log still describe PINs and the simulated card payment.
-- **Done when** every flow works in mock mode and the PWA typechecks.
+### 4. Firebase backend 🟡
 
-### 4. Firebase backend ⬜
-
-The browser side already expects all of this. None of it exists yet.
-
-- ⬜ `firebase.json` and `.firebaserc`, with the emulators on the ports the client expects: Auth 9099, Firestore 8080, Functions 5001.
-- ⬜ **Security rules** (`firebase/firestore.rules`) and indexes. The catalogue is public to read. Attendees write only their own profile and saved list. Orders and tickets are readable by their owner and written only by functions. Rules tests run in the emulator.
-- ⬜ **Callable functions** in `apps/functions`: `checkout`, `payOrder`, `verifyOrder`, `transferTicket`, `claimTickets`.
-- ⬜ **Paystack webhook:** signature check, amount check and duplicate protection, recorded in `paymentEvents`.
-- ⬜ **Scheduled job** that releases expired holds.
-- ⬜ **Mail outbox** trigger that sends through Brevo (`order_paid`, `ticket_received`).
-- ⬜ **Seed script** that loads the catalogue with the Admin SDK: festival, venues, sections, films, screenings, events, products, info and updates.
-- ⬜ **CI job** that runs the functions and rules tests against the emulators.
-- **Done when** the PWA runs end to end against the emulators: sign up, confirm the email, buy in Paystack test mode, and open the tickets offline.
+- ✅ `firebase.json` and `.firebaserc`, with the emulators on the ports the client expects: Auth 9099, Firestore 8080, Functions 5001.
+- ✅ **Security rules** (`firebase/firestore.rules`) and indexes. The catalogue is public to read. Attendees write only their own profile and saved list. Orders and tickets are readable by their owner and written only by functions. Rules tests run in the emulator.
+- ✅ **Callable functions** in `apps/functions`: `checkout`, `payOrder`, `verifyOrder`, `transferTicket`, `claimTickets`.
+- ✅ **Paystack webhook:** signature check, amount check and duplicate protection, recorded in `paymentEvents`.
+- ✅ **Scheduled job** that releases expired holds.
+- ✅ **Mail outbox** trigger that sends through Brevo (`order_paid`, `ticket_received`).
+- ✅ **Seed script** that loads the catalogue with the Admin SDK: festival, venues, sections, films, screenings, events, products, info and updates.
+- 🟡 **CI:** the rules tests run against the emulator, and the functions' unit tests run with the rest. The end-to-end runs against the emulators (70 checks for buying, 18 for the door) were scripted for this work but are not in CI yet.
+- **Done when** the PWA runs end to end against the emulators: sign up, confirm the email, buy in Paystack test mode, and open the tickets offline. 🟡 All of it works against the emulators with a stand-in for Paystack's API; Paystack's own test mode needs the keys.
 
 ### 5. Attendees live ⬜
 
@@ -144,24 +140,26 @@ The browser side already expects all of this. None of it exists yet.
 - Until the Ops Console exists, the programme is changed by re-running the seed script, and support and refunds go through the Firebase and Paystack dashboards.
 - **Done when** a real attendee can buy a ticket on production.
 
-### 6. Scanner ⬜
+### 6. Scanner ✅
 
-A new app at `apps/scanner`. The ticket QR already carries `AF1|<ticket>|<code>|<starts at>`, and the PWA already shows a scanned ticket as Used.
+`apps/scanner` ("AFRIFF Door"). Details are in [its README](../apps/scanner/README.md).
 
-- ⬜ Staff sign-in, with roles (Admin, Ops, Door) set as Firebase custom claims.
-- ⬜ Pick the screening or event being checked in.
-- ⬜ Camera scanning, with typing the printed code as a fallback.
-- ⬜ A `checkIn` function that checks every rule in one transaction and allows one check-in per ticket per screening.
-- ⬜ **Result screens:**
+- ✅ Staff sign-in, with roles (Admin, Ops, Door) set as Firebase custom claims by `bun run staff` until the Ops Console exists.
+- ✅ Pick the screening or event being checked in, by day, venue and search, with "Doors open" first.
+- ✅ Camera scanning (jsQR, then the browser's own detector once warm), with typing the printed code as a fallback. Torch, sound and vibration, and the screen kept awake.
+- ✅ A `checkIn` function that checks every rule in one transaction and allows one check-in per ticket per screening. The same rules run in the mock, which has demo tickets of every kind.
+- ✅ **Result screens:**
   - Admitted
   - Already checked in, and when
   - Not for this screening or day
   - Passed on, void or unknown
   - Ended
   - Screening full (a pass doesn't reserve a seat)
-- ⬜ Running count, e.g. "42 / 60".
+- ✅ Running count, e.g. "42 / 60", live across every phone at the same session.
+- ✅ A rehearsal clock for practising festival week, offered only in the mock and the emulators.
 - On a phone, camera access needs HTTPS. Use a tunnel when testing locally.
-- **Done when** scanning gives the right result for every rule and the attendee's ticket turns to Used.
+- **Done when** scanning gives the right result for every rule and the attendee's ticket turns to Used. ✅ Verified against the emulators, including two doors scanning one ticket at once; the attendee's ticket page now says when it was scanned in.
+- Still to do: try it on the door phones, in the venues' light.
 
 ### 7. Ops Console ⬜
 

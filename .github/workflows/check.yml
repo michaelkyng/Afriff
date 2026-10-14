@@ -61,6 +61,9 @@ jobs:
       - name: Generate static PWA
         run: bun run generate:pwa
 
+      - name: Generate static scanner
+        run: bun run generate:scanner
+
       - name: Verify PWA output and shared assets
         run: |
           pwa_output=apps/pwa/.output/public
@@ -72,6 +75,14 @@ jobs:
           test -s "$pwa_output/pwa-512x512.png"
           compgen -G "$pwa_output/_nuxt/archivo-*.woff2" > /dev/null
           compgen -G "$pwa_output/_nuxt/onest-*.woff2" > /dev/null
+
+      - name: Verify scanner output
+        run: |
+          door_output=apps/scanner/.output/public
+          test -s "$door_output/index.html"
+          test -s "$door_output/sw.js"
+          test -s "$door_output/manifest.webmanifest"
+          grep -q 'Disallow: /' "$door_output/robots.txt"
 
   rules:
     name: Firestore rules

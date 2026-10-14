@@ -4,6 +4,8 @@ import type { CallableOptions, FunctionsErrorCode } from 'firebase-functions/htt
 import type { ZodType } from 'zod'
 import { ApiError, isApiError, validationError } from '@afriff/api'
 import type { ApiErrorCode } from '@afriff/api'
+import { isStaffRole } from '@afriff/api/door'
+import type { StaffRole } from '@afriff/api/door'
 import type { CallableContract, CallableErrorDetails, CallableName } from '@afriff/api/firebase/schema'
 
 /**
@@ -44,6 +46,10 @@ export interface Caller {
   uid: string
   email?: string
   emailVerified: boolean
+  /** Name on the sign-in, if any. */
+  name?: string
+  /** Set for festival staff by `bun run staff`. */
+  role?: StaffRole
 }
 
 /**
@@ -58,7 +64,13 @@ export function callable<N extends CallableName>(
     if (!request.auth) throw toHttpsError(new ApiError('unauthorized', 'Sign in to continue.'))
     const { uid, token } = request.auth
     try {
-      return await handler(request.data, { uid, email: token.email, emailVerified: token.email_verified === true })
+      return await handler(request.data, {
+        uid,
+        email: token.email,
+        emailVerified: token.email_verified === true,
+        name: typeof token.name === 'string' ? token.name : undefined,
+        role: isStaffRole(token.role) ? token.role : undefined,
+      })
     }
     catch (error) {
       throw toHttpsError(error)

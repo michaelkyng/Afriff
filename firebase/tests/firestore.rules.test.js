@@ -76,6 +76,8 @@ beforeEach(async () => {
       setDoc(doc(db, 'tickets/tkt_for_bem'), { id: 'tkt_for_bem', userId: null, claimEmail: 'bem@example.com' }),
       setDoc(doc(db, 'mail/m_1'), { template: 'order_paid', status: 'sent' }),
       setDoc(doc(db, 'paymentEvents/charge.success_AF-1'), { reference: 'AF-1' }),
+      setDoc(doc(db, 'doorStats/screening_scr_1'), { admitted: 3, passAdmitted: 1, updatedAt: '2026-11-03T18:00:00Z' }),
+      setDoc(doc(db, 'checkins/screening_scr_1_tkt_ada'), { ticketId: 'tkt_ada', byUid: 'door1' }),
     ])
   })
 })
@@ -84,6 +86,8 @@ beforeEach(async () => {
 const ada = () => env.authenticatedContext('ada', { email: 'ada@example.com', email_verified: true }).firestore()
 const bem = () => env.authenticatedContext('bem', { email: 'bem@example.com', email_verified: false }).firestore()
 const guest = () => env.unauthenticatedContext().firestore()
+/** Door staff: an account with a `role` claim. */
+const door = () => env.authenticatedContext('door1', { email: 'door1@afriff.test', email_verified: true, role: 'door' }).firestore()
 
 const profile = (overrides = {}) => ({
   email: 'ada@example.com',
@@ -266,5 +270,30 @@ describe('server-only collections', () => {
     }
     await assertFails(getDocs(collection(ada(), 'mail')))
     await assertFails(setDoc(doc(ada(), 'mail/m_2'), { template: 'order_paid', to: { email: 'victim@example.com' } }))
+  })
+})
+
+describe('the door', () => {
+  test('staff follow a session’s running count; attendees and guests cannot', async () => {
+    await assertSucceeds(getDoc(doc(door(), 'doorStats/screening_scr_1')))
+    await assertFails(getDoc(doc(ada(), 'doorStats/screening_scr_1')))
+    await assertFails(getDoc(doc(guest(), 'doorStats/screening_scr_1')))
+  })
+
+  test('a made-up role is not staff', async () => {
+    const pretender = env.authenticatedContext('eve', { email: 'eve@example.com', role: 'superuser' }).firestore()
+    await assertFails(getDoc(doc(pretender, 'doorStats/screening_scr_1')))
+  })
+
+  test('nobody writes counts or check-ins from an app, staff included', async () => {
+    await assertFails(setDoc(doc(door(), 'doorStats/screening_scr_1'), { admitted: 0, passAdmitted: 0 }))
+    await assertFails(setDoc(doc(door(), 'checkins/screening_scr_1_tkt_bem'), { ticketId: 'tkt_bem' }))
+    await assertFails(getDoc(doc(door(), 'checkins/screening_scr_1_tkt_ada')))
+    await assertFails(updateDoc(doc(door(), 'tickets/tkt_ada'), { status: 'used' }))
+  })
+
+  test('staff do not read attendees’ tickets or orders directly', async () => {
+    await assertFails(getDoc(doc(door(), 'tickets/tkt_ada')))
+    await assertFails(getDoc(doc(door(), 'orders/ord_ada')))
   })
 })

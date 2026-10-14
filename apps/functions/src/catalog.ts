@@ -6,6 +6,7 @@ import { catalogFrom, eventIdFor } from '@afriff/api/orders'
 import type { Demand, OrderCatalog, StockLevels } from '@afriff/api/orders'
 import type { Festival, FestivalEvent, Film, Screening, TicketProduct, TicketSelection, Venue } from '@afriff/api/types'
 import { collections, db } from './admin'
+import { stockLevels } from './stock'
 
 /**
  * Loads the part of the catalogue a cart (or an order's lines) names: every
@@ -62,22 +63,9 @@ export async function readStock(tx: Transaction, demand: Demand): Promise<StockL
     ...screeningIds.map((id) => collections.screenings().doc(id)),
   ]
   const snapshots = refs.length ? await tx.getAll(...refs) : []
-  const remaining = new Map<string, number | null>()
-  const seats = new Map<string, number>()
-  snapshots.forEach((snapshot, index) => {
-    const data = snapshot.data()
-    if (index < productIds.length) {
-      remaining.set(snapshot.id, data ? ((data as TicketProduct).remaining ?? null) : 0)
-    }
-    else {
-      const screening = data as Screening | undefined
-      seats.set(snapshot.id, screening ? Math.max(0, screening.capacity - screening.sold) : 0)
-    }
-  })
-  return {
-    remaining: (productId) => remaining.get(productId) ?? 0,
-    seatsLeft: (screeningId) => seats.get(screeningId) ?? 0,
-  }
+  const products = new Map(snapshots.slice(0, productIds.length).map((snapshot) => [snapshot.id, snapshot.data() as TicketProduct | undefined]))
+  const screenings = new Map(snapshots.slice(productIds.length).map((snapshot) => [snapshot.id, snapshot.data() as Screening | undefined]))
+  return stockLevels(products, screenings)
 }
 
 /**

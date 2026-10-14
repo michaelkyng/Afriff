@@ -8,7 +8,8 @@
     "build": "bun build.ts",
     "dev": "bun build.ts --watch",
     "typecheck": "tsc --noEmit",
-    "seed": "bun scripts/seed.ts"
+    "seed": "bun scripts/seed.ts",
+    "staff": "bun scripts/staff.ts"
   },
   "dependencies": {
     "@afriff/api": "workspace:*",

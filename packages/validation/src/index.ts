@@ -129,6 +129,15 @@ export const ticketTransferSchema = z.object({
 /** The same, with the ticket it is about, as one request to the server. */
 export const ticketTransferRequestSchema = ticketTransferSchema.extend({ ticketId: z.string().trim().min(1).max(64) })
 
+// ------------------------------------------------------------------ door
+
+/** One scan at a door: which session, what was scanned, and (in rehearsal only) the scanner's clock. */
+export const checkInSchema = z.object({
+  session: z.object({ kind: z.enum(['screening', 'event']), id: z.string().trim().min(1).max(64) }),
+  scan: z.string().trim().min(1, 'Scan a ticket or type its code.').max(256),
+  at: z.iso.datetime({ offset: true }).optional(),
+})
+
 // ------------------------------------------------------------------ my festival
 
 export const savedKindSchema = z.enum(['film', 'screening', 'event'])
@@ -157,3 +166,4 @@ export type OrderRefInput = z.input<typeof orderRefSchema>
 export type TicketTransferInput = z.input<typeof ticketTransferSchema>
 export type TicketTransferRequestInput = z.input<typeof ticketTransferRequestSchema>
 export type SavedInput = z.input<typeof savedItemSchema>
+export type CheckInRequestInput = z.input<typeof checkInSchema>

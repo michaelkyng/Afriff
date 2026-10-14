@@ -50,7 +50,13 @@ const statusLine: Record<TicketStatus | 'expired', { label: string; tone: Tone; 
   transferred: { label: 'Passed on', tone: 'neutral', note: 'You gave this ticket to someone else.' },
   void: { label: 'Cancelled', tone: 'danger', note: 'This ticket was cancelled.' },
 }
-const current = computed(() => statusLine[state.value])
+const current = computed(() => {
+  const line = statusLine[state.value]
+  // The door records when it let the ticket in; say so, in case anyone asks.
+  const usedAt = ticket.value?.usedAt
+  if (state.value === 'used' && usedAt) return { ...line, note: `Scanned in on ${formatDay(usedAt)} at ${formatTime(usedAt)}.` }
+  return line
+})
 
 const payload = computed(() => (ticket.value ? ticketPayload(ticket.value) : ''))
 

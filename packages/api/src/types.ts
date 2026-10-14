@@ -381,6 +381,8 @@ export interface Ticket {
   roomName?: string
   selection?: TicketSelection
   issuedAt: ISODateTime
+  /** When it was scanned in, for a ticket that admits once. Passes are never used up. */
+  usedAt?: ISODateTime
   /** Set once this ticket has been passed on; it stops admitting anyone. */
   transfer?: TicketTransfer
   /** Set on a ticket that arrived from someone else. */

@@ -8,37 +8,139 @@
       "source": "apps/functions/dist",
       "codebase": "default",
       "runtime": "nodejs22",
-      "predeploy": ["bun run build:functions"]
+      "predeploy": [
+        "bun run build:functions"
+      ]
     }
   ],
-  "hosting": {
-    "public": "apps/pwa/.output/public",
-    "predeploy": ["bun run generate:pwa"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }],
-    "headers": [
-      {
-        "source": "**",
-        "headers": [
-          { "key": "X-Content-Type-Options", "value": "nosniff" },
-          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-          { "key": "X-Frame-Options", "value": "DENY" }
-        ]
-      },
-      {
-        "source": "/_nuxt/**",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
-      },
-      {
-        "source": "**/@(sw.js|workbox-*.js|manifest.webmanifest|index.html)",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
-      }
-    ]
-  },
+  "hosting": [
+    {
+      "public": "apps/pwa/.output/public",
+      "predeploy": [
+        "bun run generate:pwa"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            }
+          ]
+        },
+        {
+          "source": "/_nuxt/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "**/@(sw.js|workbox-*.js|manifest.webmanifest|index.html)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ],
+      "target": "attendee"
+    },
+    {
+      "target": "door",
+      "public": "apps/scanner/.output/public",
+      "predeploy": [
+        "bun run generate:scanner"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            },
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(self), microphone=(), geolocation=()"
+            }
+          ]
+        },
+        {
+          "source": "/_nuxt/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "**/@(sw.js|workbox-*.js|manifest.webmanifest|index.html)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "emulators": {
     "singleProjectMode": true,
-    "auth": { "host": "127.0.0.1", "port": 9099 },
-    "firestore": { "host": "127.0.0.1", "port": 8080 },
-    "functions": { "host": "127.0.0.1", "port": 5001 },
-    "ui": { "enabled": true, "host": "127.0.0.1", "port": 4000 }
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true,
+      "host": "127.0.0.1",
+      "port": 4000
+    }
   }
 }
