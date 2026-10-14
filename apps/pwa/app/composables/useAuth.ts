@@ -1,13 +1,5 @@
 import { isApiError } from '@afriff/api'
-import type {
-  AuthSession,
-  CodePurpose,
-  ProfileInput,
-  SetPinInput,
-  SignInInput,
-  User,
-  VerifyCodeInput,
-} from '@afriff/api'
+import type { PasswordResetInput, ProfileInput, SignInInput, SignUpInput, User } from '@afriff/api'
 
 /** Initials for the avatar: two from the name, else the first letter of the email. */
 export function initialsOf(user: Pick<User, 'name' | 'email'> | null | undefined): string {
@@ -20,7 +12,7 @@ export function initialsOf(user: Pick<User, 'name' | 'email'> | null | undefined
 
 /**
  * Where to land once the attendee is in, and how to keep that destination while
- * they hop between sign in, sign up and PIN reset. Only same-app paths are
+ * they hop between sign in, sign up and password reset. Only same-app paths are
  * followed, so `?redirect=` cannot bounce anyone off the site.
  */
 export function useAuthRedirect() {
@@ -35,12 +27,19 @@ export function useAuthRedirect() {
 }
 
 /**
- * Account state and the ways into it. Signing in takes an email and a PIN;
- * `requestCode` → `verifyCode` → `setPin` is how a PIN is set in the first
- * place, whether signing up or replacing a forgotten one.
+ * The email typed on one sign-in screen, so moving to "Create an account" or
+ * "Forgot your password?" does not mean typing it again. Never persisted.
+ */
+export function useAuthEmail() {
+  return useState('auth:email', () => '')
+}
+
+/**
+ * Account state and the ways into it: an email and a password, a reset link for a
+ * forgotten password, and a link to confirm the email address.
  *
- * The API adapter holds the token for its own calls; this keeps the persisted
- * store and the adapter in step.
+ * The API adapter owns the session; this keeps the device's copy of the account
+ * (the `session` store) and the saved plan in step with it.
  */
 export function useAuth() {
   const api = useApi()
@@ -50,34 +49,54 @@ export function useAuth() {
   const isSignedIn = computed(() => session.isSignedIn)
   const initials = computed(() => initialsOf(session.user))
 
-  /**
-   * Hands a new session to both the adapter and the persisted store, then folds
-   * whatever was saved while signed out into the account.
-   */
-  function adopt(result: AuthSession) {
-    api.setAuthToken(result.token)
-    session.signIn(result)
+  /** Takes the signed-in attendee, and folds whatever was saved while signed out into the account. */
+  function adopt(next: User): User {
+    session.setUser(next)
     usePlanStore().sync()
-    return result
+    return next
+  }
+
+  /** Signing out leaves the account's plan with the account, not on the device. */
+  function forget() {
+    session.signOut()
+    usePlanStore().clear()
   }
 
   async function signIn(input: SignInInput) {
     return adopt(await api.auth.signIn(input))
   }
 
-  /** Asks for a one-time code. In mock mode the challenge carries the code to show. */
-  function requestCode(email: string, purpose: CodePurpose) {
-    return api.auth.requestCode({ email, purpose })
+  /** Creates the account and signs it in; the adapter sends the confirmation link. */
+  async function signUp(input: SignUpInput) {
+    return adopt(await api.auth.signUp(input))
   }
 
-  /** Trades the code for a short-lived ticket that authorises setting a PIN. */
-  function verifyCode(input: VerifyCodeInput) {
-    return api.auth.verifyCode(input)
+  function requestPasswordReset(email: string) {
+    return api.auth.requestPasswordReset({ email })
   }
 
-  /** Finishes a sign-up or a PIN reset, and signs in with the PIN just set. */
-  async function setPin(input: SetPinInput) {
-    return adopt(await api.auth.setPin(input))
+  function checkPasswordReset(code: string) {
+    return api.auth.checkPasswordReset(code)
+  }
+
+  /** Sets the new password and signs in with it. */
+  async function resetPassword(input: PasswordResetInput) {
+    return adopt(await api.auth.resetPassword(input))
+  }
+
+  function sendEmailVerification() {
+    return api.auth.sendEmailVerification()
+  }
+
+  /** Applies a confirmation link, and refreshes the account if it is this one. */
+  async function verifyEmail(code: string) {
+    await api.auth.verifyEmail(code)
+    if (session.user) await refresh().catch(() => {})
+  }
+
+  /** Fetches the account again, to pick up anything changed elsewhere (an email confirmed on another device). */
+  async function refresh() {
+    session.setUser(await api.auth.me())
   }
 
   async function updateProfile(input: ProfileInput) {
@@ -93,26 +112,27 @@ export function useAuth() {
     catch {
       // Already gone on the server: sign out locally anyway.
     }
-    api.setAuthToken(null)
-    session.signOut()
-    usePlanStore().clear()
+    forget()
   }
 
-  /** Confirms a restored token still works, and clears the session when it does not. */
+  /**
+   * Asks the adapter who is signed in. Offline, with a session the adapter could
+   * not load, the device's copy stands rather than signing anyone out.
+   */
   async function restore() {
-    if (!session.token) return
-    api.setAuthToken(session.token)
     try {
-      session.setUser(await api.auth.me())
-      await usePlanStore().sync()
+      const restored = await api.auth.restore()
+      if (restored) adopt(restored)
+      else forget()
     }
     catch (error) {
-      if (isApiError(error) && error.code === 'unauthorized') {
-        api.setAuthToken(null)
-        session.signOut()
-        usePlanStore().clear()
-      }
+      if (isApiError(error) && error.code === 'unauthorized') forget()
     }
+  }
+
+  /** Follows session changes the adapter reports from outside this tab. Call once, on start-up. */
+  function follow() {
+    api.auth.onSessionChange((next) => (next ? adopt(next) : forget()))
   }
 
   return {
@@ -120,11 +140,16 @@ export function useAuth() {
     isSignedIn,
     initials,
     signIn,
-    requestCode,
-    verifyCode,
-    setPin,
+    signUp,
+    requestPasswordReset,
+    checkPasswordReset,
+    resetPassword,
+    sendEmailVerification,
+    verifyEmail,
+    refresh,
     updateProfile,
     signOut,
     restore,
+    follow,
   }
 }

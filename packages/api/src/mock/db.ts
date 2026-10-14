@@ -2,13 +2,13 @@
  * A tiny localStorage-backed "database" for the mock API.
  *
  * Only the mock adapter uses this — it plays the role of the server's storage
- * for things attendees create (accounts, orders, tickets). It is deleted when
- * the real backend arrives. Read-only seed data never goes in here.
+ * for things attendees create (accounts, orders, tickets, payments), the way
+ * Firestore does for the Firebase adapter. Read-only seed data never goes in here.
  */
 
 const PREFIX = 'afriff:mockdb:'
 /** Bump when stored shapes change; older data is discarded. */
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
 
 interface Envelope<T> {
   v: number

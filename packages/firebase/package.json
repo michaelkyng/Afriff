@@ -1,0 +1,19 @@
+{
+  "name": "@afriff/firebase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-independent Firebase client set-up for AFRIFF apps: Auth, Firestore and Functions, with the emulators.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "firebase": "12.19.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

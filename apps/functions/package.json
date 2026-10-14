@@ -1,0 +1,27 @@
+{
+  "name": "@afriff/functions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AFRIFF Cloud Functions: checkout and Paystack payments, ticket issuing and transfer, and Brevo email.",
+  "scripts": {
+    "build": "bun build.ts",
+    "dev": "bun build.ts --watch",
+    "typecheck": "tsc --noEmit",
+    "seed": "bun scripts/seed.ts"
+  },
+  "dependencies": {
+    "@afriff/api": "workspace:*",
+    "@afriff/validation": "workspace:*",
+    "firebase-admin": "14.5.0",
+    "firebase-functions": "7.4.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": "22"
+  }
+}

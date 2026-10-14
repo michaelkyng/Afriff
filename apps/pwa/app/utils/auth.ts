@@ -1,6 +1,6 @@
 /** The only routes available before signing in. */
 export function isAuthRoute(path: string): boolean {
-  return /^\/(signin|signup|reset-pin)\/?$/i.test(path)
+  return /^\/(signin|signup|forgot-password|auth\/action)\/?$/i.test(path)
 }
 
 /** Keep return destinations inside the app and out of authentication loops. */

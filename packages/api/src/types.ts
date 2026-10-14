@@ -1,4 +1,4 @@
-import type { CodePurpose, Genre } from '@afriff/validation'
+import type { Genre } from '@afriff/validation'
 
 /**
  * Shared AFRIFF domain models for apps and API adapters.
@@ -96,15 +96,13 @@ export type {
   Genre,
   FilmQuery,
   ScreeningQuery,
-  CodePurpose,
   SignInInput,
-  RequestCodeInput,
-  VerifyCodeInput,
-  SetPinInput,
+  SignUpInput,
+  PasswordResetRequestInput,
+  PasswordResetInput,
   ProfileInput,
   CartLineInput,
   CheckoutInput,
-  PaymentInput,
   TicketTransferInput,
   SavedInput,
 } from '@afriff/validation'
@@ -216,6 +214,8 @@ export interface TicketProduct {
 export interface User {
   id: string
   email: string
+  /** Whether the attendee has opened the confirmation link sent to that address. */
+  emailVerified: boolean
   firstName: string
   lastName: string
   /** First and last name together, ready to show. */
@@ -224,44 +224,39 @@ export interface User {
   createdAt: ISODateTime
 }
 
-/** What a sign-in returns: the bearer token for later calls, plus who it belongs to. */
-export interface AuthSession {
-  token: string
-  user: User
-  expiresAt: ISODateTime
-}
-
-/** The result of asking for a one-time code, to sign up or to reset a forgotten PIN. */
-export interface CodeChallenge {
+/**
+ * The answer to "send me a reset link". It looks the same whether or not the
+ * email has an account, so the screen cannot be used to find out who does.
+ */
+export interface PasswordResetChallenge {
   email: string
-  purpose: CodePurpose
-  expiresAt: ISODateTime
   /**
-   * Mock mode only: the code the real service would email. The app shows it on
-   * screen so the flow can be completed offline. The http adapter never sets this.
+   * Mock mode only: the code the reset link would carry. The app offers to open
+   * the link on screen, so the flow can be finished offline. Firebase never sets it.
    */
   devCode?: string
 }
 
-/**
- * Proof that a one-time code was checked. It authorises one call to `setPin`
- * for that email, and nothing else, so a verified address is never left able to
- * do more than the flow that verified it.
- */
-export interface VerificationTicket {
-  token: string
+/** The answer to "send me a confirmation link". */
+export interface EmailVerificationChallenge {
   email: string
-  purpose: CodePurpose
-  expiresAt: ISODateTime
-  /** The name already on the account, when resetting a PIN. Absent when signing up. */
-  name?: string
+  /** Mock mode only, as on `PasswordResetChallenge`. */
+  devCode?: string
 }
 
 // ------------------------------------------------------------------ orders
 
+/**
+ * `pending` holds the stock while the attendee pays, until `holdExpiresAt`.
+ * `failed` gives it back. Only `paid` issues tickets.
+ */
 export type OrderStatus = 'paid' | 'pending' | 'failed'
 
-export type PaymentMethod = 'card' | 'transfer'
+/** Who takes the money. `mock` is the stand-in checkout of the local build. */
+export type PaymentProvider = 'paystack' | 'mock'
+
+/** How a payment was made, as the provider reports it. */
+export type PaymentChannel = 'card' | 'bank' | 'bank_transfer' | 'ussd' | 'qr' | 'mobile_money' | 'apple_pay' | 'other'
 
 /** What the attendee picked for a product that offers a choice. */
 export interface TicketSelection {
@@ -294,12 +289,16 @@ export interface OrderContact {
 }
 
 export interface OrderPayment {
-  method: PaymentMethod
+  provider: PaymentProvider
+  /** The provider's reference for the latest attempt to pay. */
+  reference?: string
+  /** How it was paid, once it was. */
+  channel?: PaymentChannel
   /** Card payments only. */
   last4?: string
-  /** Transfer reference the attendee quotes, or the bank's reference for a card. */
-  reference?: string
-  /** Why a payment failed, in words an attendee can act on. */
+  /** Card payments only: "visa", "mastercard", "verve". */
+  cardBrand?: string
+  /** Why the last attempt failed, in words an attendee can act on. */
   failureReason?: string
 }
 
@@ -310,12 +309,32 @@ export interface Order {
   status: OrderStatus
   placedAt: ISODateTime
   paidAt?: ISODateTime
+  /** Until when an unpaid order keeps its tickets aside. */
+  holdExpiresAt?: ISODateTime
   lines: OrderLine[]
   total: Money
   contact: OrderContact
   payment: OrderPayment
   /** Tickets issued once the order is paid. */
   ticketIds: string[]
+}
+
+/**
+ * One attempt to pay for an order, opened on the server so the amount cannot be
+ * changed on the way. The app hands it to the provider's checkout and then asks
+ * `orders.verify` how it went; it never decides the outcome itself.
+ */
+export interface PaymentIntent {
+  orderId: string
+  provider: PaymentProvider
+  /** The provider's reference for this attempt. */
+  reference: string
+  /** Opens the provider's checkout inside the app (Paystack `resumeTransaction`). */
+  accessCode: string
+  /** The provider's own checkout page, for when the in-app one cannot load. */
+  authorizationUrl: string
+  amount: Money
+  email: string
 }
 
 /**

@@ -1,6 +1,6 @@
 # AFRIFF Attendee PWA — Frontend-only roadmap
 
-**Scope:** the attendee-facing Progressive Web App, built fully local. No backend, no payments, no email/SMS. Every "server" call goes through a typed mock API that stores its state in the browser, so the real backend can replace it later without touching pages or components.
+**Scope:** the attendee-facing Progressive Web App. F0 to F9 were built fully local: every "server" call goes through a typed mock API that stores its state in the browser. **B1** puts the same contract on Firebase, with Paystack for payment and Brevo for email, without touching pages beyond auth and checkout. The mock stays, for demos and offline development.
 
 **Stack:** Nuxt 4 (SPA mode) · Tailwind CSS 4 · TypeScript · Pinia · VueUse · @vite-pwa/nuxt · lucide icons · self-hosted fonts (Archivo + Onest).
 
@@ -64,6 +64,8 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 
 ## F3 — Account (mock auth) ✅
 
+> **Superseded in B1:** the six-digit PIN and emailed one-time codes became an email and a password, with reset and confirmation links, to match Firebase Auth. The notes below describe F3 as it was built.
+
 - `/signin`: email plus the six-digit PIN the attendee chose. "Forgot your PIN?" goes to `/reset-pin`.
 - `/signup`: email → six-digit code → name and a new PIN. `/reset-pin` is the same code-then-PIN flow without the name, and both share `usePinSetup` with the `AuthCodeStep` / `AuthPinStep` components, so they differ only in wording.
 - No mail integration yet, so **any six-digit code is accepted** (`ACCEPT_ANY_CODE` in `packages/api/src/mock/auth.ts`). Mock mode still shows the code it would have sent, with a "Fill it in" button, so the flow reads like the real one offline. Codes expire after 10 minutes, the ticket they produce is single-use, and "Send again" has a 30-second cooldown.
@@ -77,6 +79,8 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 **Done when:** a new attendee can create an account, leave, come back and sign in with their PIN. ✔︎
 
 ## F4 — Passes & checkout ✅
+
+> **Superseded in B1:** card fields and simulated card outcomes gave way to Paystack's checkout, which the app opens and the server verifies. The cart now leads to `/checkout` again. The notes below describe F4 as it was built.
 
 - Catalogue at `/passes`: Festival Pass, Day Pass, Single Screening, Masterclass, Opening Night Gala, Globe Awards Night, with live remaining stock
 - Options sheet per product: which day, which screening (searchable, sold-out ones hidden, seats-left shown), which masterclass, then how many. `/passes?screening=<id>` from a film page opens it on that screening
@@ -150,6 +154,22 @@ A refinement of the existing look for a sleeker, more professional app feel. Rul
 - Accessibility pass (keyboard, screen reader, contrast, reduced motion)
 - Performance pass (Lighthouse PWA/perf ≥ 90), bundle review
 
+## B1 — Backend: Firebase, Paystack, Brevo 🟡
+
+*Started. Everything below is built and tested against the Firebase Emulator Suite; it has not been deployed to a real project yet. Setup steps are in [firebase/README.md](../firebase/README.md).*
+
+- **Firebase adapter** (`@afriff/api/firebase`) implementing the whole `AttendeeApi`: Auth for accounts, Firestore read directly for the catalogue, profile, saved list, orders and tickets, and callable Cloud Functions for checkout, payment and transfers. Chosen with `NUXT_PUBLIC_API_MODE=firebase`; an unknown mode stops the app rather than falling back to the mock
+- **Accounts:** email and password (at least 8 characters). `/signup` sends a confirmation link; `/forgot-password` sends a reset link; both land on `/auth/action`, which Firebase's email templates point at. Me nudges until the email is confirmed. The adapter owns the session (`auth.restore`, `auth.onSessionChange`), so a sign-out in another tab or a reset elsewhere reaches the app. The mock was rewritten to the same flows, with on-screen links in place of email
+- **Security rules** (`firebase/firestore.rules`): the catalogue is public and read-only; attendees write only their own profile (email must match the sign-in, server timestamps) and saved list (only things in the programme); orders, tickets, mail and payment events are written only by functions. 23 rules tests run against the emulator (`bun run test:rules`)
+- **Payments with Paystack:** the server prices the order, takes the stock in a transaction and opens a Paystack transaction; the app opens Paystack's inline checkout (hosted page as a fallback) and then asks `orders.verify`. Paystack's signed webhook settles orders too, and both paths go through one idempotent `settle`. Tickets are held 30 minutes, at most 3 unpaid orders at once, and a scheduled job expires lapsed holds after checking Paystack. Late, mismatched or duplicate payments are flagged `refundDue`
+- **Email with Brevo:** order confirmations and ticket hand-overs go through a Firestore outbox and Brevo's API, with retries; templates are code (`apps/functions/src/mail/templates.ts`). Account email goes through Firebase Auth on Brevo's SMTP relay
+- **Shared order rules** (`@afriff/api/orders`): the mock and the functions validate, price and issue tickets with the same code
+- **Removed:** the Supabase scaffold (`supabase/`, `packages/supabase`, its scripts)
+
+**Still to do:** create the staging and production projects and deploy; App Check on the callables; signed ticket QR codes for the scanner; refund handling for `refundDue`; account deletion.
+
+**Done when:** an attendee on staging can sign up, confirm their email, pay with a Paystack test card and receive their tickets and confirmation email.
+
 ---
 
 ## Parked for later
@@ -162,19 +182,19 @@ Built, then switched off until we decide to ship it. The code stays in the repo 
 
 ---
 
-## Backend seams (for later)
+## Backend seams
 
-Everything the mock layer does maps to a future API call. When the backend exists we add an `http` adapter that implements the same contract and flip `NUXT_PUBLIC_API_MODE=http`.
+Everything the mock layer does has a Firebase counterpart behind the same contract (`NUXT_PUBLIC_API_MODE=firebase`).
 
-| Contract area | Mock today | Real later |
-|---|---|---|
-| `festival`, `programme` | Seed files | CMS / programme service |
-| `catalog` | Seed ticket products | Inventory + pricing service |
-| `auth` | Local users + on-screen OTP | Email/SMS OTP, JWT sessions |
-| `orders` | Local orders, simulated payment | Payment provider (e.g. Paystack) + webhooks |
-| `tickets` | Local tickets, unsigned QR payload | Signed ticket tokens, scanner validation, transfer |
-| `inbox` | Seeded messages | Push notifications |
+| Contract area | Mock | Firebase (B1) | Later |
+|---|---|---|---|
+| `festival`, `programme`, `info`, `updates` | Seed files | Firestore, loaded by the seed script | A CMS or admin console writing to Firestore |
+| `catalog` | Seed products, local stock | Firestore, stock kept by functions in transactions | Admin console |
+| `auth` | Local accounts, on-screen links | Firebase Auth, email links through Brevo SMTP | |
+| `orders` | Local orders, stand-in checkout | Callables + Paystack + webhook | Refunds, App Check |
+| `tickets` | Local tickets | Firestore, issued by functions | Signed QR tokens, scanner validation |
+| `updates` (push) | Seeded messages | Firestore | Push notifications |
 
 ## Out of scope for this phase
 
-Ops Console, ticket scanner app, real payments, emails/SMS, analytics, CMS.
+Ops Console, ticket scanner app, SMS, analytics, CMS.

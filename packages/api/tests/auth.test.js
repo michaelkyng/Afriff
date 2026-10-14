@@ -1,198 +1,174 @@
 import { describe, expect, test } from 'bun:test'
-import { createMockApi } from '@afriff/api/mock'
-
-/** A fresh adapter per test: accounts and sessions live inside the adapter instance. */
-const newApi = () => createMockApi({ latency: 0 })
-
-const PIN = '481902'
-/** Any six digits pass while there is no mail integration, so the code itself is arbitrary. */
-const ANY_CODE = '314159'
-
-async function signUp(api, { email = 'ada@example.com', firstName = 'Ada', lastName = 'Okoye', pin = PIN } = {}) {
-  await api.auth.requestCode({ email, purpose: 'signup' })
-  const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  return api.auth.setPin({ ticket: ticket.token, pin, firstName, lastName })
-}
+import { confirmEmail, newApi, PASSWORD, signUp } from './helpers'
 
 describe('mock sign-up', () => {
-  test('issues a six-digit code for a new email', async () => {
+  test('creates the account, signs it in, and leaves the email to be confirmed', async () => {
     const api = newApi()
-    const challenge = await api.auth.requestCode({ email: '  Ada@Example.com ', purpose: 'signup' })
-    expect(challenge.email).toBe('ada@example.com')
-    expect(challenge.purpose).toBe('signup')
-    expect(challenge.devCode).toMatch(/^\d{6}$/)
-    expect(Date.parse(challenge.expiresAt)).toBeGreaterThan(Date.now())
+    const user = await signUp(api, { email: '  Ada@Example.com ' })
+    expect(user).toMatchObject({
+      email: 'ada@example.com',
+      emailVerified: false,
+      firstName: 'Ada',
+      lastName: 'Okoye',
+      name: 'Ada Okoye',
+    })
+    expect(await api.auth.me()).toMatchObject({ id: user.id })
+    expect(await api.auth.restore()).toMatchObject({ id: user.id })
   })
 
-  test('rejects an invalid email address', async () => {
-    await expect(newApi().auth.requestCode({ email: 'not-an-email', purpose: 'signup' }))
-      .rejects.toMatchObject({ name: 'ApiError', code: 'validation' })
-  })
-
-  test('takes any six-digit code, but still insists on six digits', async () => {
+  test('needs a valid email, a name and a password of at least eight characters', async () => {
     const api = newApi()
-    await api.auth.requestCode({ email: 'ada@example.com', purpose: 'signup' })
-    await expect(api.auth.verifyCode({ email: 'ada@example.com', code: '12345' }))
-      .rejects.toMatchObject({ code: 'validation' })
-    const ticket = await api.auth.verifyCode({ email: 'ada@example.com', code: '000000' })
-    expect(ticket.token).toMatch(/^vrf_/)
-    expect(ticket).toMatchObject({ email: 'ada@example.com', purpose: 'signup' })
-    expect(ticket.name).toBeUndefined()
-  })
-
-  test('will not verify a code that was never asked for', async () => {
-    await expect(newApi().auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE }))
-      .rejects.toMatchObject({ code: 'unauthorized' })
-  })
-
-  test('creates the account and signs it in with the new PIN', async () => {
-    const api = newApi()
-    const session = await signUp(api)
-    expect(session.token).toMatch(/^ses_/)
-    expect(session.user).toMatchObject({ email: 'ada@example.com', firstName: 'Ada', lastName: 'Okoye', name: 'Ada Okoye' })
-    expect(await api.auth.me()).toMatchObject({ id: session.user.id })
-  })
-
-  test('takes any six digits for the PIN, however simple', async () => {
-    const api = newApi()
-    await signUp(api, { pin: '111111' })
-    await api.auth.signOut()
-    const { user } = await api.auth.signIn({ email: 'ada@example.com', pin: '111111' })
-    expect(user.email).toBe('ada@example.com')
-  })
-
-  test('needs a first and last name, and a six-digit PIN', async () => {
-    const api = newApi()
-    /** A missing name spends the ticket, so each attempt below starts from a fresh one. */
-    const freshTicket = async () => {
-      await api.auth.requestCode({ email: 'ada@example.com', purpose: 'signup' })
-      return (await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })).token
-    }
-
-    const token = await freshTicket()
-    for (const pin of ['', '1234', '12345a']) {
-      await expect(api.auth.setPin({ ticket: token, pin, firstName: 'Ada', lastName: 'Okoye' }))
-        .rejects.toMatchObject({ code: 'validation', details: { field: 'pin' } })
-    }
-    await expect(api.auth.setPin({ ticket: token, pin: PIN }))
-      .rejects.toMatchObject({ code: 'validation', details: { field: 'firstName' } })
-    await expect(api.auth.setPin({ ticket: await freshTicket(), pin: PIN, firstName: 'Ada' }))
+    const base = { email: 'ada@example.com', password: PASSWORD, firstName: 'Ada', lastName: 'Okoye' }
+    await expect(api.auth.signUp({ ...base, email: 'not-an-email' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'email' } })
+    await expect(api.auth.signUp({ ...base, password: 'short' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'password' } })
+    await expect(api.auth.signUp({ ...base, lastName: '  ' }))
       .rejects.toMatchObject({ code: 'validation', details: { field: 'lastName' } })
-    await expect(api.auth.setPin({ ticket: await freshTicket(), pin: PIN, firstName: 'Ada', lastName: '  ' }))
-      .rejects.toMatchObject({ code: 'validation', details: { field: 'lastName' } })
-  })
-
-  test('a verification ticket works only once', async () => {
-    const api = newApi()
-    const { user } = await signUp(api)
-    expect(user.email).toBe('ada@example.com')
-
-    await api.auth.requestCode({ email: 'zainab@example.com', purpose: 'signup' })
-    const { token } = await api.auth.verifyCode({ email: 'zainab@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: token, pin: PIN, firstName: 'Zainab', lastName: 'Bello' })
-    await expect(api.auth.setPin({ ticket: token, pin: '204815', firstName: 'Zainab', lastName: 'Bello' }))
-      .rejects.toMatchObject({ code: 'unauthorized' })
   })
 
   test('refuses an email that already has an account', async () => {
     const api = newApi()
     await signUp(api)
-    await expect(api.auth.requestCode({ email: 'ada@example.com', purpose: 'signup' }))
+    await expect(signUp(api, { email: 'ADA@example.com' }))
       .rejects.toMatchObject({ code: 'conflict', details: { field: 'email' } })
   })
 
-  test('keeps the PIN to itself', async () => {
+  test('keeps the password to itself', async () => {
     const api = newApi()
-    const session = await signUp(api)
-    for (const account of [session.user, await api.auth.me()]) {
-      expect(account).not.toHaveProperty('pinHash')
-      expect(account).not.toHaveProperty('pinSalt')
-      expect(account).not.toHaveProperty('failedPins')
+    for (const account of [await signUp(api), await api.auth.me()]) {
+      expect(account).not.toHaveProperty('passwordHash')
+      expect(account).not.toHaveProperty('passwordSalt')
+      expect(account).not.toHaveProperty('failedSignIns')
     }
   })
 })
 
 describe('mock sign-in', () => {
-  test('signs in with the email and PIN, on a fresh session each time', async () => {
+  test('signs in with the email and password, whatever the case of the email', async () => {
     const api = newApi()
-    const first = await signUp(api)
-    const second = await api.auth.signIn({ email: '  ADA@example.com ', pin: PIN })
-    expect(second.user.id).toBe(first.user.id)
-    expect(second.token).not.toBe(first.token)
+    const created = await signUp(api)
+    await api.auth.signOut()
+    expect(await api.auth.restore()).toBeNull()
+    const user = await api.auth.signIn({ email: '  ADA@example.com ', password: PASSWORD })
+    expect(user.id).toBe(created.id)
   })
 
-  test('says the same thing for a wrong PIN and for an email it does not know', async () => {
+  test('says the same thing for a wrong password and for an email it does not know', async () => {
     const api = newApi()
     await signUp(api)
-    const wrong = await api.auth.signIn({ email: 'ada@example.com', pin: '204815' }).catch((error) => error)
-    const unknown = await api.auth.signIn({ email: 'nobody@example.com', pin: PIN }).catch((error) => error)
-    expect(wrong).toMatchObject({ code: 'unauthorized', details: { field: 'pin' } })
+    await api.auth.signOut()
+    const wrong = await api.auth.signIn({ email: 'ada@example.com', password: 'not the one' }).catch((error) => error)
+    const unknown = await api.auth.signIn({ email: 'nobody@example.com', password: PASSWORD }).catch((error) => error)
+    expect(wrong).toMatchObject({ code: 'unauthorized', details: { field: 'password' } })
     expect(unknown.message).toBe(wrong.message)
   })
 
-  test('locks the account after five wrong PINs, then lets a reset back in', async () => {
+  test('holds off after five wrong passwords, and a reset lets the attendee back in', async () => {
     const api = newApi()
     await signUp(api)
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
-      await expect(api.auth.signIn({ email: 'ada@example.com', pin: '204815' }))
+    await api.auth.signOut()
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await expect(api.auth.signIn({ email: 'ada@example.com', password: 'not the one' }))
         .rejects.toMatchObject({ code: 'unauthorized' })
     }
-    // The right PIN is refused too, until the lockout lapses.
-    await expect(api.auth.signIn({ email: 'ada@example.com', pin: PIN }))
-      .rejects.toMatchObject({ message: expect.stringContaining('Too many wrong PINs') })
+    await expect(api.auth.signIn({ email: 'ada@example.com', password: 'not the one' }))
+      .rejects.toMatchObject({ code: 'rate_limited' })
+    // The right password is refused too, until the spell is over.
+    await expect(api.auth.signIn({ email: 'ada@example.com', password: PASSWORD }))
+      .rejects.toMatchObject({ code: 'rate_limited' })
 
-    await api.auth.requestCode({ email: 'ada@example.com', purpose: 'reset' })
-    const { token } = await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: token, pin: '730264' })
-    expect(await api.auth.signIn({ email: 'ada@example.com', pin: '730264' })).toMatchObject({
-      user: { email: 'ada@example.com' },
-    })
+    const { devCode } = await api.auth.requestPasswordReset({ email: 'ada@example.com' })
+    await api.auth.resetPassword({ code: devCode, password: 'a new long phrase' })
+    await api.auth.signOut()
+    expect(await api.auth.signIn({ email: 'ada@example.com', password: 'a new long phrase' }))
+      .toMatchObject({ email: 'ada@example.com' })
   })
 })
 
-describe('mock PIN reset', () => {
-  test('refuses an email with no account, and carries the name back for one that has', async () => {
+describe('mock password reset', () => {
+  test('answers the same way for an email with no account, without a link', async () => {
     const api = newApi()
-    await expect(api.auth.requestCode({ email: 'ada@example.com', purpose: 'reset' }))
-      .rejects.toMatchObject({ code: 'not_found', details: { field: 'email' } })
-
-    await signUp(api)
-    const challenge = await api.auth.requestCode({ email: 'ada@example.com', purpose: 'reset' })
-    expect(challenge.purpose).toBe('reset')
-    const ticket = await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })
-    expect(ticket).toMatchObject({ purpose: 'reset', name: 'Ada Okoye' })
+    expect(await api.auth.requestPasswordReset({ email: 'Nobody@example.com' })).toEqual({ email: 'nobody@example.com' })
+    await expect(api.auth.requestPasswordReset({ email: 'nope' })).rejects.toMatchObject({ code: 'validation' })
   })
 
-  test('replaces the PIN and ends the sessions opened with the old one', async () => {
+  test('says whose account a link is for, then sets the password and signs in', async () => {
     const api = newApi()
-    const old = await signUp(api)
+    const created = await signUp(api)
+    await api.auth.signOut()
 
-    await api.auth.requestCode({ email: 'ada@example.com', purpose: 'reset' })
-    const { token } = await api.auth.verifyCode({ email: 'ada@example.com', code: ANY_CODE })
-    const fresh = await api.auth.setPin({ ticket: token, pin: '730264' })
-    expect(fresh.user.id).toBe(old.user.id)
+    const { devCode } = await api.auth.requestPasswordReset({ email: 'ada@example.com' })
+    expect(devCode).toBeTruthy()
+    expect(await api.auth.checkPasswordReset(devCode)).toEqual({ email: 'ada@example.com' })
 
-    await expect(api.auth.signIn({ email: 'ada@example.com', pin: PIN }))
+    const user = await api.auth.resetPassword({ code: devCode, password: 'a new long phrase' })
+    expect(user).toMatchObject({ id: created.id, emailVerified: true })
+    expect(await api.auth.me()).toMatchObject({ id: created.id })
+
+    await api.auth.signOut()
+    await expect(api.auth.signIn({ email: 'ada@example.com', password: PASSWORD })).rejects.toMatchObject({ code: 'unauthorized' })
+  })
+
+  test('a link works once, and a made-up one not at all', async () => {
+    const api = newApi()
+    await signUp(api)
+    const { devCode } = await api.auth.requestPasswordReset({ email: 'ada@example.com' })
+    await api.auth.resetPassword({ code: devCode, password: 'a new long phrase' })
+    await expect(api.auth.resetPassword({ code: devCode, password: 'another long one' }))
       .rejects.toMatchObject({ code: 'unauthorized' })
+    await expect(api.auth.checkPasswordReset('rst_madeup')).rejects.toMatchObject({ code: 'unauthorized' })
+  })
 
-    api.setAuthToken(old.token)
-    await expect(api.auth.me()).rejects.toMatchObject({ code: 'unauthorized' })
-    api.setAuthToken(fresh.token)
-    expect(await api.auth.me()).toMatchObject({ id: old.user.id })
+  test('still insists on a good new password', async () => {
+    const api = newApi()
+    await signUp(api)
+    const { devCode } = await api.auth.requestPasswordReset({ email: 'ada@example.com' })
+    await expect(api.auth.resetPassword({ code: devCode, password: 'short' }))
+      .rejects.toMatchObject({ code: 'validation', details: { field: 'password' } })
+  })
+})
+
+describe('mock email confirmation', () => {
+  test('confirms the address through the link, once', async () => {
+    const api = newApi()
+    await signUp(api)
+    const { email, devCode } = await api.auth.sendEmailVerification()
+    expect(email).toBe('ada@example.com')
+    await api.auth.verifyEmail(devCode)
+    expect((await api.auth.me()).emailVerified).toBe(true)
+    await expect(api.auth.verifyEmail(devCode)).rejects.toMatchObject({ code: 'unauthorized' })
+  })
+
+  test('sends no link to an address that is already confirmed, and none to a guest', async () => {
+    const api = newApi()
+    await signUp(api)
+    await confirmEmail(api)
+    expect(await api.auth.sendEmailVerification()).toEqual({ email: 'ada@example.com' })
+    await api.auth.signOut()
+    await expect(api.auth.sendEmailVerification()).rejects.toMatchObject({ code: 'unauthorized' })
+  })
+
+  test('works signed out, since the link may be opened on another device', async () => {
+    const api = newApi()
+    await signUp(api)
+    const { devCode } = await api.auth.sendEmailVerification()
+    await api.auth.signOut()
+    await api.auth.verifyEmail(devCode)
+    const user = await api.auth.signIn({ email: 'ada@example.com', password: PASSWORD })
+    expect(user.emailVerified).toBe(true)
   })
 })
 
 describe('mock account', () => {
-  test('needs a token for account calls, and drops it on sign out', async () => {
+  test('the adapter keeps the session, and signing out ends it', async () => {
     const api = newApi()
+    expect(await api.auth.restore()).toBeNull()
     await expect(api.auth.me()).rejects.toMatchObject({ code: 'unauthorized' })
     await signUp(api)
     await api.auth.signOut()
     await expect(api.auth.me()).rejects.toMatchObject({ code: 'unauthorized' })
-
-    const other = newApi()
-    other.setAuthToken('ses_madeup')
-    await expect(other.auth.me()).rejects.toMatchObject({ code: 'unauthorized' })
+    expect(await api.auth.restore()).toBeNull()
   })
 
   test('saves profile changes and validates the phone number', async () => {
@@ -211,8 +187,8 @@ describe('mock account', () => {
 
   test('returns copies, so the caller cannot edit the account in place', async () => {
     const api = newApi()
-    const session = await signUp(api)
-    session.user.name = 'Someone else'
+    const user = await signUp(api)
+    user.name = 'Someone else'
     expect((await api.auth.me()).name).toBe('Ada Okoye')
   })
 })

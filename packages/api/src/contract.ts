@@ -1,81 +1,94 @@
 import type {
-  AuthSession,
-  CodeChallenge,
+  CheckoutInput,
+  EmailVerificationChallenge,
   Festival,
   FestivalEvent,
   FestivalInfo,
   FestivalUpdate,
   Film,
   FilmQuery,
-  CheckoutInput,
   Order,
-  PaymentInput,
+  PasswordResetChallenge,
+  PasswordResetInput,
+  PasswordResetRequestInput,
+  PaymentIntent,
   ProfileInput,
-  RequestCodeInput,
   SavedInput,
   SavedItem,
   Screening,
   ScreeningQuery,
   Section,
-  SetPinInput,
   SignInInput,
+  SignUpInput,
   Ticket,
   TicketProduct,
   TicketTransferInput,
   User,
   Venue,
-  VerificationTicket,
-  VerifyCodeInput,
 } from './types'
 
 /**
  * The attendee API contract.
  *
- * Pages and stores only ever talk to this interface (via `useApi()`).
- * Today it is implemented by the mock adapter in `./mock`. When the backend
- * exists, an `http` adapter implements the same interface and the app switches
- * with `NUXT_PUBLIC_API_MODE=http` — no page or component changes.
- *
- * New areas (orders, tickets, inbox) are added here as their features land.
+ * Pages and stores only ever talk to this interface (via `useApi()`). Two
+ * adapters implement it: `./mock`, which runs entirely in the browser, and
+ * `./firebase`, backed by Firebase Auth, Firestore and Cloud Functions. The app
+ * picks one with `NUXT_PUBLIC_API_MODE` — no page or component changes.
  */
 export interface AttendeeApi {
   /**
-   * The session token to send with authenticated calls, or null when signed out.
-   * The app sets this from the persisted session on start-up and after sign-in.
-   */
-  setAuthToken(token: string | null): void
-
-  /**
-   * Signing in takes an email and a six-digit PIN. Getting a PIN in the first
-   * place — signing up, or replacing a forgotten one — goes through an emailed
-   * code: `requestCode` → `verifyCode` → `setPin`.
+   * Accounts are an email and a password. The adapter owns the credentials and
+   * keeps the session itself (Firebase refreshes its tokens on its own), so the
+   * app never handles a token: it asks `restore()` who is signed in on start-up
+   * and listens to `onSessionChange` for anything that happens behind its back.
    */
   auth: {
     /**
-     * Signs an existing account in.
-     * Throws `ApiError('unauthorized')` when the pair does not match, or when
-     * too many wrong PINs have locked the account for a while.
+     * The account this device is already signed in to, or null. Call once on
+     * start-up, before anything that needs an account.
+     * Throws `ApiError('network')` when there is a session but the account could
+     * not be loaded, so the caller can keep what it last knew rather than sign out.
      */
-    signIn(input: SignInInput): Promise<AuthSession>
+    restore(): Promise<User | null>
     /**
-     * Sends a one-time code to the email, to sign up or to reset a PIN.
-     * In mock mode the returned challenge carries the code to show on screen.
-     * Throws `ApiError('conflict')` signing up with an email that already has an
-     * account, and `ApiError('not_found')` resetting one that has none.
+     * Called when the session changes without this app asking: signed out in
+     * another tab, or the session revoked after a password reset elsewhere.
+     * Returns a function that stops listening.
      */
-    requestCode(input: RequestCodeInput): Promise<CodeChallenge>
+    onSessionChange(listener: (user: User | null) => void): () => void
     /**
-     * Checks the code and returns a short-lived ticket for `setPin`.
-     * Throws `ApiError('unauthorized')` when the code is wrong or expired.
+     * Throws `ApiError('unauthorized')` when the pair does not match — with the
+     * same message whether or not the email has an account — and
+     * `ApiError('rate_limited')` after too many wrong passwords.
      */
-    verifyCode(input: VerifyCodeInput): Promise<VerificationTicket>
+    signIn(input: SignInInput): Promise<User>
     /**
-     * Sets the PIN against a verified email and signs in with it. A sign-up also
-     * needs `firstName` and `lastName`; a reset ends the account's other sessions.
-     * Throws `ApiError('unauthorized')` when the ticket is spent or expired.
+     * Creates the account, signs it in and sends a link to confirm the email.
+     * Throws `ApiError('conflict')` when the email already has an account.
      */
-    setPin(input: SetPinInput): Promise<AuthSession>
-    /** The signed-in attendee. Throws `ApiError('unauthorized')` without a valid token. */
+    signUp(input: SignUpInput): Promise<User>
+    /** Emails a reset link. Answers the same way whether or not the email has an account. */
+    requestPasswordReset(input: PasswordResetRequestInput): Promise<PasswordResetChallenge>
+    /**
+     * Checks the code from a reset link before asking for a new password, and
+     * says whose account it is for. Throws `ApiError('unauthorized')` when the
+     * link has expired or been used.
+     */
+    checkPasswordReset(code: string): Promise<{ email: string }>
+    /**
+     * Sets the new password and signs in with it. Every other session on the
+     * account ends. Throws `ApiError('unauthorized')` for a spent or expired link.
+     */
+    resetPassword(input: PasswordResetInput): Promise<User>
+    /** Emails a fresh confirmation link to the signed-in attendee. */
+    sendEmailVerification(): Promise<EmailVerificationChallenge>
+    /**
+     * Applies the code from a confirmation link. Works signed out, since the link
+     * may be opened on another device. Throws `ApiError('unauthorized')` when the
+     * link has expired or been used.
+     */
+    verifyEmail(code: string): Promise<void>
+    /** The signed-in attendee. Throws `ApiError('unauthorized')` when nobody is signed in. */
     me(): Promise<User>
     updateProfile(input: ProfileInput): Promise<User>
     signOut(): Promise<void>
@@ -98,21 +111,37 @@ export interface AttendeeApi {
     listProducts(): Promise<TicketProduct[]>
   }
 
-  /** Buying. Every call needs a signed-in attendee. */
+  /**
+   * Buying. Every call needs a signed-in attendee.
+   *
+   * The server prices the order, holds the stock and opens a payment with the
+   * provider; the attendee pays in the provider's checkout, and `verify` asks the
+   * provider how it went. The provider also tells the server directly (Paystack's
+   * webhook), so an order settles even if the app is closed mid-payment.
+   */
   orders: {
     /**
-     * Places an order and takes payment in one step, the way a hosted checkout does.
+     * Places an order and opens the payment for it.
      * Throws `ApiError('validation')` for a bad selection, `ApiError('sold_out')`
-     * when stock ran out, and `ApiError('unauthorized')` without a session.
+     * when stock ran out, `ApiError('conflict')` with too many unpaid orders open,
+     * and `ApiError('unauthorized')` without a session.
      */
-    checkout(input: CheckoutInput): Promise<Order>
+    checkout(input: CheckoutInput): Promise<PaymentIntent>
     list(): Promise<Order[]>
     /** Throws `ApiError('not_found')` for an order that is not the attendee's. */
     get(id: string): Promise<Order>
-    /** Tries payment again on a failed order. */
-    pay(orderId: string, payment: PaymentInput): Promise<Order>
-    /** Stands in for the bank telling us a transfer landed. */
-    confirmTransfer(orderId: string): Promise<Order>
+    /**
+     * Opens the payment again for an unpaid order: the same attempt while it is
+     * still open, a fresh one after a failure (holding the stock again).
+     * Throws `ApiError('conflict')` when the order is already paid.
+     */
+    pay(orderId: string): Promise<PaymentIntent>
+    /**
+     * Asks the provider how the latest payment went and settles the order:
+     * tickets when it succeeded, stock given back when it failed, no change while
+     * it is still open. Safe to call any number of times.
+     */
+    verify(orderId: string): Promise<Order>
   }
 
   tickets: {
@@ -174,7 +203,19 @@ export type ApiErrorCode =
   | 'unauthorized'
   | 'conflict'
   | 'sold_out'
+  | 'rate_limited'
   | 'unknown'
+
+export const API_ERROR_CODES: readonly ApiErrorCode[] = [
+  'not_found',
+  'network',
+  'validation',
+  'unauthorized',
+  'conflict',
+  'sold_out',
+  'rate_limited',
+  'unknown',
+]
 
 export class ApiError extends Error {
   readonly code: ApiErrorCode
@@ -190,4 +231,20 @@ export class ApiError extends Error {
 
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
+}
+
+/**
+ * Turns schema issues into one `ApiError('validation')` that names the first
+ * field at fault ("contact.email", "firstName"), so forms can show the message
+ * beside it.
+ */
+export function validationError(
+  issues: readonly { message: string; path: readonly PropertyKey[] }[],
+  fallback: string,
+): ApiError {
+  const first = issues[0]
+  return new ApiError('validation', first?.message ?? fallback, {
+    issues,
+    field: first?.path.map(String).join('.') || undefined,
+  })
 }

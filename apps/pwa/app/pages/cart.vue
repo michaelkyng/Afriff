@@ -1,50 +1,16 @@
 <script setup lang="ts">
 import { ShoppingBagIcon } from 'lucide-vue-next'
-import { isApiError } from '@afriff/api'
 
 useHead({ title: 'Cart' })
 
-const api = useApi()
 const cart = useCartStore()
-const { user } = useAuth()
 const { data: products } = useCatalog()
-const refreshAccount = useAccountRefresh()
-
-const placing = ref(false)
-const message = ref('')
 
 /** The stepper never offers more than the product allows or has left. */
 function maxFor(productId: string) {
   const product = products.value?.find((item) => item.id === productId)
   if (!product) return 10
   return Math.max(1, Math.min(product.maxPerOrder, product.remaining ?? product.maxPerOrder))
-}
-
-/**
- * Payments are not integrated yet, so checkout completes on the spot: the order
- * goes in under the signed-in account with a card the mock always approves.
- */
-async function checkout() {
-  if (!user.value) return
-  message.value = ''
-  placing.value = true
-  try {
-    const order = await api.orders.checkout({
-      items: cart.toCheckoutItems(),
-      contact: { name: user.value.name, email: user.value.email, phone: user.value.phone ?? '' },
-      payment: { method: 'card', cardName: user.value.name, cardNumber: '4111 1111 1111 1111', expiry: '12/30', cvv: '123' },
-    })
-    // Leave first, so the cart does not flash its empty state on the way out.
-    await navigateTo(`/orders/${order.id}`)
-    cart.clear()
-    refreshAccount()
-  }
-  catch (error) {
-    message.value = isApiError(error) ? error.message : 'We could not place that order. Try again.'
-  }
-  finally {
-    placing.value = false
-  }
 }
 </script>
 
@@ -79,13 +45,11 @@ async function checkout() {
         </div>
       </UiCard>
 
-      <p v-if="message" role="alert" class="text-meta text-danger">{{ message }}</p>
-
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <UiButton to="/tickets" variant="ghost" :disabled="placing">Keep browsing</UiButton>
+        <UiButton to="/tickets" variant="ghost">Keep browsing</UiButton>
         <div class="flex items-center gap-2">
-          <UiButton variant="ghost" :disabled="placing" @click="cart.clear()">Clear cart</UiButton>
-          <UiButton :loading="placing" @click="checkout">Checkout</UiButton>
+          <UiButton variant="ghost" @click="cart.clear()">Clear cart</UiButton>
+          <UiButton to="/checkout">Checkout</UiButton>
         </div>
       </div>
     </template>

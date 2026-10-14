@@ -1,73 +1,49 @@
-import { profileSchema, requestCodeSchema, setPinSchema, signInSchema, verifyCodeSchema } from '@afriff/validation'
-import { ApiError } from '../contract'
+import { actionCodeSchema, passwordResetRequestSchema, passwordResetSchema, profileSchema, signInSchema, signUpSchema } from '@afriff/validation'
+import { ApiError, validationError } from '../contract'
 import type { AttendeeApi } from '../contract'
 import type {
-  AuthSession,
-  CodeChallenge,
-  CodePurpose,
+  EmailVerificationChallenge,
+  PasswordResetChallenge,
+  PasswordResetInput,
+  PasswordResetRequestInput,
   ProfileInput,
-  RequestCodeInput,
-  SetPinInput,
   SignInInput,
+  SignUpInput,
   User,
-  VerificationTicket,
-  VerifyCodeInput,
 } from '../types'
 import { mockDb } from './db'
 import { sha256Hex } from './sha256'
 
 /**
- * Accounts, PINs, one-time codes and sessions for the mock API.
+ * Accounts and sessions for the mock API, shaped like Firebase Auth so the two
+ * adapters behave alike: an email and a password, a link to reset a forgotten
+ * password, and a link to confirm the email address.
  *
- * It behaves like a small auth service. Signing in takes an email and a
- * six-digit PIN. Getting a PIN in the first place — signing up, or replacing a
- * forgotten one — goes through a code sent to the email, which is exchanged for
- * a short-lived ticket that authorises one PIN change.
- *
- * There is no mail integration yet, so `ACCEPT_ANY_CODE` waves any six digits
- * through; the code the service would have sent still comes back on the
- * challenge, so the screen can show it. Everything around it keeps the shape the
- * real service will have: codes and tickets expire, tickets are single-use, PINs
- * are stored only as a salted hash, and wrong PINs lock an account for a spell.
+ * There is no mail here. A reset or confirmation hands back the code its link
+ * would carry (`devCode`), so the app can offer to open the link on screen and
+ * the whole flow can be finished offline. Everything around it keeps the shape
+ * of the real service: links expire and work once, passwords are stored only as
+ * a salted hash, wrong passwords lock an account for a spell, and a reset ends
+ * the account's other sessions.
  *
  * State lives in memory and is mirrored to localStorage through `mockDb`, so a
- * reload keeps the account and the session.
+ * reload keeps the account and the session. The session belongs to the adapter,
+ * as Firebase's does; the app only ever asks who is signed in.
  */
 
-/**
- * No inbox to check offline, so any six-digit code passes. Set this to false the
- * day codes are actually delivered — the rest of the flow does not change.
- */
-const ACCEPT_ANY_CODE: boolean = true
-
-const CODE_TTL_MS = 10 * 60 * 1000
-const TICKET_TTL_MS = 10 * 60 * 1000
+const LINK_TTL_MS = 60 * 60 * 1000
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const MAX_PIN_ATTEMPTS = 5
+const MAX_FAILED_SIGN_INS = 5
 const LOCKOUT_MS = 5 * 60 * 1000
 
-/** What the "server" stores. The PIN hash and the lockout never leave this module. */
+/** What the "server" stores. Everything to do with the password stays in this module. */
 interface UserRecord extends User {
-  pinHash: string
-  pinSalt: string
-  /** Wrong PINs since the last success. Reset on a correct PIN or a PIN change. */
-  failedPins: number
-  /** Epoch ms until which sign-in is refused, after too many wrong PINs. */
+  passwordHash: string
+  passwordSalt: string
+  /** Wrong passwords since the last success. */
+  failedSignIns: number
+  /** Epoch ms until which sign-in is refused, after too many wrong passwords. */
   lockedUntil?: number
-}
-
-interface Challenge {
-  email: string
-  purpose: CodePurpose
-  code: string
-  expiresAt: number
-}
-
-interface Ticket {
-  token: string
-  email: string
-  purpose: CodePurpose
-  expiresAt: number
 }
 
 interface SessionRecord {
@@ -76,52 +52,38 @@ interface SessionRecord {
   expiresAt: number
 }
 
-interface AuthState {
-  users: UserRecord[]
-  sessions: SessionRecord[]
+/** What an emailed link would carry: what it is for, for whom, and until when. */
+interface ActionCode {
+  purpose: 'reset' | 'verify'
+  email: string
+  expiresAt: number
 }
 
-function randomId(prefix: string): string {
-  const random = typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID().replace(/-/g, '')
-    : Math.random().toString(36).slice(2) + Date.now().toString(36)
-  return `${prefix}_${random.slice(0, 20)}`
-}
-
-function randomCode(): string {
-  const n = typeof crypto !== 'undefined' && crypto.getRandomValues
-    ? crypto.getRandomValues(new Uint32Array(1))[0]!
-    : Math.floor(Math.random() * 1_000_000)
-  return String(n % 1_000_000).padStart(6, '0')
+function randomToken(prefix: string): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return `${prefix}_${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`
 }
 
 /**
- * PINs are salted and hashed, never stored in the clear: a copy of localStorage
- * should not hand anyone's PIN over, and the real service will do the same.
+ * Salted and hashed, never stored in the clear: a copy of localStorage should
+ * not hand anyone's password over. (Firebase uses scrypt; a demo can make do.)
  */
-function hashPin(pin: string, salt: string): string {
-  return sha256Hex(`${salt}:${pin}`)
+function hashPassword(password: string, salt: string): string {
+  return sha256Hex(`${salt}:${password}`)
 }
 
 function fullName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName}`
 }
 
-/** The public view of an account: everything to do with the PIN stays behind. */
+/** The public view of an account. */
 function toUser(record: UserRecord): User {
-  const { pinHash, pinSalt, failedPins, lockedUntil, ...user } = record
+  const { passwordHash, passwordSalt, failedSignIns, lockedUntil, ...user } = record
   return user
-}
-
-/** Surfaces the first schema message, so forms can show it next to the field. */
-function fail(issues: { message: string; path: PropertyKey[] }[], fallback: string): never {
-  const first = issues[0]
-  throw new ApiError('validation', first?.message ?? fallback, { issues, field: first?.path[0] })
 }
 
 export interface MockAuth {
   api: AttendeeApi['auth']
-  setToken(token: string | null): void
   /**
    * The signed-in attendee, for the other mock services to hang their work off.
    * Throws `ApiError('unauthorized')` when nobody is signed in.
@@ -134,201 +96,186 @@ export interface MockAuth {
  */
 export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Promise<T>): MockAuth {
   /** Fresh fallback arrays per adapter: `mockDb.read` hands the fallback straight back. */
-  const state: AuthState = {
-    users: mockDb.read<UserRecord[]>('users', []),
-    sessions: mockDb.read<SessionRecord[]>('sessions', []),
-  }
-  /** Codes and tickets are deliberately not persisted: a reload mid-flow starts a fresh one. */
-  const challenges = new Map<string, Challenge>()
-  const tickets = new Map<string, Ticket>()
-  let token: string | null = null
+  const users = mockDb.read<UserRecord[]>('users', [])
+  let sessions = mockDb.read<SessionRecord[]>('sessions', [])
+  /** This device's session, the way Firebase keeps its own in IndexedDB. */
+  let token = mockDb.read<string | null>('current', null)
+  /** Links are deliberately not persisted: a reload makes them stale, as an old email would be. */
+  const codes = new Map<string, ActionCode>()
 
   const persist = () => {
-    mockDb.write('users', state.users)
-    mockDb.write('sessions', state.sessions)
+    mockDb.write('users', users)
+    mockDb.write('sessions', sessions)
+    mockDb.write('current', token)
   }
 
-  const findUser = (email: string) => state.users.find((user) => user.email === email)
+  const findUser = (email: string) => users.find((user) => user.email === email)
+
+  function sessionUser(): UserRecord | undefined {
+    const now = Date.now()
+    sessions = sessions.filter((session) => session.expiresAt > now)
+    const session = token ? sessions.find((item) => item.token === token) : undefined
+    return session ? users.find((user) => user.id === session.userId) : undefined
+  }
 
   function currentUser(): UserRecord {
-    const now = Date.now()
-    state.sessions = state.sessions.filter((session) => session.expiresAt > now)
-    const session = token ? state.sessions.find((s) => s.token === token) : undefined
-    const user = session ? state.users.find((u) => u.id === session.userId) : undefined
+    const user = sessionUser()
     if (!user) throw new ApiError('unauthorized', 'Sign in to continue.')
     return user
   }
 
-  function startSession(user: UserRecord): AuthSession {
-    const session: SessionRecord = {
-      token: randomId('ses'),
-      userId: user.id,
-      expiresAt: Date.now() + SESSION_TTL_MS,
-    }
-    state.sessions.push(session)
-    persist()
+  function startSession(user: UserRecord): User {
+    const session: SessionRecord = { token: randomToken('ses'), userId: user.id, expiresAt: Date.now() + SESSION_TTL_MS }
+    sessions.push(session)
     token = session.token
-    return { token: session.token, user: toUser(user), expiresAt: new Date(session.expiresAt).toISOString() }
+    persist()
+    return toUser(user)
+  }
+
+  function issueCode(purpose: ActionCode['purpose'], email: string): string {
+    const code = randomToken(purpose === 'reset' ? 'rst' : 'vfy')
+    codes.set(code, { purpose, email, expiresAt: Date.now() + LINK_TTL_MS })
+    return code
+  }
+
+  /** The same words Firebase's handler would warrant, for a link that is spent, stale or made up. */
+  function readCode(code: string, purpose: ActionCode['purpose']): ActionCode {
+    const parsed = actionCodeSchema.safeParse(code)
+    const found = parsed.success ? codes.get(parsed.data) : undefined
+    if (!found || found.purpose !== purpose || found.expiresAt < Date.now()) {
+      throw new ApiError('unauthorized', 'That link has expired or has already been used. Ask for a new one.')
+    }
+    return found
   }
 
   return {
-    setToken(value) {
-      token = value
-    },
-
     currentUser: () => toUser(currentUser()),
 
     api: {
-      signIn: (input: SignInInput) =>
-        respond((): AuthSession => {
-          const parsed = signInSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Check your email and PIN.')
-          const { email, pin } = parsed.data
+      restore: () => respond(() => {
+        const user = sessionUser()
+        if (!user && token) {
+          token = null
+          persist()
+        }
+        return user ? toUser(user) : null
+      }),
 
-          /** One message for a wrong PIN and for an email with no account: which it was is not the caller's business. */
+      // One tab, one adapter: nothing changes behind the app's back in the demo.
+      onSessionChange: () => () => {},
+
+      signIn: (input: SignInInput) =>
+        respond((): User => {
+          const parsed = signInSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Check your email and password.')
+          const { email, password } = parsed.data
+
+          /** One message for a wrong password and for an email with no account: which it was is not the caller's business. */
           const mismatch = () =>
-            new ApiError('unauthorized', 'That email and PIN do not match. Check them and try again.', { field: 'pin' })
+            new ApiError('unauthorized', 'That email and password do not match. Check them and try again.', {
+              field: 'password',
+            })
 
           const user = findUser(email)
           if (!user) throw mismatch()
 
           const now = Date.now()
           if (user.lockedUntil && user.lockedUntil > now) {
-            const minutes = Math.ceil((user.lockedUntil - now) / 60_000)
-            throw new ApiError(
-              'unauthorized',
-              `Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}, or reset your PIN.`,
-              { field: 'pin' },
-            )
+            throw new ApiError('rate_limited', 'Too many wrong passwords. Wait a few minutes, or reset your password.', {
+              field: 'password',
+            })
           }
 
-          if (hashPin(pin, user.pinSalt) !== user.pinHash) {
-            user.failedPins += 1
-            if (user.failedPins >= MAX_PIN_ATTEMPTS) {
-              user.failedPins = 0
+          if (hashPassword(password, user.passwordSalt) !== user.passwordHash) {
+            user.failedSignIns += 1
+            if (user.failedSignIns >= MAX_FAILED_SIGN_INS) {
+              user.failedSignIns = 0
               user.lockedUntil = now + LOCKOUT_MS
               persist()
-              throw new ApiError('unauthorized', 'Too many wrong PINs. Try again in 5 minutes, or reset your PIN.', {
-                field: 'pin',
+              throw new ApiError('rate_limited', 'Too many wrong passwords. Wait a few minutes, or reset your password.', {
+                field: 'password',
               })
             }
             persist()
             throw mismatch()
           }
 
-          user.failedPins = 0
+          user.failedSignIns = 0
           delete user.lockedUntil
           return startSession(user)
         }),
 
-      requestCode: (input: RequestCodeInput) =>
-        respond((): CodeChallenge => {
-          const parsed = requestCodeSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Enter a valid email address.')
-          const { email, purpose } = parsed.data
-
-          const existing = findUser(email)
-          if (purpose === 'signup' && existing) {
+      signUp: (input: SignUpInput) =>
+        respond((): User => {
+          const parsed = signUpSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Check your details and try again.')
+          const { email, password, firstName, lastName } = parsed.data
+          if (findUser(email)) {
             throw new ApiError('conflict', 'That email already has an account. Sign in instead.', { field: 'email' })
           }
-          if (purpose === 'reset' && !existing) {
-            // A real service would not say which emails it knows. Offline there is no
-            // inbox to check, so staying quiet would strand the attendee on a dead step.
-            throw new ApiError('not_found', 'We have no account for that email. Create one instead.', {
-              field: 'email',
-            })
+          const passwordSalt = randomToken('slt')
+          const user: UserRecord = {
+            id: randomToken('usr').slice(0, 24),
+            email,
+            emailVerified: false,
+            firstName,
+            lastName,
+            name: fullName(firstName, lastName),
+            createdAt: new Date().toISOString(),
+            passwordHash: hashPassword(password, passwordSalt),
+            passwordSalt,
+            failedSignIns: 0,
           }
-
-          const code = randomCode()
-          const expiresAt = Date.now() + CODE_TTL_MS
-          challenges.set(email, { email, purpose, code, expiresAt })
-          return { email, purpose, expiresAt: new Date(expiresAt).toISOString(), devCode: code }
+          users.push(user)
+          return startSession(user)
         }),
 
-      verifyCode: (input: VerifyCodeInput) =>
-        respond((): VerificationTicket => {
-          const parsed = verifyCodeSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Enter the six-digit code.')
-          const { email, code } = parsed.data
-
-          const challenge = challenges.get(email)
-          if (!challenge || challenge.expiresAt < Date.now()) {
-            challenges.delete(email)
-            throw new ApiError('unauthorized', 'That code has expired. Ask for a new one.', { field: 'code' })
-          }
-          if (!ACCEPT_ANY_CODE && challenge.code !== code) {
-            throw new ApiError('unauthorized', 'That code is not right. Check it and try again.', { field: 'code' })
-          }
-          challenges.delete(email)
-
-          const ticket: Ticket = {
-            token: randomId('vrf'),
-            email,
-            purpose: challenge.purpose,
-            expiresAt: Date.now() + TICKET_TTL_MS,
-          }
-          tickets.set(ticket.token, ticket)
-          return {
-            token: ticket.token,
-            email,
-            purpose: ticket.purpose,
-            expiresAt: new Date(ticket.expiresAt).toISOString(),
-            name: ticket.purpose === 'reset' ? findUser(email)?.name : undefined,
-          }
+      requestPasswordReset: (input: PasswordResetRequestInput) =>
+        respond((): PasswordResetChallenge => {
+          const parsed = passwordResetRequestSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Enter a valid email address.')
+          const { email } = parsed.data
+          // No account, no link — and the same answer either way.
+          return findUser(email) ? { email, devCode: issueCode('reset', email) } : { email }
         }),
 
-      setPin: (input: SetPinInput) =>
-        respond((): AuthSession => {
-          const parsed = setPinSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Pick a six-digit PIN.')
-          const { ticket: ticketToken, pin, firstName, lastName } = parsed.data
+      checkPasswordReset: (code: string) => respond(() => ({ email: readCode(code, 'reset').email })),
 
-          const ticket = tickets.get(ticketToken)
-          if (!ticket || ticket.expiresAt < Date.now()) {
-            tickets.delete(ticketToken)
-            throw new ApiError('unauthorized', 'That verification has expired. Start again.')
+      resetPassword: (input: PasswordResetInput) =>
+        respond((): User => {
+          const parsed = passwordResetSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Choose a new password.')
+          const found = readCode(parsed.data.code, 'reset')
+          const user = findUser(found.email)
+          if (!user) throw new ApiError('unauthorized', 'That link has expired or has already been used. Ask for a new one.')
+          codes.delete(parsed.data.code)
+
+          user.passwordSalt = randomToken('slt')
+          user.passwordHash = hashPassword(parsed.data.password, user.passwordSalt)
+          user.failedSignIns = 0
+          delete user.lockedUntil
+          // Opening the link proves the inbox, the way Firebase treats it.
+          user.emailVerified = true
+          // A new password ends the account's other sessions.
+          sessions = sessions.filter((session) => session.userId !== user.id)
+          return startSession(user)
+        }),
+
+      sendEmailVerification: () =>
+        respond((): EmailVerificationChallenge => {
+          const user = currentUser()
+          return user.emailVerified ? { email: user.email } : { email: user.email, devCode: issueCode('verify', user.email) }
+        }),
+
+      verifyEmail: (code: string) =>
+        respond(() => {
+          const found = readCode(code, 'verify')
+          codes.delete(code.trim())
+          const user = findUser(found.email)
+          if (user) {
+            user.emailVerified = true
+            persist()
           }
-          tickets.delete(ticketToken)
-
-          const pinSalt = randomId('slt')
-          const pinHash = hashPin(pin, pinSalt)
-          const existing = findUser(ticket.email)
-          let account: UserRecord
-
-          if (ticket.purpose === 'signup') {
-            if (existing) {
-              throw new ApiError('conflict', 'That email already has an account. Sign in instead.', { field: 'email' })
-            }
-            if (!firstName || !lastName) {
-              throw new ApiError('validation', 'Tell us your name to finish setting up your account.', {
-                field: firstName ? 'lastName' : 'firstName',
-              })
-            }
-            account = {
-              id: randomId('usr'),
-              email: ticket.email,
-              firstName,
-              lastName,
-              name: fullName(firstName, lastName),
-              createdAt: new Date().toISOString(),
-              pinHash,
-              pinSalt,
-              failedPins: 0,
-            }
-            state.users.push(account)
-          }
-          else {
-            if (!existing) throw new ApiError('not_found', 'We have no account for that email.', { field: 'email' })
-            account = existing
-            account.pinHash = pinHash
-            account.pinSalt = pinSalt
-            account.failedPins = 0
-            delete account.lockedUntil
-            // A new PIN ends the account's other sessions, the way a password change does.
-            state.sessions = state.sessions.filter((session) => session.userId !== account.id)
-          }
-
-          return startSession(account)
         }),
 
       me: () => respond(() => toUser(currentUser())),
@@ -337,7 +284,7 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
         respond(() => {
           const user = currentUser()
           const parsed = profileSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Check the details and try again.')
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Check the details and try again.')
           user.firstName = parsed.data.firstName
           user.lastName = parsed.data.lastName
           user.name = fullName(user.firstName, user.lastName)
@@ -350,9 +297,9 @@ export function createMockAuth(respond: <T>(produce: () => T | Promise<T>) => Pr
 
       signOut: () =>
         respond(() => {
-          state.sessions = state.sessions.filter((session) => session.token !== token)
-          persist()
+          sessions = sessions.filter((session) => session.token !== token)
           token = null
+          persist()
         }),
     },
   }

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { CheckIcon, ClockIcon, TicketCheckIcon, TriangleAlertIcon } from 'lucide-vue-next'
+import { CheckIcon, ClockIcon, RefreshCwIcon, TicketCheckIcon, TriangleAlertIcon } from 'lucide-vue-next'
 import { isApiError } from '@afriff/api'
 import type { OrderStatus } from '@afriff/api'
-import type { PaymentDraft } from '~/components/pass/PaymentFields.vue'
 
 const route = useRoute()
+const router = useRouter()
 const api = useApi()
-const { user } = useAuth()
+const payment = usePayment()
 const refreshAccount = useAccountRefresh()
+const demo = useRuntimeConfig().public.apiMode === 'mock'
 const id = String(route.params.id)
 
-const { data: order, status, error: loadError, refresh } = useLazyAsyncData(`order:${id}`, () => api.orders.get(id))
+const { data: order, status, error: loadError } = useLazyAsyncData(`order:${id}`, () => api.orders.get(id))
 /** `status` rather than `pending`: a lazy fetch is idle, not pending, on the first render. */
 const loading = computed(() => status.value !== 'success' && status.value !== 'error')
 
@@ -24,56 +25,55 @@ watchEffect(() => {
 const tone: Record<OrderStatus, { icon: typeof CheckIcon; title: string; className: string }> = {
   paid: { icon: CheckIcon, title: 'Paid', className: 'text-success bg-success-soft' },
   pending: { icon: ClockIcon, title: 'Waiting for payment', className: 'text-accent-ink bg-accent-soft' },
-  failed: { icon: TriangleAlertIcon, title: 'Payment failed', className: 'text-danger bg-danger-soft' },
+  failed: { icon: TriangleAlertIcon, title: 'Not paid', className: 'text-danger bg-danger-soft' },
 }
 
 const headline = computed(() => {
   const current = order.value
   if (!current) return ''
   if (current.status === 'paid') return 'Your tickets are ready'
-  if (current.status === 'failed') return current.payment.failureReason ?? 'That payment did not go through.'
-  return current.payment.method === 'transfer'
-    ? 'Send the transfer to finish your order'
-    : 'Your bank is still confirming this payment'
+  if (current.status === 'failed') return 'That payment did not go through'
+  return 'Finish paying to get your tickets'
 })
 
-const retrying = ref(false)
-const working = ref(false)
+/** What is happening right now: paying in the provider's checkout, or asking how a payment went. */
+const working = ref<'paying' | 'checking' | null>(null)
 const message = ref('')
-const payment = reactive<PaymentDraft>({ method: 'card', cardName: '', cardNumber: '', expiry: '', cvv: '' })
-watchEffect(() => {
-  payment.cardName ||= user.value?.name ?? ''
-})
 
-async function run(action: () => Promise<unknown>) {
-  working.value = true
+async function run(kind: 'paying' | 'checking', action: () => Promise<void>) {
+  working.value = kind
   message.value = ''
   try {
     await action()
-    await refresh()
-    // A payment that lands issues tickets; one that fails gives the stock back.
-    refreshAccount()
-    retrying.value = false
   }
   catch (error) {
     message.value = isApiError(error) ? error.message : 'That did not work. Try again.'
+    // An order paid since the page loaded says so as a conflict; show where it stands.
+    if (isApiError(error) && error.code === 'conflict') order.value = await api.orders.get(id).catch(() => order.value)
   }
   finally {
-    working.value = false
+    working.value = null
+    // A payment that lands issues tickets; one that fails gives the stock back.
+    refreshAccount()
   }
 }
 
-const retry = () =>
-  run(() =>
-    api.orders.pay(
-      id,
-      payment.method === 'card'
-        ? { method: 'card', cardName: payment.cardName, cardNumber: payment.cardNumber, expiry: payment.expiry, cvv: payment.cvv }
-        : { method: 'transfer' },
-    ),
-  )
+/** Pays, or carries on paying: the same attempt while it is open, a fresh one after a failure. */
+const payNow = () => run('paying', async () => {
+  order.value = await payment.pay(await api.orders.pay(id))
+})
 
-const confirmTransfer = () => run(() => api.orders.confirmTransfer(id))
+/** For a payment made but not yet seen: a bank transfer still clearing, or a closed tab. */
+const checkAgain = () => run('checking', async () => {
+  order.value = await api.orders.verify(id)
+})
+
+// Back from Paystack's own checkout page, which adds `?reference=` on the way.
+onMounted(() => {
+  if (!route.query.reference && !route.query.trxref) return
+  router.replace({ query: {} })
+  checkAgain()
+})
 </script>
 
 <template>
@@ -95,59 +95,45 @@ const confirmTransfer = () => run(() => api.orders.confirmTransfer(id))
           <span class="text-meta text-muted tabular-nums">· {{ order.reference }}</span>
           <UiCopyButton :value="order.reference" label="order reference" class="-ml-1.5" />
         </p>
-        <h1 class="mt-3 font-display text-h1 font-semibold">{{ headline }}</h1>
+        <h1 class="mt-3 font-display text-h1 font-semibold text-balance">{{ headline }}</h1>
+        <p v-if="order.status === 'failed' && order.payment.failureReason" class="mt-1.5 text-pretty text-ink">
+          {{ order.payment.failureReason }}
+        </p>
         <p class="mt-1.5 text-muted">
           Placed {{ formatDay(order.placedAt) }} at {{ formatTime(order.placedAt) }}.
           <template v-if="order.status === 'paid'">
-            {{ order.ticketIds.length }} {{ order.ticketIds.length === 1 ? 'ticket is' : 'tickets are' }} under My tickets.
+            {{ order.ticketIds.length }} {{ order.ticketIds.length === 1 ? 'ticket is' : 'tickets are' }} under My tickets<template v-if="demo">.</template>
+            <template v-else>, and a confirmation is on its way to {{ order.contact.email }}.</template>
           </template>
         </p>
       </header>
 
       <!-- What happens next -->
-      <UiCard v-if="order.status === 'pending' && order.payment.method === 'transfer'" class="space-y-3">
-        <h2 class="font-semibold">Transfer details</h2>
-        <dl class="grid gap-2 text-meta sm:grid-cols-2">
-          <div><dt class="text-muted">Bank</dt><dd class="font-medium">Demo Bank Nigeria</dd></div>
-          <div><dt class="text-muted">Account name</dt><dd class="font-medium">AFRIFF Tickets Ltd</dd></div>
-          <div>
-            <dt class="text-muted">Account number</dt>
-            <dd class="flex items-center gap-1 font-medium tabular-nums">
-              0123456789
-              <UiCopyButton value="0123456789" label="account number" class="-my-1.5" />
-            </dd>
-          </div>
-          <div>
-            <dt class="text-muted">Reference</dt>
-            <dd class="flex items-center gap-1 font-semibold tabular-nums">
-              {{ order.payment.reference }}
-              <UiCopyButton
-                v-if="order.payment.reference"
-                :value="order.payment.reference"
-                label="payment reference"
-                class="-my-1.5"
-              />
-            </dd>
-          </div>
-        </dl>
-        <p class="text-meta text-muted">
-          Quote the reference so we can match your transfer. In this demo build you can confirm it yourself.
-        </p>
-        <UiButton :loading="working" @click="confirmTransfer">I have sent the transfer</UiButton>
+      <UiCard v-if="order.status === 'pending'" class="space-y-3">
+        <h2 class="font-semibold">
+          {{ order.holdExpiresAt ? `Your tickets are held until ${formatTime(order.holdExpiresAt)}` : 'Your tickets are held' }}
+        </h2>
+        <p class="text-meta text-pretty text-muted">After that they go back on sale, and nothing is charged.</p>
+        <div class="flex flex-wrap gap-2">
+          <UiButton :loading="working === 'paying'" :disabled="working === 'checking'" @click="payNow">
+            Pay {{ formatMoney(order.total) }}
+          </UiButton>
+          <UiButton variant="secondary" :loading="working === 'checking'" :disabled="working === 'paying'" @click="checkAgain">
+            <RefreshCwIcon aria-hidden="true" />
+            I have paid, check again
+          </UiButton>
+        </div>
+        <p class="text-label text-pretty text-muted">A bank transfer or USSD payment can take a few minutes to clear.</p>
       </UiCard>
 
-      <UiCard v-else-if="order.status !== 'paid'" class="space-y-3">
-        <h2 class="font-semibold">{{ order.status === 'failed' ? 'Try another card' : 'Pay by card instead' }}</h2>
-        <p v-if="!retrying" class="text-meta text-muted">
-          Your tickets are held until this is settled.
+      <UiCard v-else-if="order.status === 'failed'" class="space-y-3">
+        <h2 class="font-semibold">Try again</h2>
+        <p class="text-meta text-pretty text-muted">
+          Paying again holds the tickets for you once more, if they are still available. Nothing was taken for the
+          attempt that failed.
         </p>
-        <PaymentFields v-if="retrying" v-model="payment" :disabled="working" />
-        <div class="flex flex-wrap gap-2">
-          <UiButton v-if="!retrying" @click="retrying = true">Try again</UiButton>
-          <template v-else>
-            <UiButton :loading="working" @click="retry">Pay {{ formatMoney(order.total) }}</UiButton>
-            <UiButton variant="ghost" :disabled="working" @click="retrying = false">Cancel</UiButton>
-          </template>
+        <div>
+          <UiButton :loading="working === 'paying'" @click="payNow">Pay {{ formatMoney(order.total) }}</UiButton>
         </div>
       </UiCard>
 
@@ -162,13 +148,12 @@ const confirmTransfer = () => run(() => api.orders.confirmTransfer(id))
             <dd class="text-right">{{ order.contact.name }}<br>{{ order.contact.email }}</dd>
           </div>
           <div class="flex justify-between gap-4 px-4 py-3 md:px-5">
-            <dt class="text-muted">Payment</dt>
-            <dd class="text-right tabular-nums">
-              <template v-if="order.payment.method === 'card'">
-                Card ending {{ order.payment.last4 }}
-              </template>
-              <template v-else>Bank transfer</template>
-            </dd>
+            <dt class="text-muted">{{ order.status === 'paid' ? 'Paid with' : 'Payment' }}</dt>
+            <dd class="text-right tabular-nums">{{ formatPaymentMethod(order.payment) }}</dd>
+          </div>
+          <div v-if="order.payment.reference" class="flex justify-between gap-4 px-4 py-3 md:px-5">
+            <dt class="text-muted">Payment reference</dt>
+            <dd class="text-right tabular-nums">{{ order.payment.reference }}</dd>
           </div>
         </dl>
       </UiCard>

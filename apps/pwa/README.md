@@ -2,7 +2,7 @@
 
 The attendee-facing app for the Africa International Film Festival: programme, tickets, checkout and the tickets an attendee already holds.
 
-**Current phase:** frontend only, fully local. There is no backend — all data comes from a typed mock API that stores what attendees create in the browser. See [`docs/ROADMAP-attendee-fe.md`](../../docs/ROADMAP-attendee-fe.md) for the feature plan.
+It runs on one of two API adapters, chosen by `NUXT_PUBLIC_API_MODE`: **`mock`** (the default), entirely in the browser on placeholder data, or **`firebase`**, on Firebase Auth, Firestore and Cloud Functions with Paystack for payment. Pages never know which. See [`docs/ROADMAP-attendee-fe.md`](../../docs/ROADMAP-attendee-fe.md) for the feature plan and the [Firebase backend guide](../../firebase/README.md) for the server side.
 
 ## Getting started
 
@@ -24,6 +24,8 @@ All commands below run from the repository root:
 
 To test offline: run `bun run preview:pwa`, open the app once, then turn on "Offline" in DevTools → Network (or airplane mode on a phone on the same Wi-Fi) and reload.
 
+To run against Firebase locally: start the emulators from the root (`bun run emulators`, then `bun run emulators:seed`), and set the three emulator lines at the end of `.env.example` in `apps/pwa/.env`.
+
 ## Stack
 
 Nuxt 4 in SPA mode (`ssr: false`) · Tailwind CSS 4 · TypeScript · Pinia (+ persisted state) · VueUse · `@vite-pwa/nuxt` · `lucide-vue-next` icons · Archivo + Onest from Fontsource (bundled, no Google Fonts request).
@@ -38,21 +40,24 @@ app/
   layouts/default.vue     app shell: phone header + tab bar, or desktop sidebar + top bar; offline banner, PWA prompts
   pages/                  index, /programme (+ [slug]), /tickets (Buy and My tickets) + /tickets/[id],
                           /my-festival, /updates, /info, /me, plus /venues/[slug], /cart, /checkout,
-                          /orders/[id], /signin, /signup, /reset-pin, /styleguide
+                          /orders/[id], /signin, /signup, /forgot-password, /auth/action (links in account
+                          emails), /styleguide
   components/
     app/                  shell pieces (AppSidebar, AppTopBar, AppHeader, AppTabBar, AppPageHeader, AppUpdateBanner, AppPwaPrompts, …)
-    auth/                 AuthCodeStep, AuthPinStep — the steps /signup and /reset-pin share
+    auth/                 AuthPanel (the frame every account screen shares), AuthDemoNotice, AuthVerifyEmailCard
     film/                 FilmPoster, FilmCard, FilmScreeningRow
     programme/            ProgrammeItemCard, ProgrammeDayPicker, ProgrammeFilterSheet, ProgrammeSectionCard
     home/                 Home sections (HomeHero, HomeNowNext, HomeFeatured, HomeDontMiss, HomeVenues, …)
-    pass/                 PassProductCard, PassOptionSheet, CartLineRow, OrderSummary, PaymentFields
+    pass/                 PassProductCard, PassOptionSheet, CartLineRow, OrderSummary, PaymentMethodsNote,
+                          MockCheckoutSheet (mock mode's stand-in for Paystack's checkout)
     ticket/               TicketCard, TicketQrCode, TicketTransferSheet
     plan/                 PlanSaveButton — the bookmark toggle used across the programme
-  composables/            useApi, useAuth, usePinSetup, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useMyTickets, useUpdates, useReminders, useTheme, useBreadcrumb
+  composables/            useApi, useAuth, usePayment, useFieldErrors, useFestival, useProgramme, useProgrammeFilters, useHomeFeed, useFestivalClock, useMyTickets, useUpdates, useReminders, useTheme, useBreadcrumb
   middleware/auth.ts      sends guests to /signin and back again
   stores/                 Pinia stores (prefs, session, cart, plan, reminders, inbox)
-  plugins/api.ts          selects and injects the shared API adapter
-  plugins/auth.client.ts  restores the saved session into the adapter on start-up
+  plugins/api.ts          loads and injects the chosen API adapter (mock or Firebase)
+  plugins/auth.client.ts  asks the adapter who is signed in on start-up, and follows later changes
+  types/                  declarations for packages that ship none (Paystack InlineJS)
   utils/                  Nuxt auto-import bridges to @afriff/api; attendee navigation
 public/                   attendee robots.txt
 ../../layers/ui-kit/     shared Nuxt layer: UI/brand components, tokens, fonts, icons
@@ -63,13 +68,13 @@ public/                   attendee robots.txt
                           plan logic (`@afriff/api/plan`) and update sorting (`@afriff/api/updates`)
 ```
 
-## How the mock API works
+## How the API works
 
-- Pages call `useApi()` and get an object that implements `AttendeeApi` (`@afriff/api`).
-- In mock mode, `@afriff/api/mock` answers from seed files with simulated latency (`NUXT_PUBLIC_MOCK_LATENCY`, default 450 ms), so loading states are real.
-- Anything attendees create (accounts, orders, tickets — from F3 onward) is written through `mockDb` into `localStorage` under `afriff:mockdb:*`.
-- **Accounts (F3):** `auth.signIn` takes an email and a six-digit PIN. Getting a PIN — signing up, or replacing a forgotten one — runs `requestCode` → `verifyCode` → `setPin`. In mock mode `requestCode` returns the code it would have emailed (`devCode`) so the screen can show it, and **any six digits are accepted** while there is no mail integration (`ACCEPT_ANY_CODE` in `mock/auth.ts`). `setPin` returns a token, which the app keeps in the `session` store and hands back to the adapter with `setAuthToken`. PINs are stored salted and hashed, five wrong ones lock an account for five minutes, and a reset ends the account's other sessions.
-- **Buying (F4):** `/tickets` has two tabs, Buy and My tickets (`?view=mine`). The cart lives in the `cart` store on the device; `orders.checkout` takes the items, checks them against the catalogue and the programme, decides the payment outcome and issues tickets. Payment outcomes are deterministic in mock mode: a card ending 0000 is declined, one ending 0001 stays pending, anything else is paid, and a transfer waits for `orders.confirmTransfer`.
+- Pages call `useApi()` and get an object that implements `AttendeeApi` (`@afriff/api`). `plugins/api.ts` loads only the adapter `NUXT_PUBLIC_API_MODE` names, and refuses to start on an unknown one rather than quietly falling back to the mock.
+- **Mock mode:** `@afriff/api/mock` answers from seed files with simulated latency (`NUXT_PUBLIC_MOCK_LATENCY`, default 450 ms), so loading states are real. What attendees create is written through `mockDb` into `localStorage` under `afriff:mockdb:*`.
+- **Firebase mode:** `@afriff/api/firebase` reads Firestore directly (guarded by `firebase/firestore.rules`) and calls Cloud Functions for anything that moves money or stock. Firestore's offline cache and the Auth session live in IndexedDB, so tickets open offline once loaded.
+- **Accounts:** an email and a password (at least 8 characters). `/signup` creates the account and sends a link to confirm the email; Me nudges until it is confirmed (`AuthVerifyEmailCard`), but nothing is held back meanwhile. `/forgot-password` sends a reset link that lands on `/auth/action`, which also confirms emails; Firebase's email templates point there. The adapter owns the session: on start-up the app asks `auth.restore()` who is signed in, and `auth.onSessionChange` reports a sign-out in another tab or a session ended by a reset elsewhere. The `session` store is only a copy of the account, for an instant and offline start. In mock mode no email is sent: the reset or confirmation link is offered on screen instead (`devCode`).
+- **Buying:** `/tickets` has two tabs, Buy and My tickets (`?view=mine`). The cart lives in the `cart` store on the device until `/checkout`, where `orders.checkout` prices the order on the server, holds the tickets for 30 minutes and returns a `PaymentIntent`. `usePayment` opens Paystack's checkout with it (or, in mock mode, the stand-in sheet, where you choose to pay or decline) and then asks `orders.verify` how it went. It never decides the outcome itself. The order page resumes or retries payment (`orders.pay`) and checks again on return from Paystack's hosted page (`?reference=`). Card details never pass through the app.
 - **Tickets (F5):** `tickets.list` and `tickets.get` come denormalised — title, time, venue, room, holder — so `/tickets/[id]` needs nothing else to render. `tickets.transfer` marks the sender's copy `transferred` and issues the recipient a new ticket with its own code; if that email has no account yet, the ticket waits under it and is picked up the first time they sign in. Stored statuses are `valid`, `used`, `transferred` and `void`; `expired` is worked out from the clock by `ticketState`. **Passing a ticket on is parked:** the API and `TicketTransferSheet` are still here, but the "Pass it on" button on `/tickets/[id]` is commented out until we decide to ship it (see [Parked for later](../../docs/ROADMAP-attendee-fe.md#parked-for-later)).
 - **My festival (F6):** `saved.list / add / remove / merge` keeps one list per account covering films, screenings and events. The `plan` store mirrors it on the device so saving works signed out; `merge` folds that device list into the account at sign-in, and signing out clears the device copy. `@afriff/api/plan` turns saved items plus tickets into the schedule (`buildPlan`, `groupPlanByDay`) and finds where it cannot be kept (`planWarnings`: a clash, or less than 45 minutes between two venues). Reminders are device-only timers in the `reminders` store and fire only while the app is open.
 - **Updates (F7):** `updates.list()` is public and returns every seeded update with the moment it was published; the app shows what the festival clock says has happened, so the dev clock presets on Me simulate the week filling up. `@afriff/api/updates` decides what touches this attendee (`refsFromTickets` + `refsFromSaved` → `touches`), what is unread (`unreadCount`) and what earns the banner (`urgentForAttendee`: urgent, theirs, unread, undismissed). Read state is device-only, in the `inbox` store.
@@ -116,7 +121,7 @@ Everything on `/programme` is in the query string, so any view can be linked to 
 ## Developer tools (Me tab)
 
 - **Festival clock:** pin "now" to a moment in festival week (week before, opening night, day 3, closing night, after) to preview Home's time-based states. Stored in `prefs.devNow`.
-- **Reset demo data:** clears the mock DB and all `afriff:*` keys on this device.
+- **Reset demo data** (mock mode only): clears the mock DB and all `afriff:*` keys on this device.
 
 ## Decisions so far
 
@@ -128,7 +133,8 @@ Everything on `/programme` is in the query string, so any view can be linked to 
 | All times shown in Africa/Lagos | Attendees and venues are in Lagos regardless of device timezone. |
 | `useProgramme()` loads the whole programme once | Small data set; one cached request feeds Home and Programme. Revisit (paging / per-day queries) with the real API. |
 | Generated poster art | Works offline with no image assets; swap for real key art later via an `imageUrl` field. |
-| Session token held by the API adapter | `setAuthToken` mirrors how the http adapter will send `Authorization`, so pages never pass tokens around. |
+| Session held by the API adapter | Firebase keeps and refreshes its own tokens; the app only asks who is signed in, so pages never pass tokens around. |
+| Payment outcome decided on the server | The browser's "success" is only a hint to ask; the webhook and `orders.verify` settle the order. |
 | Filters in the URL, not a store | Shareable links, Back button and reload all just work; `router.replace` avoids history spam. |
 | Film/venue pages read from `useProgramme()` | Instant and offline once the programme has loaded. The contract's `getFilm(slug)` stays for the real API. |
 | Only `/` precached for navigation | Every SPA route has the same HTML shell; `navigateFallback` serves it offline. |

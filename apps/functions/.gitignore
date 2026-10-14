@@ -1,0 +1,6 @@
+# Bundled deploy output (see build.ts)
+dist
+# Local parameter overrides and emulator secrets
+.env.local
+.env.*.local
+.secret.local

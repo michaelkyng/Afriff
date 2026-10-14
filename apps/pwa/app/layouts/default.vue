@@ -1,3 +1,8 @@
+<script setup lang="ts">
+// Only the mock adapter has a stand-in checkout; with Paystack the provider draws its own.
+const { $mockGateway } = useNuxtApp()
+</script>
+
 <template>
   <div class="min-h-dvh md:flex">
     <a
@@ -21,5 +26,6 @@
 
     <AppTabBar />
     <AppPwaPrompts />
+    <MockCheckoutSheet v-if="$mockGateway" />
   </div>
 </template>

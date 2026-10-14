@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  checkoutSchema,
   filmQuerySchema,
-  otpCodeSchema,
-  pinSchema,
+  NIGERIAN_PHONE_PATTERN,
+  passwordResetRequestSchema,
+  passwordResetSchema,
+  passwordSchema,
   profileSchema,
-  requestCodeSchema,
   screeningQuerySchema,
-  setPinSchema,
   signInSchema,
-  verifyCodeSchema,
+  signUpSchema,
 } from '@afriff/validation'
 
 describe('shared programme input validation', () => {
@@ -32,49 +33,73 @@ describe('shared programme input validation', () => {
 
 describe('shared account input validation', () => {
   test('normalises the email address', () => {
-    expect(requestCodeSchema.parse({ email: '  Ada@Example.COM ', purpose: 'signup' }))
-      .toEqual({ email: 'ada@example.com', purpose: 'signup' })
-    expect(requestCodeSchema.safeParse({ email: 'ada@', purpose: 'signup' }).success).toBe(false)
-    expect(requestCodeSchema.safeParse({ email: 'ada@example.com' }).success).toBe(false)
-    expect(requestCodeSchema.safeParse({ email: 'ada@example.com', purpose: 'whatever' }).success).toBe(false)
+    expect(passwordResetRequestSchema.parse({ email: '  Ada@Example.COM ' })).toEqual({ email: 'ada@example.com' })
+    expect(passwordResetRequestSchema.safeParse({ email: 'ada@' }).success).toBe(false)
+    expect(passwordResetRequestSchema.safeParse({}).success).toBe(false)
   })
 
-  test('accepts only a six-digit code', () => {
-    expect(otpCodeSchema.parse(' 012345 ')).toBe('012345')
-    expect(otpCodeSchema.safeParse('12345').success).toBe(false)
-    expect(otpCodeSchema.safeParse('12345a').success).toBe(false)
-    expect(verifyCodeSchema.parse({ email: 'ADA@example.com', code: '012345' }))
-      .toEqual({ email: 'ada@example.com', code: '012345' })
+  test('signing in only needs a password to have been typed, and never trims it', () => {
+    expect(signInSchema.parse({ email: 'ADA@example.com', password: ' pass ' }))
+      .toEqual({ email: 'ada@example.com', password: ' pass ' })
+    expect(signInSchema.safeParse({ email: 'ada@example.com', password: '' }).success).toBe(false)
   })
 
-  test('takes the same six digits for a PIN when signing in', () => {
-    expect(signInSchema.parse({ email: 'ada@example.com', pin: ' 481902 ' }).pin).toBe('481902')
-    expect(signInSchema.safeParse({ email: 'ada@example.com', pin: '4819' }).success).toBe(false)
-    expect(pinSchema.safeParse('111111').success).toBe(true)
-  })
-
-  test('takes any six digits when a PIN is being chosen', () => {
-    for (const pin of ['481902', '000000', '111111', '123456', '654321']) {
-      expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin }).success).toBe(true)
+  test('a chosen password needs at least eight characters, of any kind', () => {
+    for (const password of ['harmattan', 'correct horse battery staple', '12345678', 'àṣẹ àṣẹ àṣẹ']) {
+      expect(passwordSchema.safeParse(password).success).toBe(true)
     }
-    for (const pin of ['', '12345', '1234567', '12345a']) {
-      expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin }).success).toBe(false)
+    for (const password of ['', 'short', '1234567', 'x'.repeat(129)]) {
+      expect(passwordSchema.safeParse(password).success).toBe(false)
     }
   })
 
-  test('takes a first and last name when signing up, and none when resetting a PIN', () => {
-    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902' })).not.toHaveProperty('firstName')
-    expect(setPinSchema.parse({ ticket: 'vrf_1', pin: '481902', firstName: ' Ada ', lastName: ' Okoye ' }))
+  test('signing up takes a first and last name, trimmed', () => {
+    expect(signUpSchema.parse({ email: 'ada@example.com', password: 'harmattan', firstName: ' Ada ', lastName: ' Okoye ' }))
       .toMatchObject({ firstName: 'Ada', lastName: 'Okoye' })
-    expect(setPinSchema.safeParse({ ticket: 'vrf_1', pin: '481902', firstName: 'Ada', lastName: ' ' }).success).toBe(false)
-    expect(setPinSchema.safeParse({ ticket: '', pin: '481902' }).success).toBe(false)
+    expect(signUpSchema.safeParse({ email: 'ada@example.com', password: 'harmattan', firstName: 'Ada', lastName: ' ' }).success)
+      .toBe(false)
+    expect(signUpSchema.safeParse({ email: 'ada@example.com', password: 'harmattan', firstName: 'Ada' }).success).toBe(false)
+  })
+
+  test('a password reset needs the code from the link and a new password', () => {
+    expect(passwordResetSchema.parse({ code: ' oob-123 ', password: 'harmattan' })).toEqual({ code: 'oob-123', password: 'harmattan' })
+    expect(passwordResetSchema.safeParse({ code: '', password: 'harmattan' }).success).toBe(false)
+    expect(passwordResetSchema.safeParse({ code: 'oob-123', password: 'short' }).success).toBe(false)
   })
 
   test('accepts Nigerian phone numbers, and an empty one', () => {
-    for (const phone of ['08031234567', '0803 123 4567', '+234 803 123 4567', '234-803-123-4567', '']) {
+    for (const phone of ['08031234567', '0803 123 4567', '+234 803 123 4567', '234-803-123-4567', '0803.123.4567', '']) {
       expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye', phone }).success).toBe(true)
     }
-    expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye', phone: '123' }).success).toBe(false)
+    for (const phone of ['123', '0803\t123\t4567', '+44 7700 900123']) {
+      expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye', phone }).success).toBe(false)
+    }
     expect(profileSchema.safeParse({ firstName: 'Ada', lastName: 'Okoye' }).success).toBe(true)
+  })
+
+  test('the phone pattern has no backslashes, so the Firestore rules can share it word for word', () => {
+    expect(NIGERIAN_PHONE_PATTERN).not.toContain('\\')
+  })
+})
+
+describe('shared checkout input validation', () => {
+  const contact = { name: 'Ada Okoye', email: 'ada@example.com' }
+
+  test('takes the items and who they are for, and no payment details', () => {
+    const parsed = checkoutSchema.parse({ items: [{ productId: 'prod_festival_pass', quantity: 1 }], contact })
+    expect(parsed).toEqual({ items: [{ productId: 'prod_festival_pass', quantity: 1 }], contact })
+    // Card details have no business here: Paystack's checkout takes them.
+    const withCard = checkoutSchema.parse({
+      items: [{ productId: 'prod_festival_pass', quantity: 1 }],
+      contact,
+      payment: { method: 'card', cardNumber: '4111111111111111' },
+    })
+    expect(withCard).not.toHaveProperty('payment')
+  })
+
+  test('refuses an empty cart and a bad contact email', () => {
+    expect(checkoutSchema.safeParse({ items: [], contact }).success).toBe(false)
+    expect(checkoutSchema.safeParse({ items: [{ productId: 'p', quantity: 1 }], contact: { ...contact, email: 'nope' } }).success)
+      .toBe(false)
   })
 })

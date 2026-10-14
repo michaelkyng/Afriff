@@ -1,4 +1,4 @@
-import type { Money } from './types'
+import type { Money, OrderPayment, PaymentChannel } from './types'
 
 /** All festival times are shown in Lagos time, whatever the device timezone. */
 export const FESTIVAL_TZ = 'Africa/Lagos'
@@ -106,4 +106,25 @@ export function splitDuration(ms: number): DurationParts {
     minutes: Math.floor((totalSeconds % 3600) / 60),
     seconds: totalSeconds % 60,
   }
+}
+
+const CHANNEL_LABELS: Record<PaymentChannel, string> = {
+  card: 'Card',
+  bank: 'Bank account',
+  bank_transfer: 'Bank transfer',
+  ussd: 'USSD',
+  qr: 'QR code',
+  mobile_money: 'Mobile money',
+  apple_pay: 'Apple Pay',
+  other: 'Paystack',
+}
+
+/** How an order was (or is being) paid: "Visa ending 4081", "Bank transfer", or who takes the money. */
+export function formatPaymentMethod(payment: OrderPayment): string {
+  if (payment.channel === 'card' && payment.last4) {
+    const brand = payment.cardBrand ? payment.cardBrand.charAt(0).toUpperCase() + payment.cardBrand.slice(1) : 'Card'
+    return `${brand} ending ${payment.last4}`
+  }
+  if (payment.channel) return CHANNEL_LABELS[payment.channel]
+  return payment.provider === 'mock' ? 'Test checkout' : 'Paystack'
 }

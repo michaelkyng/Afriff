@@ -1,55 +1,62 @@
-import { checkoutSchema, paymentSchema, ticketTransferSchema } from '@afriff/validation'
-import { ApiError } from '../contract'
+import { checkoutSchema, ticketTransferSchema } from '@afriff/validation'
+import { ApiError, validationError } from '../contract'
 import type { AttendeeApi } from '../contract'
-import { formatDay, formatDateRange, formatTime } from '../format'
-import type {
-  CheckoutInput,
-  Order,
-  OrderLine,
-  PaymentInput,
-  Ticket,
-  TicketProduct,
-  TicketSelection,
-  TicketTransferInput,
-  User,
-} from '../types'
+import {
+  assertAvailable,
+  attemptReference,
+  catalogFrom,
+  demandOf,
+  HOLD_EXPIRED_REASON,
+  holdExpiry,
+  LATE_PAYMENT_REASON,
+  MAX_OPEN_ORDERS,
+  newId,
+  orderTotal,
+  paymentChannel,
+  paymentFailureReason,
+  resolveLine,
+  seatsLeftAt,
+  ticketsFor,
+  type StockLevels,
+} from '../orders'
+import type { CheckoutInput, Order, OrderLine, PaymentIntent, Ticket, TicketProduct, TicketTransferInput, User } from '../types'
 import { mockDb } from './db'
+import type { MockPaymentProvider, MockTransaction } from './payments'
 import * as seed from './seed'
 
 /**
  * Orders, payments and tickets for the mock API.
  *
- * It plays the part the backend and the payment provider will play together:
- * it checks the cart against the catalogue and the programme, holds stock,
- * decides how the payment goes, and issues tickets when money lands. Orders and
- * tickets belong to the signed-in attendee and are mirrored to localStorage, so
- * a reload keeps them.
+ * It plays the part the Cloud Functions play behind the Firebase adapter: it
+ * checks the cart against the catalogue and the programme (with the same rules,
+ * from `../orders`), holds stock while the attendee pays, opens the payment with
+ * the stand-in provider, and settles the order when asked how it went — tickets
+ * when the money landed, stock back when it did not.
  *
- * Payment outcomes are deterministic, so every branch can be demonstrated:
- * a card number ending 0000 is declined, one ending 0001 stays pending, any
- * other card is paid at once, and a transfer is pending until it is confirmed.
+ * Orders and tickets belong to the signed-in attendee and are mirrored to
+ * localStorage, so a reload keeps them.
  */
 
-const CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+type StoredOrder = Order & {
+  userId: string
+  /** Whether the order is currently holding its stock. */
+  holds: boolean
+  /** Every reference opened for it, oldest first. */
+  attempts: string[]
+  /** Set when money landed that could not be turned into tickets. */
+  refundDue?: boolean
+}
+
+type StoredTicket = Ticket & { userId: string }
 
 interface OrdersState {
-  orders: (Order & { userId: string })[]
-  tickets: (Ticket & { userId: string })[]
-  /** Units sold per product, on top of the seed's `remaining`. */
+  orders: StoredOrder[]
+  tickets: StoredTicket[]
+  /** Units sold per product and per `screening:<id>`, on top of the seed. */
   sold: Record<string, number>
 }
 
-function randomCode(length: number): string {
-  const bytes = typeof crypto !== 'undefined' && crypto.getRandomValues
-    ? crypto.getRandomValues(new Uint8Array(length))
-    : Array.from({ length }, () => Math.floor(Math.random() * 256))
-  return Array.from(bytes, (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join('')
-}
-
-function fail(issues: { message: string; path: PropertyKey[] }[], fallback: string): never {
-  const first = issues[0]
-  throw new ApiError('validation', first?.message ?? fallback, { issues, field: first?.path.join('.') })
-}
+const catalog = catalogFrom(seed)
 
 export interface MockOrders {
   orders: AttendeeApi['orders']
@@ -61,10 +68,12 @@ export interface MockOrders {
 /**
  * @param respond wraps results in the adapter's simulated latency and deep copy.
  * @param requireUser resolves the signed-in attendee, or throws `unauthorized`.
+ * @param payments the stand-in for Paystack.
  */
 export function createMockOrders(
   respond: <T>(produce: () => T | Promise<T>) => Promise<T>,
   requireUser: () => User,
+  payments: MockPaymentProvider,
 ): MockOrders {
   const state: OrdersState = {
     orders: mockDb.read<OrdersState['orders']>('orders', []),
@@ -78,209 +87,39 @@ export function createMockOrders(
     mockDb.write('stock', state.sold)
   }
 
-  const remainingOf = (product: TicketProduct) =>
-    product.remaining === null ? null : Math.max(0, product.remaining - (state.sold[product.id] ?? 0))
-
-  /** Seats left at a screening: the seed's own sales plus anything bought here. */
-  function seatsLeft(screeningId: string): number {
-    const screening = seed.screenings.find((item) => item.id === screeningId)
-    if (!screening) return 0
-    return Math.max(0, screening.capacity - screening.sold - (state.sold[`screening:${screeningId}`] ?? 0))
+  const stock: StockLevels = {
+    remaining(productId) {
+      const product = catalog.product(productId)
+      if (!product || product.remaining === null) return null
+      return Math.max(0, product.remaining - (state.sold[productId] ?? 0))
+    },
+    seatsLeft(screeningId) {
+      const screening = catalog.screening(screeningId)
+      if (!screening) return 0
+      return seatsLeftAt({ capacity: screening.capacity, sold: screening.sold + (state.sold[`screening:${screeningId}`] ?? 0) })
+    },
   }
 
-  function venueOf(venueId: string) {
-    return seed.venues.find((venue) => venue.id === venueId)
-  }
-
-  /**
-   * Checks a line against the catalogue and the programme, and describes what was
-   * bought. Everything an attendee could get wrong is caught here.
-   */
-  function resolveLine(input: { productId: string; quantity: number; selection?: TicketSelection }): OrderLine {
-    const product = seed.products.find((item) => item.id === input.productId)
-    if (!product) throw new ApiError('not_found', 'That ticket is no longer on sale.', { productId: input.productId })
-
-    const selection = input.selection ?? {}
-    const line: OrderLine = {
-      id: `line_${randomCode(8).toLowerCase()}`,
-      productId: product.id,
-      productName: product.name,
-      kind: product.kind,
-      unitPrice: product.price,
-      quantity: input.quantity,
-      title: product.name,
-    }
-
-    switch (product.validity.type) {
-      case 'festival': {
-        line.detail = formatDateRange(seed.festival.startsAt, seed.festival.endsAt)
-        break
-      }
-      case 'day': {
-        const day = seed.festival.days.find((item) => item.date === selection.day)
-        if (!day) throw new ApiError('validation', 'Choose which day this pass is for.', { field: 'selection.day' })
-        line.selection = { day: day.date }
-        line.detail = day.label
-        break
-      }
-      case 'screening': {
-        const screening = seed.screenings.find((item) => item.id === selection.screeningId)
-        if (!screening) throw new ApiError('validation', 'Choose which screening this ticket is for.', { field: 'selection.screeningId' })
-        const film = seed.films.find((item) => item.id === screening.filmId)
-        const venue = venueOf(screening.venueId)
-        const screen = venue?.screens.find((item) => item.id === screening.screenId)
-        line.selection = { screeningId: screening.id }
-        line.title = film?.title ?? product.name
-        line.detail = `${formatDay(screening.startsAt)}, ${formatTime(screening.startsAt)} · ${venue?.shortName ?? ''}${screen ? `, ${screen.name}` : ''}`
-        break
-      }
-      case 'event': {
-        const wanted = product.validity.eventId ?? selection.eventId
-        const event = seed.events.find((item) => item.id === wanted)
-        if (!event || event.kind !== product.validity.eventKind) {
-          throw new ApiError('validation', 'Choose which session this ticket is for.', { field: 'selection.eventId' })
-        }
-        line.selection = { eventId: event.id }
-        line.title = event.title
-        line.detail = `${formatDay(event.startsAt)}, ${formatTime(event.startsAt)} · ${venueOf(event.venueId)?.name ?? ''}`
-        break
-      }
-    }
-
-    return line
-  }
-
-  /**
-   * Limits and stock apply to the whole order, not to one line, so splitting a
-   * product across lines cannot get past the per-order cap.
-   */
-  function assertAvailability(lines: OrderLine[]) {
-    const byProduct = new Map<string, number>()
-    const byScreening = new Map<string, number>()
+  function moveStock(lines: OrderLine[], direction: 1 | -1) {
     for (const line of lines) {
-      byProduct.set(line.productId, (byProduct.get(line.productId) ?? 0) + line.quantity)
-      const screeningId = line.selection?.screeningId
-      if (screeningId) byScreening.set(screeningId, (byScreening.get(screeningId) ?? 0) + line.quantity)
-    }
-
-    for (const [productId, quantity] of byProduct) {
-      const product = seed.products.find((item) => item.id === productId)!
-      if (quantity > product.maxPerOrder) {
-        throw new ApiError('validation', `Up to ${product.maxPerOrder} ${product.name} tickets per order.`, {
-          field: 'quantity',
-          productId,
-        })
-      }
-      const left = remainingOf(product)
-      if (left !== null && quantity > left) {
-        throw new ApiError('sold_out', left === 0 ? `${product.name} is sold out.` : `Only ${left} left for ${product.name}.`, {
-          productId,
-          remaining: left,
-        })
-      }
-    }
-
-    for (const [screeningId, quantity] of byScreening) {
-      const left = seatsLeft(screeningId)
-      if (quantity > left) {
-        throw new ApiError('sold_out', left === 0 ? 'That screening is sold out.' : `Only ${left} seats left at that screening.`, {
-          screeningId,
-          remaining: left,
-        })
-      }
+      const keys = [line.productId, ...(line.selection?.screeningId ? [`screening:${line.selection.screeningId}`] : [])]
+      for (const key of keys) state.sold[key] = Math.max(0, (state.sold[key] ?? 0) + direction * line.quantity)
     }
   }
 
-  function takeStock(lines: OrderLine[]) {
-    for (const line of lines) {
-      state.sold[line.productId] = (state.sold[line.productId] ?? 0) + line.quantity
-      if (line.selection?.screeningId) {
-        const key = `screening:${line.selection.screeningId}`
-        state.sold[key] = (state.sold[key] ?? 0) + line.quantity
-      }
-    }
+  const takeStock = (order: StoredOrder) => {
+    moveStock(order.lines, 1)
+    order.holds = true
   }
 
-  function releaseStock(lines: OrderLine[]) {
-    for (const line of lines) {
-      state.sold[line.productId] = Math.max(0, (state.sold[line.productId] ?? 0) - line.quantity)
-      if (line.selection?.screeningId) {
-        const key = `screening:${line.selection.screeningId}`
-        state.sold[key] = Math.max(0, (state.sold[key] ?? 0) - line.quantity)
-      }
-    }
+  const releaseStock = (order: StoredOrder) => {
+    if (order.holds) moveStock(order.lines, -1)
+    order.holds = false
   }
 
-  /** The mock payment provider: the card number decides, transfers wait. */
-  function settle(order: Order, payment: PaymentInput) {
-    const parsed = paymentSchema.safeParse(payment)
-    if (!parsed.success) fail(parsed.error.issues, 'Check the payment details.')
-    const details = parsed.data
-
-    if (details.method === 'transfer') {
-      order.payment = { method: 'transfer', reference: order.reference }
-      order.status = 'pending'
-      return
-    }
-
-    const digits = details.cardNumber.replace(/\s/g, '')
-    const last4 = digits.slice(-4)
-    if (last4 === '0000') {
-      order.payment = { method: 'card', last4, failureReason: 'Your bank declined this payment.' }
-      order.status = 'failed'
-      return
-    }
-    if (last4 === '0001') {
-      order.payment = { method: 'card', last4, reference: order.reference }
-      order.status = 'pending'
-      return
-    }
-    order.payment = { method: 'card', last4, reference: order.reference }
-    order.status = 'paid'
-  }
-
-  /** Turns a paid order into admissions, one ticket per seat. */
-  function issueTickets(order: Order & { userId: string }) {
-    if (order.ticketIds.length) return
-    for (const line of order.lines) {
-      for (let index = 0; index < line.quantity; index += 1) {
-        const screening = line.selection?.screeningId
-          ? seed.screenings.find((item) => item.id === line.selection?.screeningId)
-          : undefined
-        const event = line.selection?.eventId
-          ? seed.events.find((item) => item.id === line.selection?.eventId)
-          : undefined
-        const venueId = screening?.venueId ?? event?.venueId
-        const venue = venueId ? venueOf(venueId) : undefined
-        const ticket: Ticket & { userId: string } = {
-          id: `tkt_${randomCode(12).toLowerCase()}`,
-          code: `AF-${randomCode(4)}-${randomCode(4)}`,
-          userId: order.userId,
-          orderId: order.id,
-          productId: line.productId,
-          productName: line.productName,
-          kind: line.kind,
-          status: 'valid',
-          holderName: order.contact.name,
-          title: line.title,
-          subtitle: line.detail,
-          startsAt: screening?.startsAt ?? event?.startsAt,
-          endsAt: screening?.endsAt ?? event?.endsAt,
-          venueName: venue?.name,
-          venueId: venue?.id,
-          roomName: screening ? venue?.screens.find((item) => item.id === screening.screenId)?.name : undefined,
-          selection: line.selection,
-          issuedAt: new Date().toISOString(),
-        }
-        state.tickets.push(ticket)
-        order.ticketIds.push(ticket.id)
-      }
-    }
-  }
-
-  /** Orders and tickets are stored with an owner; callers never see it. */
-  const publicOrder = ({ userId: _userId, ...order }: Order & { userId: string }): Order => order
-  const publicTicket = ({ userId: _userId, ...ticket }: Ticket & { userId: string }): Ticket => ticket
+  /** Orders and tickets are stored with an owner and bookkeeping; callers never see it. */
+  const publicOrder = ({ userId: _u, holds: _h, attempts: _a, refundDue: _r, ...order }: StoredOrder): Order => order
+  const publicTicket = ({ userId: _userId, ...ticket }: StoredTicket): Ticket => ticket
 
   function findOrder(id: string, userId: string) {
     const order = state.orders.find((item) => item.id === id && item.userId === userId)
@@ -294,65 +133,145 @@ export function createMockOrders(
     return ticket
   }
 
+  function openAttempt(order: StoredOrder): PaymentIntent {
+    const reference = attemptReference(order.reference, order.attempts.length + 1)
+    order.attempts.push(reference)
+    order.payment = { provider: 'mock', reference }
+    return payments.open({ orderId: order.id, reference, amount: order.total, email: order.contact.email })
+  }
+
+  /**
+   * What the provider says about the latest attempt, applied to the order. The
+   * same steps as `settle` in the Cloud Functions, in the same order.
+   */
+  function settle(order: StoredOrder, transaction: MockTransaction | undefined) {
+    if (!transaction || order.status === 'paid') return
+    if (transaction.status === 'success') {
+      if (transaction.amount.amount !== order.total.amount) {
+        releaseStock(order)
+        order.status = 'failed'
+        order.payment = { ...order.payment, failureReason: 'The amount paid did not match the order. We will be in touch.' }
+        order.refundDue = true
+        return
+      }
+      if (!order.holds) {
+        try {
+          assertAvailable(demandOf(order.lines), catalog, stock)
+          takeStock(order)
+        }
+        catch {
+          order.status = 'failed'
+          order.payment = { ...order.payment, failureReason: LATE_PAYMENT_REASON }
+          order.refundDue = true
+          return
+        }
+      }
+      const issuedAt = new Date().toISOString()
+      const tickets = ticketsFor(order, catalog, issuedAt)
+      state.tickets.push(...tickets.map((ticket) => ({ ...ticket, userId: order.userId })))
+      order.status = 'paid'
+      order.paidAt = issuedAt
+      order.ticketIds = tickets.map((ticket) => ticket.id)
+      delete order.holdExpiresAt
+      order.payment = {
+        provider: 'mock',
+        reference: transaction.reference,
+        channel: paymentChannel(transaction.channel),
+        last4: transaction.last4,
+        cardBrand: transaction.cardBrand,
+      }
+      return
+    }
+    if (transaction.status === 'failed' && transaction.reference === order.payment.reference) {
+      releaseStock(order)
+      order.status = 'failed'
+      delete order.holdExpiresAt
+      order.payment = { ...order.payment, failureReason: paymentFailureReason(transaction.gatewayResponse) }
+    }
+  }
+
+  /**
+   * Unpaid orders past their hold give their stock back, unless the provider
+   * says the money landed after all. The server does this on a schedule; the mock
+   * does it whenever it is asked about orders.
+   */
+  function sweep() {
+    const now = new Date().toISOString()
+    let changed = false
+    for (const order of state.orders) {
+      if (order.status !== 'pending' || !order.holdExpiresAt || order.holdExpiresAt > now) continue
+      const latest = order.payment.reference ? payments.verify(order.payment.reference) : undefined
+      if (latest?.status === 'success') settle(order, latest)
+      else {
+        releaseStock(order)
+        order.status = 'failed'
+        delete order.holdExpiresAt
+        order.payment = { ...order.payment, failureReason: HOLD_EXPIRED_REASON }
+      }
+      changed = true
+    }
+    if (changed) persist()
+  }
+
   /**
    * A ticket sent to someone with no account waits under their email until they
-   * have one. Standing in for the invitation email the backend will send.
+   * have one. Standing in for the claim the server makes once the email is confirmed.
    */
   const parkedId = (email: string) => `email:${email.toLowerCase()}`
 
   function claimParked(user: User) {
+    if (!user.emailVerified) return
     const waiting = state.tickets.filter((ticket) => ticket.userId === parkedId(user.email))
     if (!waiting.length) return
     for (const ticket of waiting) ticket.userId = user.id
     persist()
   }
 
-  /** Paid and pending orders hold stock; a failed one gives it back. */
-  function applyOutcome(order: Order & { userId: string }, wasHolding: boolean) {
-    const holds = order.status !== 'failed'
-    if (holds && !wasHolding) takeStock(order.lines)
-    if (!holds && wasHolding) releaseStock(order.lines)
-    if (order.status === 'paid') {
-      order.paidAt = new Date().toISOString()
-      issueTickets(order)
-    }
-    persist()
-  }
-
   return {
-    products: () => seed.products.map((product) => ({ ...product, remaining: remainingOf(product) })),
+    products: () => seed.products.map((product) => ({ ...product, remaining: stock.remaining(product.id) })),
 
     orders: {
       checkout: (input: CheckoutInput) =>
-        respond((): Order => {
+        respond((): PaymentIntent => {
           const user = requireUser()
+          sweep()
           const parsed = checkoutSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Check the order and try again.')
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Check the order and try again.')
 
-          const lines = parsed.data.items.map(resolveLine)
-          assertAvailability(lines)
-          const total = lines.reduce((sum, line) => sum + line.unitPrice.amount * line.quantity, 0)
-          const order: Order & { userId: string } = {
-            id: `ord_${randomCode(12).toLowerCase()}`,
-            reference: `AF-${randomCode(5)}`,
+          const open = state.orders.filter((order) => order.userId === user.id && order.status === 'pending')
+          if (open.length >= MAX_OPEN_ORDERS) {
+            throw new ApiError('conflict', 'You have unpaid orders waiting. Pay for one, or let it lapse, before starting another.')
+          }
+
+          const lines = parsed.data.items.map((item) => resolveLine(item, catalog))
+          assertAvailable(demandOf(lines), catalog, stock)
+          const placedAt = new Date()
+          const order: StoredOrder = {
+            id: newId.order(),
+            reference: newId.orderReference(),
             userId: user.id,
             status: 'pending',
-            placedAt: new Date().toISOString(),
+            placedAt: placedAt.toISOString(),
+            holdExpiresAt: holdExpiry(placedAt),
             lines,
-            total: { amount: total, currency: 'NGN' },
+            total: orderTotal(lines),
             contact: parsed.data.contact,
-            payment: { method: parsed.data.payment.method },
+            payment: { provider: 'mock' },
             ticketIds: [],
+            holds: false,
+            attempts: [],
           }
-          settle(order, parsed.data.payment)
+          takeStock(order)
+          const intent = openAttempt(order)
           state.orders.push(order)
-          applyOutcome(order, false)
-          return publicOrder(order)
+          persist()
+          return intent
         }),
 
       list: () =>
         respond(() => {
           const user = requireUser()
+          sweep()
           return state.orders
             .filter((order) => order.userId === user.id)
             .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
@@ -362,32 +281,46 @@ export function createMockOrders(
       get: (id: string) =>
         respond(() => {
           const user = requireUser()
+          sweep()
           return publicOrder(findOrder(id, user.id))
         }),
 
-      pay: (orderId: string, payment: PaymentInput) =>
-        respond(() => {
+      pay: (orderId: string) =>
+        respond((): PaymentIntent => {
           const user = requireUser()
+          sweep()
           const order = findOrder(orderId, user.id)
-          if (order.status === 'paid') throw new ApiError('conflict', 'That order is already paid.', { orderId })
-          const wasHolding = order.status !== 'failed'
-          // Stock may have gone while the payment was failing.
-          if (!wasHolding) assertAvailability(order.lines)
-          settle(order, payment)
-          applyOutcome(order, wasHolding)
-          return publicOrder(order)
+          // Money may have landed since the app last looked.
+          if (order.status === 'pending' && order.payment.reference) settle(order, payments.verify(order.payment.reference))
+          if (order.status === 'paid') {
+            persist()
+            throw new ApiError('conflict', 'That order is already paid.', { orderId })
+          }
+          if (order.status === 'pending' && order.payment.reference) {
+            const open = payments.resume(order.id, order.payment.reference)
+            if (open) return open
+          }
+          // A fresh attempt. A failed order gave its stock back, so it has to be there still.
+          if (!order.holds) {
+            assertAvailable(demandOf(order.lines), catalog, stock)
+            takeStock(order)
+          }
+          order.status = 'pending'
+          order.holdExpiresAt = holdExpiry()
+          const intent = openAttempt(order)
+          persist()
+          return intent
         }),
 
-      confirmTransfer: (orderId: string) =>
+      verify: (orderId: string) =>
         respond(() => {
           const user = requireUser()
+          sweep()
           const order = findOrder(orderId, user.id)
-          if (order.payment.method !== 'transfer') {
-            throw new ApiError('conflict', 'That order was not paid by transfer.', { orderId })
+          if (order.status !== 'paid' && order.payment.reference) {
+            settle(order, payments.verify(order.payment.reference))
+            persist()
           }
-          if (order.status === 'paid') return publicOrder(order)
-          order.status = 'paid'
-          applyOutcome(order, true)
           return publicOrder(order)
         }),
     },
@@ -414,7 +347,7 @@ export function createMockOrders(
         respond(() => {
           const user = requireUser()
           const parsed = ticketTransferSchema.safeParse(input)
-          if (!parsed.success) fail(parsed.error.issues, 'Check the email address.')
+          if (!parsed.success) throw validationError(parsed.error.issues, 'Check the email address.')
           const { email, name } = parsed.data
 
           const ticket = findTicket(id, user.id)
@@ -433,13 +366,12 @@ export function createMockOrders(
           }
 
           const at = new Date().toISOString()
-          const holderName = name?.trim() || email
           state.tickets.push({
             ...ticket,
-            id: `tkt_${randomCode(12).toLowerCase()}`,
-            code: `AF-${randomCode(4)}-${randomCode(4)}`,
+            id: newId.ticket(),
+            code: newId.ticketCode(),
             userId: parkedId(email),
-            holderName,
+            holderName: name?.trim() || email,
             issuedAt: at,
             transfer: undefined,
             origin: { fromName: user.name, at },

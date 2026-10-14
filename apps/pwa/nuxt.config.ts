@@ -1,7 +1,8 @@
-// AFRIFF Attendee PWA — frontend-only, fully local build.
-// SPA mode (ssr: false) keeps everything in the browser so the app works offline
-// and the mock API can persist to localStorage. Revisit when the real backend lands
-// (public pages like film detail may benefit from prerendering for SEO).
+// AFRIFF Attendee PWA.
+// SPA mode (ssr: false) keeps everything in the browser so the app works offline:
+// the mock API persists to localStorage, and the Firebase adapter keeps Firestore's
+// cache and the session in IndexedDB. Public pages like film detail may later
+// benefit from prerendering for SEO.
 export default defineNuxtConfig({
   extends: ['@afriff/ui-kit'],
   compatibilityDate: '2026-09-01',
@@ -47,15 +48,27 @@ export default defineNuxtConfig({
     },
   },
 
+  // Public settings reach the browser, and a static build bakes them in at
+  // `generate` time: rebuild after changing them. See .env.example.
   runtimeConfig: {
     public: {
-      // 'mock' today. An 'http' adapter implementing the same contract comes with the backend.
+      // 'mock' runs entirely in the browser on placeholder data. 'firebase' uses
+      // Firebase Auth, Firestore and Cloud Functions, with Paystack for payment.
       apiMode: 'mock',
       // Simulated network latency for the mock API, in ms (0 to disable).
       mockLatency: 450,
-      // Reserved for the future Supabase adapter. Public settings reach the browser.
-      supabaseUrl: '',
-      supabasePublishableKey: '',
+      // Where links in account emails lead back to. Defaults to wherever the app is served from.
+      appUrl: '',
+      // The Firebase web config. None of it is secret; the security rules are what protect the data.
+      firebase: {
+        apiKey: '',
+        authDomain: '',
+        projectId: '',
+        appId: '',
+        functionsRegion: 'europe-west1',
+        // e.g. 127.0.0.1 to use the local Emulator Suite (`bun run emulators`).
+        emulatorHost: '',
+      },
     },
   },
 

@@ -1,12 +1,15 @@
 /**
- * Restores the persisted session into the API adapter before the first guarded
- * route runs, and drops it if the mock server no longer knows the token
- * (for example after "Reset demo data").
+ * Asks the API adapter who is signed in before the first guarded route runs,
+ * then follows any change it reports later: signed out in another tab, or a
+ * session ended by a password reset elsewhere. `app.vue` takes the attendee to
+ * sign in when the session goes.
  */
 export default defineNuxtPlugin({
   name: 'auth',
   dependsOn: ['api'],
   async setup() {
-    await useAuth().restore()
+    const auth = useAuth()
+    await auth.restore()
+    auth.follow()
   },
 })

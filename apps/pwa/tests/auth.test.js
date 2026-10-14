@@ -31,10 +31,12 @@ test('all app routes, including future routes, require a session and preserve th
 
 test('sign-in, signup and recovery remain accessible without a session', () => {
   signedIn = false
-  for (const path of ['/signin', '/signup', '/reset-pin', '/signin/', '/SIGNIN']) {
+  for (const path of ['/signin', '/signup', '/forgot-password', '/auth/action', '/signin/', '/SIGNIN']) {
     expect(guard({ path, fullPath: path })).toBeUndefined()
   }
   expect(isAuthRoute('/signin/anything')).toBe(false)
+  expect(isAuthRoute('/auth')).toBe(false)
+  expect(isAuthRoute('/auth/other')).toBe(false)
 })
 
 test('signed-in attendees can access protected routes', () => {
@@ -44,7 +46,7 @@ test('signed-in attendees can access protected routes', () => {
 
 test('return destinations preserve deep links but reject external URLs and auth loops', () => {
   expect(authRedirect('/programme?day=3#films')).toBe('/programme?day=3#films')
-  for (const target of [undefined, ['/', '/me'], 'https://example.com', '//example.com', '/\\example.com', '/signin', '/signup?redirect=/signin', '/reset-pin/', '/me/../signin']) {
+  for (const target of [undefined, ['/', '/me'], 'https://example.com', '//example.com', '/\\example.com', '/signin', '/signup?redirect=/signin', '/forgot-password/', '/auth/action?mode=verifyEmail', '/me/../signin']) {
     expect(authRedirect(target)).toBe('/')
   }
 })

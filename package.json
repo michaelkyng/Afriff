@@ -2,7 +2,7 @@
   "name": "afriff",
   "private": true,
   "type": "module",
-  "description": "AFRIFF deployable apps, shared Nuxt layers and framework-independent packages.",
+  "description": "AFRIFF deployable apps, Cloud Functions, shared Nuxt layers and framework-independent packages.",
   "packageManager": "bun@1.3.14",
   "engines": {
     "node": ">=22.12",
@@ -18,27 +18,26 @@
     "dev:pwa": "bun run --filter @afriff/pwa dev",
     "build": "bun run --filter '*' build",
     "build:pwa": "bun run --filter @afriff/pwa build",
+    "build:functions": "bun run --filter @afriff/functions build",
     "generate": "bun run --filter '*' generate",
     "generate:pwa": "bun run --filter @afriff/pwa generate",
     "preview:server": "bun run --filter @afriff/pwa preview",
     "preview:pwa": "bun run --filter @afriff/pwa preview:pwa",
     "typecheck": "bun run --filter '*' typecheck",
-    "test": "bun test packages apps/pwa/tests",
+    "test": "bun test packages apps/pwa/tests apps/functions/tests",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-afriff \"node --test firebase/tests/*.test.js\"",
     "check": "bun run typecheck && bun run test",
-    "supabase": "supabase",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
-    "db:status": "supabase status",
-    "db:migration:new": "supabase migration new",
-    "db:reset": "supabase db reset --local",
-    "db:lint": "supabase db lint --local --level warning --fail-on warning",
-    "db:test": "supabase test db",
-    "db:types": "bun scripts/generate-database-types.mjs",
-    "functions:serve": "supabase functions serve",
+    "firebase": "firebase",
+    "emulators": "bun run build:functions && firebase emulators:start --project demo-afriff",
+    "emulators:seed": "bun run --filter @afriff/functions seed",
+    "deploy:rules": "firebase deploy --only firestore",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:hosting": "firebase deploy --only hosting",
     "brand:assets": "bun run --filter @afriff/ui-kit brand:assets",
     "postinstall": "bun run --filter '*' postinstall"
   },
   "devDependencies": {
-    "supabase": "2.117.0"
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase-tools": "15.32.1"
   }
 }

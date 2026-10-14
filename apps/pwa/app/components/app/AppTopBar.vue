@@ -14,7 +14,8 @@ const section = computed(() => {
   if (route.path.startsWith('/signin')) return { label: 'Sign in', to: '/signin' }
   if (/^\/(cart|checkout|orders)/.test(route.path)) return { label: 'Tickets', to: '/tickets' }
   if (route.path.startsWith('/signup')) return { label: 'Create account', to: '/signup' }
-  if (route.path.startsWith('/reset-pin')) return { label: 'Reset PIN', to: '/reset-pin' }
+  if (route.path.startsWith('/forgot-password')) return { label: 'Reset password', to: '/forgot-password' }
+  if (route.path.startsWith('/auth/action')) return { label: 'Account', to: '/me' }
   return null
 })
 

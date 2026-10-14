@@ -1,19 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { createMockApi } from '@afriff/api/mock'
 import { buildPlan, groupPlanByDay, overlaps, planWarnings, warningsByKey } from '@afriff/api/plan'
-
-const PIN = '481902'
-const ANY_CODE = '314159'
-const CARD = { method: 'card', cardName: 'Ada Okoye', cardNumber: '4111 1111 1111 1234', expiry: '11/29', cvv: '123' }
-const CONTACT = { name: 'Ada Okoye', email: 'ada@example.com', phone: '0803 123 4567' }
-
-async function signedIn(email = 'ada@example.com') {
-  const api = createMockApi({ latency: 0 })
-  await api.auth.requestCode({ email, purpose: 'signup' })
-  const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName: 'Ada', lastName: 'Okoye' })
-  return api
-}
+import { signedIn, signUp } from './helpers'
 
 // ------------------------------------------------------------------ the API
 
@@ -53,9 +40,7 @@ describe('saved', () => {
     await api.auth.signOut()
     await expect(api.saved.list()).rejects.toMatchObject({ code: 'unauthorized' })
 
-    await api.auth.requestCode({ email: 'bem@example.com', purpose: 'signup' })
-    const ticket = await api.auth.verifyCode({ email: 'bem@example.com', code: ANY_CODE })
-    await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName: 'Bem', lastName: 'Tersoo' })
+    await signUp(api, { email: 'bem@example.com', firstName: 'Bem', lastName: 'Tersoo' })
     expect(await api.saved.list()).toHaveLength(0)
   })
 

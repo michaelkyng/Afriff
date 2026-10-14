@@ -1,30 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { createMockApi } from '@afriff/api/mock'
 import { ticketAdmits, ticketIcs, ticketIcsFilename, ticketPayload, ticketState } from '@afriff/api/tickets'
-
-const PIN = '481902'
-const ANY_CODE = '314159'
-const CARD = { method: 'card', cardName: 'Ada Okoye', cardNumber: '4111 1111 1111 1234', expiry: '11/29', cvv: '123' }
-const CONTACT = { name: 'Ada Okoye', email: 'ada@example.com', phone: '0803 123 4567' }
-
-async function signUp(api, email, name) {
-  const [firstName, lastName] = name.split(' ')
-  await api.auth.requestCode({ email, purpose: 'signup' })
-  const ticket = await api.auth.verifyCode({ email, code: ANY_CODE })
-  await api.auth.setPin({ ticket: ticket.token, pin: PIN, firstName, lastName })
-}
+import { buy, confirmEmail, newApi, signUp } from './helpers'
 
 /** One paid screening ticket, and the API it lives in. */
 async function boughtTicket() {
-  const api = createMockApi({ latency: 0 })
-  await signUp(api, 'ada@example.com', 'Ada Okoye')
+  const api = newApi()
+  await signUp(api)
   const screenings = await api.programme.listScreenings()
   const screening = screenings.find((item) => item.capacity - item.sold > 2)
-  await api.orders.checkout({
-    items: [{ productId: 'prod_screening', quantity: 1, selection: { screeningId: screening.id } }],
-    contact: CONTACT,
-    payment: CARD,
-  })
+  await buy(api, [{ productId: 'prod_screening', quantity: 1, selection: { screeningId: screening.id } }])
   const [ticket] = await api.tickets.list()
   return { api, ticket, screening }
 }
@@ -44,7 +28,7 @@ describe('tickets.get', () => {
   test('does not hand a ticket to anyone else', async () => {
     const { api, ticket } = await boughtTicket()
     await api.auth.signOut()
-    await signUp(api, 'bem@example.com', 'Bem Tersoo')
+    await signUp(api, { email: 'bem@example.com', firstName: 'Bem', lastName: 'Tersoo' })
     await expect(api.tickets.get(ticket.id)).rejects.toMatchObject({ code: 'not_found' })
   })
 
@@ -69,12 +53,15 @@ describe('tickets.transfer', () => {
     expect(mine[0].status).toBe('transferred')
   })
 
-  test('the ticket is waiting when the recipient makes an account', async () => {
+  test('the ticket waits until the recipient makes an account and confirms the address', async () => {
     const { api, ticket } = await boughtTicket()
     await api.tickets.transfer(ticket.id, { email: 'bem@example.com', name: 'Bem Tersoo' })
 
     await api.auth.signOut()
-    await signUp(api, 'bem@example.com', 'Bem Tersoo')
+    await signUp(api, { email: 'bem@example.com', firstName: 'Bem', lastName: 'Tersoo' })
+    // Anyone can sign up with any email, so an unconfirmed one proves nothing.
+    expect(await api.tickets.list()).toHaveLength(0)
+    await confirmEmail(api)
 
     const theirs = await api.tickets.list()
     expect(theirs).toHaveLength(1)

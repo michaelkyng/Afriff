@@ -1,7 +1,0 @@
-# CLI state and local secrets
-.branches/
-.temp/
-.env
-.env.*
-!.env.example
-signing_keys.json

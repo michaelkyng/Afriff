@@ -31,44 +31,51 @@ export const firstNameSchema = z.string().trim().min(1, 'Enter your first name.'
 
 export const lastNameSchema = z.string().trim().min(1, 'Enter your last name.').max(30)
 
-/** The one-time code that confirms an email address: six digits, entered without spaces. */
-export const otpCodeSchema = z
+/**
+ * A password being chosen. Length is the only rule, the way current guidance has
+ * it: a long phrase beats a short string of symbols. Never trimmed, since spaces
+ * may be part of it. Firebase also enforces its own minimum on the server.
+ */
+export const passwordSchema = z
   .string()
-  .trim()
-  .regex(/^\d{6}$/, 'Enter the six-digit code.')
+  .min(8, 'Use at least 8 characters.')
+  .max(128, 'Use 128 characters or fewer.')
 
-/** The PIN that signs an attendee in, whether it is being chosen or checked. Same six digits, different job. */
-export const pinSchema = z
-  .string()
-  .trim()
-  .regex(/^\d{6}$/, 'Your PIN is six digits.')
-
-/** Why a one-time code was asked for, which decides what verifying it unlocks. */
-export const codePurposeSchema = z.enum(['signup', 'reset'])
-
-export const signInSchema = z.object({ email: emailSchema, pin: pinSchema })
-
-export const requestCodeSchema = z.object({ email: emailSchema, purpose: codePurposeSchema })
-
-export const verifyCodeSchema = z.object({ email: emailSchema, code: otpCodeSchema })
-
-/** Finishes a sign-up (which also needs a first and last name) or a PIN reset, against a verified email. */
-export const setPinSchema = z.object({
-  ticket: z.string().min(1, 'Start again — that verification has gone stale.'),
-  pin: pinSchema,
-  /** Set when signing up; a reset already knows whose account it is. */
-  firstName: firstNameSchema.optional(),
-  lastName: lastNameSchema.optional(),
+/** Signing in only checks that a password was typed; the rules for a good one apply when it is chosen. */
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Enter your password.'),
 })
+
+export const signUpSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+})
+
+export const passwordResetRequestSchema = z.object({ email: emailSchema })
+
+/**
+ * The code from an emailed link (Firebase calls it an `oobCode`), for a password
+ * reset or an email confirmation. Opaque: only its presence is checked here.
+ */
+export const actionCodeSchema = z.string().trim().min(1, 'That link is incomplete. Open it from the email again.').max(512)
+
+export const passwordResetSchema = z.object({ code: actionCodeSchema, password: passwordSchema })
 
 /**
  * Nigerian mobile numbers, the way attendees type them: 0803 123 4567,
- * +234 803 123 4567 or 234 803 123 4567. Spaces, dashes and brackets are allowed.
+ * +234 803 123 4567 or 234-803-123-4567. Groups may be split by a space, dot or
+ * dash. Kept free of backslashes so `firebase/firestore.rules` can use the same
+ * pattern word for word.
  */
+export const NIGERIAN_PHONE_PATTERN = '^([+]?234|0)[ .-]?[0-9]{3}[ .-]?[0-9]{3}[ .-]?[0-9]{3,4}$'
+
 export const phoneSchema = z
   .string()
   .trim()
-  .regex(/^(\+?234|0)[\s.-]?\d{3}[\s.-]?\d{3}[\s.-]?\d{3,4}$/, 'Enter a Nigerian phone number, e.g. 0803 123 4567.')
+  .regex(new RegExp(NIGERIAN_PHONE_PATTERN), 'Enter a Nigerian phone number, e.g. 0803 123 4567.')
 
 export const profileSchema = z.object({
   firstName: firstNameSchema,
@@ -99,29 +106,17 @@ export const orderContactSchema = z.object({
 })
 
 /**
- * Card details are checked for shape only; nothing is stored beyond the last four
- * digits, and no real payment network is involved while the app is local.
+ * What the app sends to place an order. There is no payment in it: the attendee
+ * pays in the provider's own checkout (Paystack), so card details never pass
+ * through the app or its servers.
  */
-export const paymentSchema = z.discriminatedUnion('method', [
-  z.object({
-    method: z.literal('card'),
-    cardName: nameSchema,
-    cardNumber: z
-      .string()
-      .trim()
-      .regex(/^[\d ]{13,23}$/, 'Enter the 16 digits on the card.')
-      .refine((value) => value.replace(/\s/g, '').length >= 12, 'Enter the 16 digits on the card.'),
-    expiry: z.string().trim().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Use MM/YY.'),
-    cvv: z.string().trim().regex(/^\d{3,4}$/, 'Three digits on the back of the card.'),
-  }),
-  z.object({ method: z.literal('transfer') }),
-])
-
 export const checkoutSchema = z.object({
   items: z.array(cartLineSchema).min(1, 'Your cart is empty.').max(20),
   contact: orderContactSchema,
-  payment: paymentSchema,
 })
+
+/** Names one of the attendee's orders, for paying or checking on it. */
+export const orderRefSchema = z.object({ orderId: z.string().trim().min(1).max(64) })
 
 // ------------------------------------------------------------------ tickets
 
@@ -130,6 +125,9 @@ export const ticketTransferSchema = z.object({
   email: emailSchema,
   name: z.union([nameSchema, z.literal('')]).optional(),
 })
+
+/** The same, with the ticket it is about, as one request to the server. */
+export const ticketTransferRequestSchema = ticketTransferSchema.extend({ ticketId: z.string().trim().min(1).max(64) })
 
 // ------------------------------------------------------------------ my festival
 
@@ -147,15 +145,15 @@ export const savedMergeSchema = z.array(savedItemSchema).max(200)
 export type Genre = z.infer<typeof genreSchema>
 export type FilmQuery = z.infer<typeof filmQuerySchema>
 export type ScreeningQuery = z.infer<typeof screeningQuerySchema>
-export type CodePurpose = z.infer<typeof codePurposeSchema>
 export type SignInInput = z.input<typeof signInSchema>
-export type RequestCodeInput = z.input<typeof requestCodeSchema>
-export type VerifyCodeInput = z.input<typeof verifyCodeSchema>
-export type SetPinInput = z.input<typeof setPinSchema>
+export type SignUpInput = z.input<typeof signUpSchema>
+export type PasswordResetRequestInput = z.input<typeof passwordResetRequestSchema>
+export type PasswordResetInput = z.input<typeof passwordResetSchema>
 export type ProfileInput = z.input<typeof profileSchema>
 export type CartLineInput = z.input<typeof cartLineSchema>
 export type OrderContactInput = z.input<typeof orderContactSchema>
-export type PaymentInput = z.input<typeof paymentSchema>
 export type CheckoutInput = z.input<typeof checkoutSchema>
+export type OrderRefInput = z.input<typeof orderRefSchema>
 export type TicketTransferInput = z.input<typeof ticketTransferSchema>
+export type TicketTransferRequestInput = z.input<typeof ticketTransferRequestSchema>
 export type SavedInput = z.input<typeof savedItemSchema>

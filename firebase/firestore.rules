@@ -1,0 +1,132 @@
+rules_version = '2';
+
+// AFRIFF Firestore security rules.
+//
+// The attendee app reads Firestore directly, and writes only two things itself:
+// its own profile and its own saved list. Everything that moves money or stock
+// (orders, tickets, mail, payment events, catalogue stock) is written by Cloud
+// Functions with the Admin SDK, which these rules do not apply to.
+//
+// Anything not allowed below is denied. Shapes mirror
+// packages/api/src/firebase/schema.ts and the Zod schemas in packages/validation;
+// change them together, and run `bun run test:rules` (firebase/tests).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------ helpers
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // A string of min to max characters with no space at either end.
+    function isText(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max && value.trim() == value;
+    }
+
+    // The same pattern as NIGERIAN_PHONE_PATTERN in @afriff/validation.
+    function isPhone(value) {
+      return value is string
+        && value.size() <= 20
+        && value.matches('^([+]?234|0)[ .-]?[0-9]{3}[ .-]?[0-9]{3}[ .-]?[0-9]{3,4}$');
+    }
+
+    // First and last name, the full name made of exactly those, and an optional phone.
+    function validNames(data) {
+      return isText(data.firstName, 1, 30)
+        && isText(data.lastName, 1, 30)
+        && data.name == data.firstName + ' ' + data.lastName
+        && (!('phone' in data) || isPhone(data.phone));
+    }
+
+    function inProgramme(kind, refId) {
+      return (kind == 'film' && exists(/databases/$(database)/documents/films/$(refId)))
+        || (kind == 'screening' && exists(/databases/$(database)/documents/screenings/$(refId)))
+        || (kind == 'event' && exists(/databases/$(database)/documents/events/$(refId)));
+    }
+
+    // ------------------------------------------------------------ public catalogue
+    // The festival, its programme, what is on sale, the help pages and the
+    // announcements. Readable by anyone; written only with the Admin SDK (the
+    // seed script, and the functions for stock).
+
+    match /festival/{id} { allow read: if true; }
+    match /venues/{id} { allow read: if true; }
+    match /sections/{id} { allow read: if true; }
+    match /films/{id} { allow read: if true; }
+    match /screenings/{id} { allow read: if true; }
+    match /events/{id} { allow read: if true; }
+    match /products/{id} { allow read: if true; }
+    match /info/{id} { allow read: if true; }
+    match /updates/{id} { allow read: if true; }
+
+    // ------------------------------------------------------------ accounts
+
+    match /users/{uid} {
+      allow get: if isUser(uid);
+
+      // Written once, straight after sign-up: the email on the sign-in itself,
+      // and the server's clock rather than the device's.
+      allow create: if isUser(uid)
+        && incoming().keys().hasAll(['email', 'firstName', 'lastName', 'name', 'createdAt', 'updatedAt'])
+        && incoming().keys().hasOnly(['email', 'firstName', 'lastName', 'name', 'phone', 'createdAt', 'updatedAt'])
+        && incoming().email == request.auth.token.email
+        && validNames(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      // Names and phone only. The email belongs to Firebase Auth, and the
+      // creation time never changes.
+      allow update: if isUser(uid)
+        && incoming().diff(resource.data).affectedKeys().hasOnly(['firstName', 'lastName', 'name', 'phone', 'updatedAt'])
+        && validNames(incoming())
+        && incoming().updatedAt == request.time;
+
+      // What the attendee has put aside. The id is `<kind>_<refId>`, so saving
+      // the same thing twice is the same document, and it has to point at
+      // something that is in the programme.
+      match /saved/{savedId} {
+        allow read, delete: if isUser(uid);
+
+        allow create: if isUser(uid)
+          && incoming().keys().hasAll(['kind', 'refId', 'savedAt'])
+          && incoming().keys().hasOnly(['kind', 'refId', 'savedAt'])
+          && incoming().kind in ['film', 'screening', 'event']
+          && isText(incoming().refId, 1, 100)
+          && savedId == incoming().kind + '_' + incoming().refId
+          && incoming().savedAt == request.time
+          && inProgramme(incoming().kind, incoming().refId);
+      }
+    }
+
+    // ------------------------------------------------------------ buying
+    // Written only by Cloud Functions. An attendee can read their own orders and
+    // tickets; a list has to ask for them by `userId`.
+
+    match /orders/{orderId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        // Passed on to this email before it had an account. Only a confirmed
+        // address may see it: anyone can sign up with any email.
+        || (resource.data.userId == null
+          && request.auth.token.email_verified == true
+          && resource.data.claimEmail == request.auth.token.email)
+      );
+    }
+
+    // mail/{id} and paymentEvents/{id} have no rules on purpose: they are for
+    // the functions and the team, never for the app.
+  }
+}

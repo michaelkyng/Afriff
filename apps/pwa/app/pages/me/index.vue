@@ -21,8 +21,15 @@ import type { ThemeMode } from '~/stores/prefs'
 useHead({ title: 'Me' })
 
 const { mode } = useTheme()
-const { user, isSignedIn, initials, updateProfile, signOut: endSession } = useAuth()
+const { user, isSignedIn, initials, updateProfile, refresh: refreshAccount, signOut: endSession } = useAuth()
 const api = useApi()
+/** Only the mock keeps its data on this device, so only the mock can be reset from here. */
+const demo = useRuntimeConfig().public.apiMode === 'mock'
+
+// An email confirmed from another device shows up here without signing in again.
+onMounted(() => {
+  if (user.value && !user.value.emailVerified) refreshAccount().catch(() => {})
+})
 
 /**
  * Recent orders, for the account section. Fetched on every visit while signed
@@ -219,6 +226,8 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       <UiButton size="sm" to="/signin">Sign in</UiButton>
     </UiCard>
 
+    <AuthVerifyEmailCard v-if="user && !user.emailVerified" />
+
     <!-- Your festival -->
     <section aria-labelledby="yours-title">
       <UiSectionHeader title="Yours" title-id="yours-title" />
@@ -336,7 +345,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
 
     <!-- Developer -->
     <section aria-labelledby="dev-title">
-      <UiSectionHeader title="Developer" title-id="dev-title" meta="Local build" />
+      <UiSectionHeader title="Developer" title-id="dev-title" :meta="demo ? 'Local build' : 'Firebase'" />
       <UiCard :padded="false" class="divide-y divide-line">
         <div class="space-y-2.5 px-4 py-4 md:px-5">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -365,7 +374,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
           </div>
           <ChevronRightIcon class="size-4 text-subtle" aria-hidden="true" />
         </NuxtLink>
-        <div class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
+        <div v-if="demo" class="flex items-center justify-between gap-4 px-4 py-3.5 md:px-5">
           <div>
             <p class="font-semibold">Reset demo data</p>
             <p class="text-label text-muted">Clears mock accounts, orders, tickets and preferences on this device.</p>

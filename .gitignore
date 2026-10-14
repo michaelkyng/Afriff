@@ -13,6 +13,9 @@ dev-dist
 coverage
 *.tsbuildinfo
 
+# Firebase CLI caches and emulator logs (*.log above covers the logs)
+.firebase
+
 # Local configuration
 .env
 .env.*

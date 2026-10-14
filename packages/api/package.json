@@ -14,14 +14,19 @@
     "./tickets": "./src/tickets.ts",
     "./updates": "./src/updates.ts",
     "./filters": "./src/filters.ts",
+    "./orders": "./src/orders.ts",
     "./mock": "./src/mock/index.ts",
-    "./mock/db": "./src/mock/db.ts"
+    "./mock/db": "./src/mock/db.ts",
+    "./seed": "./src/mock/seed/index.ts",
+    "./firebase": "./src/firebase/index.ts",
+    "./firebase/schema": "./src/firebase/schema.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@afriff/validation": "workspace:*"
+    "@afriff/validation": "workspace:*",
+    "firebase": "12.19.0"
   },
   "devDependencies": {
     "typescript": "~6.0.3"

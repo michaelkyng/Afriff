@@ -1,33 +1,30 @@
-import type { AuthSession, User } from '@afriff/api'
+import type { User } from '@afriff/api'
 
 /**
- * The signed-in attendee, persisted to localStorage under `afriff:session`.
- * The token is sent with authenticated API calls; `app/plugins/auth.client.ts`
- * restores it on start-up and checks it is still valid.
+ * The signed-in attendee, kept on the device under `afriff:session` so the app
+ * opens straight into the account, offline too.
+ *
+ * It is a copy, not the session: the API adapter holds that (Firebase keeps and
+ * refreshes its own tokens), and `app/plugins/auth.client.ts` checks this copy
+ * against it on every start-up.
  */
 export const useSessionStore = defineStore(
   'session',
   () => {
-    const token = ref<string | null>(null)
     const user = ref<User | null>(null)
 
-    const isSignedIn = computed(() => Boolean(token.value && user.value))
-
-    function signIn(session: AuthSession) {
-      token.value = session.token
-      user.value = session.user
-    }
+    const isSignedIn = computed(() => Boolean(user.value))
 
     function setUser(value: User) {
       user.value = value
     }
 
     function signOut() {
-      token.value = null
       user.value = null
     }
 
-    return { token, user, isSignedIn, signIn, setUser, signOut }
+    return { user, isSignedIn, setUser, signOut }
   },
-  { persist: true },
+  // Only the account. Older builds also kept a token here; it is ignored.
+  { persist: { pick: ['user'] } },
 )
