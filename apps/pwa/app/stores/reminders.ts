@@ -2,9 +2,9 @@
  * Reminders for what is on the plan, kept on this device under `afriff:reminders`.
  *
  * Not on the account: a notification is a property of the phone in your pocket,
- * not of who you are. Until there is a backend to push them, they are local
- * timers, so they only fire while the app is open. F7 replaces the mechanism,
- * not the setting.
+ * not of who you are. With push on, the device's record on the server carries
+ * them and the server sends them, app open or not; otherwise they are local
+ * timers that only fire while the app is open (`useReminders`).
  */
 export const useRemindersStore = defineStore(
   'reminders',

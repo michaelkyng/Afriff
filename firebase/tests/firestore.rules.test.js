@@ -337,3 +337,43 @@ describe('the Ops Console', () => {
     await assertFails(getDoc(doc(door(), 'users/bem')))
   })
 })
+
+describe('devices signed up for push', () => {
+  const device = (overrides = {}) => ({
+    token: 'fcm-token-'.padEnd(40, 'x'),
+    kinds: { changes: true, reminders: true, festival: false },
+    reminders: ['screening:scr_1'],
+    label: 'iPhone, Safari',
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  })
+
+  test('an attendee signs up their own device, and changes and removes it', async () => {
+    await assertSucceeds(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device()))
+    await assertSucceeds(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ reminders: [], kinds: { changes: false, reminders: true, festival: true } })))
+    await assertSucceeds(getDocs(collection(ada(), 'users/ada/devices')))
+    await assertSucceeds(deleteDoc(doc(ada(), 'users/ada/devices/dev-1234abcd')))
+  })
+
+  test('not for someone else, and nobody else reads them', async () => {
+    await assertFails(setDoc(doc(bem(), 'users/ada/devices/dev-1234abcd'), device()))
+    await env.withSecurityRulesDisabled((context) => setDoc(doc(context.firestore(), 'users/ada/devices/dev-1234abcd'), device({ updatedAt: Timestamp.now() })))
+    await assertFails(getDoc(doc(bem(), 'users/ada/devices/dev-1234abcd')))
+    await assertFails(getDoc(doc(ops(), 'users/ada/devices/dev-1234abcd')))
+  })
+
+  test('refuses a bad shape: unknown kinds, extra fields, a device clock, a made-up id, too many reminders', async () => {
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ kinds: { changes: true, reminders: true, festival: true, marketing: true } })))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ kinds: { changes: 'yes', reminders: true, festival: true } })))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ isAdmin: true })))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ updatedAt: Timestamp.now() })))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/NOT_OK'), device()))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ token: 'short' })))
+    await assertFails(setDoc(doc(ada(), 'users/ada/devices/dev-1234abcd'), device({ reminders: Array.from({ length: 201 }, (_, i) => `screening:s${i}`) })))
+  })
+
+  test('the push log is closed to everyone', async () => {
+    await assertFails(getDoc(doc(ops(), 'pushLog/update_upd_1')))
+    await assertFails(setDoc(doc(ada(), 'pushLog/update_upd_1'), { sent: 0 }))
+  })
+})

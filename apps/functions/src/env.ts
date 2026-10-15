@@ -40,6 +40,9 @@ export const MAIL_REPLY_TO = defineString('MAIL_REPLY_TO', { default: '' })
 /** `log` writes email to the logs instead of sending it: for the emulators, or staging without Brevo. */
 export const MAIL_TRANSPORT = defineString('MAIL_TRANSPORT', { default: 'brevo' })
 
+/** `log` writes push notifications to the logs instead of sending them, e.g. on staging. The emulators always log them. */
+export const PUSH_TRANSPORT = defineString('PUSH_TRANSPORT', { default: 'fcm' })
+
 /** Where staff sign in, for invitation emails. Optional: without them the email says to ask the team. */
 export const OPS_URL = defineString('OPS_URL', { default: '' })
 export const DOOR_URL = defineString('DOOR_URL', { default: '' })

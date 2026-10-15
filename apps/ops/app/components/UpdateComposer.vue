@@ -77,7 +77,7 @@ async function submit() {
       <UiInput v-model="form.title" label="Title" :maxlength="90" :error="errorFor('title')" :disabled="pending" />
       <UiTextarea v-model="form.body" label="What has changed, and what to do" :rows="5" :maxlength="600" :error="errorFor('body')" :disabled="pending" />
       <UiInput v-model="form.link" label="Link in the app (optional)" placeholder="/programme/salt-roads" :error="errorFor('link')" :disabled="pending" />
-      <UiCheckbox v-model="form.urgent" label="Urgent" hint="Shows a banner to people holding a ticket for what it is about." :disabled="pending" />
+      <UiCheckbox v-model="form.urgent" label="Urgent" hint="Pushes a notification to the people it is about (ticket holders and anyone who saved it; everyone, when it is about nothing in particular), and shows ticket holders a banner." :disabled="pending" />
 
       <div class="space-y-2">
         <UiSegmented v-model="form.when" :options="whenOptions" label="Publish" />

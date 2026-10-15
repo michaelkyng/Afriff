@@ -1,7 +1,8 @@
+import { deviceSchema } from '@afriff/validation'
 import type { AttendeeApi } from '../contract'
-import { ApiError } from '../contract'
+import { ApiError, validationError } from '../contract'
 import { selectFilms, selectScreenings } from '../queries'
-import type { FilmQuery, ScreeningQuery } from '../types'
+import type { DeviceInput, FilmQuery, ScreeningQuery } from '../types'
 import { createMockAuth } from './auth'
 import { createMockOrders } from './orders'
 import { createMockPayments } from './payments'
@@ -90,6 +91,17 @@ export function createMockApi(options: MockApiOptions): MockApi {
     orders: shop.orders,
 
     tickets: shop.tickets,
+
+    // There is no push service in the demo, so the app never gets a token to save. Kept so the contract is whole.
+    notifications: {
+      saveDevice: (input: DeviceInput) =>
+        respond(() => {
+          auth.currentUser()
+          const parsed = deviceSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'We could not save this device.')
+        }),
+      removeDevice: () => respond(() => void auth.currentUser()),
+    },
 
     saved,
   }

@@ -2,7 +2,7 @@
 
 AFRIFF runs on Firebase: **Auth** for accounts (email and password), **Firestore**
 for data, **Cloud Functions** (2nd gen) for everything that moves money or stock,
-**Paystack** for payment and **Brevo** for email. Three apps use it: the attendee
+**Paystack** for payment, **Brevo** for email and **Cloud Messaging** for push. Three apps use it: the attendee
 PWA (`apps/pwa`), the door scanner (`apps/scanner`) and the Ops Console
 (`apps/ops`). Each can still run entirely on the local mock
 (`NUXT_PUBLIC_API_MODE=mock`); each talks to one contract (`AttendeeApi`,
@@ -14,7 +14,7 @@ firebase.json               emulators, rules, indexes, functions source, hosting
 .firebaserc                 project aliases (default: demo-afriff, emulator only)
 firebase/
   firestore.rules           who may read and write what
-  firestore.indexes.json    the composite index the expiry job needs
+  firestore.indexes.json    the expiry job's composite index, and the push queries' collection-group indexes
   tests/                    rules tests, run against the emulator
 apps/functions/             @afriff/functions: the Cloud Functions
   src/orders.ts             checkout, payOrder, verifyOrder, settle
@@ -24,10 +24,11 @@ apps/functions/             @afriff/functions: the Cloud Functions
   src/door.ts               checkIn (staff only)
   src/ops/                  ops: every change the Ops Console makes, with the activity log
   src/mail/                 Brevo client, templates, the outbox trigger
+  src/push/                 pushUpdates, pushScheduledUpdates, sendReminders, and the FCM sender
   scripts/seed.ts           loads the catalogue into Firestore
   scripts/staff.ts          gives festival staff a role (until the Ops Console can)
   build.ts                  bundles into dist/ (what deploys)
-packages/firebase/          @afriff/firebase: browser SDK set-up and emulator wiring
+packages/firebase/          @afriff/firebase: browser SDK set-up, emulator wiring, the push token helper
 packages/api/src/firebase/  the AttendeeApi, DoorApi and OpsApi adapters, and the shared Firestore schema
 ```
 
@@ -47,6 +48,9 @@ Ops → useOps() → Firebase ops adapter ───────┬─ Firestore 
                                                  │
 Paystack ── webhook ─→ paystackWebhook ──────────┤   (Admin SDK: rules do not apply, so every write is checked here)
                                                  └─→ mail/{id} ─→ sendMail ─→ Brevo
+
+updates/{id} ─→ pushUpdates, pushScheduledUpdates ─┐
+screenings, events ─→ sendReminders (every 5 min) ─┴─→ users/*/devices ─→ Cloud Messaging ─→ the app's service worker
 ```
 
 `packages/api/src/firebase/schema.ts` is the single description of collections,
@@ -63,10 +67,12 @@ They allow exactly this, and deny everything else:
 | `festival`, `venues`, `sections`, `films`, `screenings`, `events`, `products`, `info`, `updates` | anyone | Admin SDK only (seed script; functions for stock) |
 | `users/{uid}` | the owner; ops | create once (email must match the sign-in, names consistent, server timestamps); update names and phone only |
 | `users/{uid}/saved/{kind_refId}` | the owner | create if the film, screening or event exists; delete; never update |
+| `users/{uid}/devices/{deviceId}` | the owner | the owner: a token, the three kinds, up to 200 reminders and the server's time; delete |
 | `orders/{id}` | the owner, by id or `where userId ==`; ops | functions only |
 | `tickets/{id}` | the owner; a **confirmed** email it is waiting for; ops | functions only |
 | `doorStats/{sessionKey}` | staff (a `role` claim) | functions only |
 | `checkins`, `mail`, `paymentEvents`, `audit`, `staff` | ops | functions only |
+| `pushLog` | nobody | functions only |
 
 "Ops" means a `role` claim of `ops` or `admin`. Door staff read only the counts.
 
@@ -74,10 +80,11 @@ Prices, stock, payment outcomes and tickets are decided only on the server. The
 app never sees a card number: attendees pay in Paystack's checkout. A Firebase web
 config is public by design; what protects the data is the rules and the functions.
 
-`bun run test:rules` runs 30 tests against the emulator, including the attacks that
+`bun run test:rules` runs 34 tests against the emulator, including the attacks that
 matter: editing stock, marking an order paid, claiming someone else's waiting
 ticket with an unconfirmed address, writing to the mail outbox, a made-up staff
-role, and staff writing check-ins or reading attendees' tickets directly.
+role, staff writing check-ins or reading attendees' tickets directly, and
+writing to someone else's devices.
 
 ## Payments with Paystack
 
@@ -115,6 +122,48 @@ Refunds are made by the team in the Paystack dashboard for now.
 - **Account email** (password reset, email confirmation) is sent by Firebase Auth
   itself, which rate-limits it. Route it through Brevo with Firebase's SMTP
   setting (below), so all festival email comes from one sender and one reputation.
+
+## Push with Cloud Messaging
+
+The attendee app turns push on from Me (or with the first reminder bell in My
+Festival). It asks the browser for permission, gets a token from Cloud Messaging
+through its own service worker, and saves the device under the account in
+`users/{uid}/devices/{deviceId}`: the token, the kinds it wants (`changes`,
+`reminders`, `festival`) and the plan keys it wants reminders for. Reminder
+changes follow it there; signing out removes the device and drops the token.
+The rules in `@afriff/api/push` decide what goes and what it says, shared with
+the tests.
+
+- **Urgent updates.** `pushUpdates` runs when an update is written;
+  `pushScheduledUpdates` (every 5 minutes) catches updates set for later. An
+  update about a screening, event, venue or film goes to devices wanting
+  `changes` whose owner holds a ticket for it (void tickets of a cancelled
+  screening included, finished slots not) or saved it: the same people the app
+  marks "Affects you". One about nothing in particular goes to every device
+  wanting `festival`. Only within 30 minutes of its publish time, so a reseed
+  or a late run never pushes old news. `pushLog/update_<id>` is claimed with
+  `create` first, so the trigger and the schedule cannot both send it, and an
+  edit does not send it again.
+- **Reminders.** `sendReminders` (every 5 minutes) finds the screenings and
+  events starting 25 to 35 minutes from now, skips cancelled ones, and pushes to
+  the devices that asked for each (`reminders` array-contains the plan key) and
+  want `reminders`. Each slot falls in two runs, so a late or skipped run still
+  reminds everyone; `pushLog/reminder_<slot>_<uid>_<deviceId>` keeps it to one
+  each.
+- **Messages are data only** (title, body, path, tag). The app's service worker
+  (`apps/pwa/public/push-sw.js`) shows them, replaces one with the same tag, and
+  on a tap moves the open window to the path, or opens one. A path off the site
+  opens the home page instead. FCM's own service worker is never installed.
+- **Dead tokens** (app uninstalled, permission withdrawn) are deleted when FCM
+  says so on a send.
+- **iPhone and iPad** receive web push only in the app added to the Home Screen,
+  on iOS 16.4 or later. Me tells them how.
+
+`PUSH_TRANSPORT=log` writes pushes to the function logs instead of sending them
+(for a staging project without a Web Push certificate). The emulators always
+log them, since there is no Cloud Messaging emulator. The emulators do not run
+scheduled functions either: `pushScheduledUpdates` and `sendReminders` only run
+deployed, while `pushUpdates` runs locally too.
 
 ## The door
 
@@ -206,6 +255,8 @@ and `bun run dev:pwa`. For the scanner and the Ops Console, do the same in
   expose port 5001 with a tunnel and point a test-mode webhook at it.
 - For changes to function code, run `bun run --filter @afriff/functions dev` in
   another terminal; the emulator reloads the rebuilt bundle.
+- Push needs a real project: against the emulators the app offers none, and
+  the functions log what they would have sent (see above).
 
 ## Setting up a project
 
@@ -227,8 +278,13 @@ outbound calls need the Blaze plan.
    URL* to `https://<app domain>/auth/action`, so resets and confirmations finish
    in the app (`apps/pwa/app/pages/auth/action.vue`).
 6. **Function parameters:** create `apps/functions/.env.<project-id>` with
-   `APP_URL`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO` and
-   `MAIL_TRANSPORT=brevo` (see `.env.example`).
+   `APP_URL`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`,
+   `MAIL_TRANSPORT=brevo` and `PUSH_TRANSPORT=fcm` (see `.env.example`).
+   **Push:** under *Project settings > Cloud Messaging*, generate a **Web Push
+   certificate** key pair. Put its public key in the PWA's
+   `NUXT_PUBLIC_FIREBASE_VAPID_KEY`, and the *Sender ID* in
+   `NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`. The scheduled functions use
+   Cloud Scheduler, which the Blaze plan includes.
 7. **Secrets:**
    ```sh
    bun run firebase functions:secrets:set PAYSTACK_SECRET_KEY --project <id>   # sk_test_… on staging, sk_live_… in production
@@ -285,6 +341,9 @@ Pass `--project <id>` (or use an alias) to every deploy.
 | Webhook and `verifyOrder` both settle, idempotently | Neither alone is reliable: webhooks get lost, browsers get closed. |
 | Holds expire after 30 minutes, max 3 unpaid orders | Abandoned checkouts must not keep tickets off sale. |
 | Mail outbox in Firestore | An order is never paid without its email being queued, and Brevo outages retry. |
+| Push devices per install, under the account | A notification belongs to a phone, not a person: each device chooses its kinds and reminders, and leaves with sign-out. |
+| Data-only push, shown by the app's own service worker | One service worker for offline and push, one place deciding how a notification looks and where a tap goes. |
+| Only urgent updates are pushed, within 30 minutes | Interrupting someone has to be worth it, and old news must never arrive late. |
 | Firestore offline cache on the device | Tickets open with no connection. It persists after sign-out, as Firebase's default does; clear it on sign-out if shared devices become a concern. |
 
 Worth doing before launch:

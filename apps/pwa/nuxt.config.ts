@@ -68,6 +68,9 @@ export default defineNuxtConfig({
         functionsRegion: 'europe-west1',
         // e.g. 127.0.0.1 to use the local Emulator Suite (`bun run emulators`).
         emulatorHost: '',
+        // Push through Cloud Messaging. Leave either empty and the app offers no push.
+        messagingSenderId: '',
+        vapidKey: '',
       },
     },
   },
@@ -112,6 +115,8 @@ export default defineNuxtConfig({
         '**/*-greek*',
       ],
       cleanupOutdatedCaches: true,
+      // Shows push notifications and opens the app from them (public/push-sw.js).
+      importScripts: ['/push-sw.js'],
     },
     client: {
       installPrompt: true,

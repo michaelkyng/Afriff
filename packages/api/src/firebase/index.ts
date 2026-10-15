@@ -30,6 +30,7 @@ import type { DocumentSnapshot, Firestore } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import type { Functions } from 'firebase/functions'
 import {
+  deviceSchema,
   passwordResetRequestSchema,
   passwordResetSchema,
   profileSchema,
@@ -43,6 +44,7 @@ import type { AttendeeApi } from '../contract'
 import { selectFilms, selectScreenings } from '../queries'
 import type {
   CheckoutInput,
+  DeviceInput,
   Festival,
   FestivalEvent,
   FestivalInfo,
@@ -502,6 +504,30 @@ export function createFirebaseApi({ auth, db, functions, appUrl }: FirebaseApiOp
       get: async (id: string) => toTicket(await ownDoc<TicketDoc>(COLLECTIONS.tickets, id, 'We could not find that ticket.')),
 
       transfer: (id: string, input: TicketTransferInput) => transferTicket({ ticketId: id, ...input }),
+    },
+
+    notifications: {
+      saveDevice: (input: DeviceInput) =>
+        attempt(async () => {
+          const { uid } = requireAccount()
+          const parsed = deviceSchema.safeParse(input)
+          if (!parsed.success) throw validationError(parsed.error.issues, 'We could not save this device.')
+          const { deviceId, token, kinds, reminders, label } = parsed.data
+          // One whole record each time: the rules check its shape, and the server time stamps it.
+          await setDoc(doc(db, COLLECTIONS.users, uid, COLLECTIONS.devices, deviceId), {
+            token,
+            kinds,
+            reminders,
+            ...(label ? { label } : {}),
+            updatedAt: serverTimestamp(),
+          })
+        }),
+
+      removeDevice: (deviceId: string) =>
+        attempt(async () => {
+          const { uid } = requireAccount()
+          await deleteDoc(doc(db, COLLECTIONS.users, uid, COLLECTIONS.devices, deviceId))
+        }),
     },
 
     saved: {

@@ -7,6 +7,8 @@
  * - The door: `checkIn` (callable, festival staff only).
  * - The Ops Console: `ops` (callable, ops and admin staff only).
  * - Email: `sendMail` delivers the `mail` outbox through Brevo.
+ * - Push: `pushUpdates` (on write) and `pushScheduledUpdates` (every 5 minutes)
+ *   send urgent updates; `sendReminders` (every 5 minutes) sends reminders.
  */
 import './env'
 
@@ -17,3 +19,5 @@ export { transferTicket, claimTickets } from './tickets'
 export { checkIn } from './door'
 export { ops } from './ops'
 export { sendMail } from './mail/outbox'
+export { pushScheduledUpdates, pushUpdates } from './push/updates'
+export { sendReminders } from './push/reminders'

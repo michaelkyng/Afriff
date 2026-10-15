@@ -225,6 +225,30 @@ export const opsActionSchema = z.discriminatedUnion('action', [
   setStaffRoleSchema.extend({ action: z.literal('setStaffRole') }),
 ])
 
+// ------------------------------------------------------------------ notifications
+
+/** Which kinds of push a device wants. Kept per device: a notification belongs to the phone in your pocket. */
+export const notificationKindsSchema = z.object({
+  /** Urgent changes to something the attendee holds a ticket for or saved. */
+  changes: z.boolean(),
+  /** Reminders for slots this device asked to be reminded about. */
+  reminders: z.boolean(),
+  /** Urgent news for everyone. */
+  festival: z.boolean(),
+})
+
+/** One device signed up for push, under the signed-in attendee. */
+export const deviceSchema = z.object({
+  /** Made on the device once and kept, so a refreshed token updates the same record. */
+  deviceId: z.string().regex(/^[a-z0-9-]{8,64}$/, 'Not a device id.'),
+  token: z.string().min(20).max(4096),
+  kinds: notificationKindsSchema,
+  /** Plan keys (`screening:scn_x`, `event:evt_y`) this device wants a reminder for. */
+  reminders: z.array(z.string().min(3).max(100)).max(200),
+  /** What the device is, for the attendee to recognise: "iPhone, Safari". */
+  label: z.string().trim().max(120).optional(),
+})
+
 // ------------------------------------------------------------------ my festival
 
 export const savedKindSchema = z.enum(['film', 'screening', 'event'])
@@ -266,3 +290,5 @@ export type MarkRefundedInput = z.input<typeof markRefundedSchema>
 export type InviteStaffInput = z.input<typeof inviteStaffSchema>
 export type SetStaffRoleInput = z.input<typeof setStaffRoleSchema>
 export type OpsActionRequest = z.input<typeof opsActionSchema>
+export type NotificationKinds = z.infer<typeof notificationKindsSchema>
+export type DeviceInput = z.input<typeof deviceSchema>

@@ -27,7 +27,9 @@ const {
   toggle: toggleReminder,
   schedule: scheduleReminders,
   store: reminderStore,
+  pushed: remindersPushed,
 } = useReminders()
+const { availability: pushAvailability } = usePush()
 
 /** Tickets count towards the plan, so they are checked again every time the page opens. */
 const { tickets, revalidate: revalidateTickets } = useMyTickets()
@@ -226,7 +228,10 @@ onMounted(() => {
         </section>
 
         <p class="px-1 text-label text-muted">
-          <template v-if="remindersPermission === 'denied'">
+          <template v-if="remindersPushed">
+            Reminders arrive {{ reminderStore.leadMinutes }} minutes before, on this device, even with the app closed.
+          </template>
+          <template v-else-if="remindersPermission === 'denied'">
             Reminders are blocked for this site in your browser settings.
           </template>
           <template v-else-if="!remindersSupported">
@@ -234,6 +239,13 @@ onMounted(() => {
           </template>
           <template v-else>
             Reminders arrive {{ reminderStore.leadMinutes }} minutes before, on this device, while the app is open.
+            <template v-if="pushAvailability === 'ready'">
+              <NuxtLink to="/me#notifications-title" class="font-medium text-ink underline decoration-line-strong hover:decoration-current">Turn on notifications</NuxtLink>
+              to get them with it closed.
+            </template>
+            <template v-else-if="pushAvailability === 'install'">
+              Add AFRIFF to your Home Screen to get them with it closed.
+            </template>
           </template>
         </p>
       </section>

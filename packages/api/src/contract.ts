@@ -1,5 +1,6 @@
 import type {
   CheckoutInput,
+  DeviceInput,
   EmailVerificationChallenge,
   Festival,
   FestivalEvent,
@@ -179,6 +180,19 @@ export interface AttendeeApi {
    */
   updates: {
     list(): Promise<FestivalUpdate[]>
+  }
+
+  /**
+   * Push notifications. The app gets a push token from the browser (Firebase
+   * Cloud Messaging) and registers the device here with what it wants: which
+   * kinds, and which slots to be reminded about. The server sends from there,
+   * so notifications arrive with the app closed. Every call needs a session.
+   */
+  notifications: {
+    /** Saves (or refreshes) this device's registration under the signed-in attendee. */
+    saveDevice(input: DeviceInput): Promise<void>
+    /** Stops pushes to this device for this attendee: on turning them off, or signing out. */
+    removeDevice(deviceId: string): Promise<void>
   }
 
   /**

@@ -32,6 +32,8 @@ export interface FirebaseClientConfig {
   authDomain: string
   projectId: string
   appId: string
+  /** Cloud Messaging's sender id, for push. Without it the app simply offers no push. */
+  messagingSenderId?: string
   /** Where the callable Cloud Functions run. Must match `apps/functions`. */
   functionsRegion: string
   /**
@@ -101,6 +103,7 @@ export function createFirebaseClient(config: FirebaseClientConfig): FirebaseClie
       authDomain: config.authDomain.trim() || `${config.projectId.trim()}.firebaseapp.com`,
       projectId: config.projectId.trim(),
       appId: config.appId.trim() || undefined,
+      messagingSenderId: config.messagingSenderId?.trim() || undefined,
     },
     config.name,
   )

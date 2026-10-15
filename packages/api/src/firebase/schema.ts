@@ -3,6 +3,7 @@ import type { CheckInInput, CheckInResult, DoorCount, SessionRef, StaffRole } fr
 import type { AuditTarget, OpsActionName, OpsActions } from '../ops'
 import type {
   CheckoutInput,
+  NotificationKinds,
   FestivalInfo,
   Order,
   PaymentIntent,
@@ -60,6 +61,10 @@ export const COLLECTIONS = {
   audit: 'audit',
   /** `staff/{uid}`: who has a staff role, so Ops can list them without scanning every account. */
   staff: 'staff',
+  /** Under `users/{uid}`: devices signed up for push. */
+  devices: 'devices',
+  /** `pushLog/{id}`: what was pushed, so nothing is pushed twice. */
+  pushLog: 'pushLog',
 } as const
 
 /** The one document in `festival` and `info`: this edition. */
@@ -176,6 +181,28 @@ export interface CheckInDoc {
 export interface DoorStatsDoc extends DoorCount {
   updatedAt: string
 }
+
+/**
+ * `users/{uid}/devices/{deviceId}`. Written by the attendee's own app, checked
+ * by the rules; read by the push functions with a collection-group query.
+ */
+export interface DeviceDoc {
+  token: string
+  kinds: NotificationKinds
+  /** Plan keys (`screening:scn_x`) to be reminded about. */
+  reminders: string[]
+  label?: string
+  updatedAt: TimestampLike
+}
+
+/**
+ * `pushLog/{id}`, written only by the push functions, so nothing is pushed twice:
+ * `update_<updateId>` once per update, and `reminder_<slot>_<uid>_<deviceId>`
+ * once per device per slot.
+ */
+export type PushLogDoc =
+  | { kind: 'update'; at: string; devices: number; sent: number; removed: number }
+  | { kind: 'reminder'; at: string; slot: string }
 
 /** `audit/{id}`. Written only by the `ops` function. */
 export interface AuditDoc {

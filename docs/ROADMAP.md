@@ -52,7 +52,7 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 | 5. Attendees live | ⬜ Needs the Firebase projects, the Paystack and Brevo accounts, and real content |
 | 6. Scanner | ✅ Built and verified on the emulators. Not yet tried on the door phones |
 | 7. Ops Console | ✅ Built and verified on the emulators. Editing films, venues and events is not in it yet |
-| 8. Push notifications | ⬜ |
+| 8. Push notifications | ✅ Built and verified on the emulators and in Chrome. Needs a real project's Cloud Messaging key to reach phones; the daily digest is not built |
 | 9. Live ops and offline scanning | ⬜ |
 | 10. Hardening and launch | ⬜ |
 | Alongside: PWA polish (F9) | ⬜ |
@@ -61,11 +61,11 @@ The attendee PWA's screen-by-screen log is in [ROADMAP-attendee-fe.md](ROADMAP-a
 
 ## Next up
 
-1. **Commit** phase 7, the Ops Console, which is in the working tree.
+1. **Commit** phase 8, push notifications, which is in the working tree.
 2. **Phase 5 set-up**, which needs the festival's accounts: staging and production Firebase projects, the Paystack test and live keys, a Brevo sender domain, then the checklist in [firebase/README.md](../firebase/README.md#setting-up-a-project). A run on staging with a Paystack test card closes phase 4.
-3. **Try the scanner on the door phones**, over HTTPS, in the venues' light, and the console with the festival team.
+3. **Try the scanner on the door phones**, over HTTPS, in the venues' light, and the console with the festival team. Try push on an Android phone and an iPhone (installed to the Home Screen) once staging has its Web Push certificate.
 4. **Settle the open questions** below before phase 5 goes live.
-5. **Phase 8, push notifications**, is the next build. Updates already reach attendees in the app and, for ticket holders, by email.
+5. **Phase 9, live ops and offline scanning**, is the next build.
 
 ## Open questions
 
@@ -175,16 +175,16 @@ The API contract the PWA talks to has been reshaped for Firebase and Paystack. B
 - ✅ **Audit log:** every change, by whom and when, written by the function in the same step as the change.
 - **Done when** a screening moved in Ops shows up in the PWA, with an update reaching the attendees it affects. ✅ Verified against the emulators: the attendee's tickets took the new time, and the drafted update showed as a banner in their app and arrived by email. The same for a cancellation.
 
-### 8. Push notifications ⬜
+### 8. Push notifications ✅
 
-Today, updates appear only inside the app, read state is kept on the device, and My Festival reminders fire only while the app is open.
-
-- ⬜ Web push through Firebase Cloud Messaging, with device tokens stored against the attendee.
-- ⬜ Push an urgent update to the attendees it touches, through their tickets and saved items.
-- ⬜ Reminders 30 minutes before a saved screening, sent by the server so they arrive with the app closed.
-- ⬜ Turn notifications off by kind.
-- ⬜ A daily digest (optional).
-- On iPhones, web push works only after the app is added to the Home Screen (iOS 16.4 and later).
+- ✅ **Web push through Firebase Cloud Messaging.** Each device that turns push on is stored under the attendee (`users/{uid}/devices/{deviceId}`) with its token, the kinds it wants and the reminders it asked for. Turned on from Me, or by the first reminder bell in My Festival. Signing out removes the device and drops its token; tokens FCM no longer knows are deleted when a push to them fails.
+- ✅ **Urgent updates pushed to the attendees they touch:** ticket holders (a cancelled screening's void tickets included) and anyone who saved the screening, event or film, the same people the app marks "Affects you". An update about nothing in particular goes to everyone who wants festival news. Sent as soon as it is published, or within five minutes of its set time; never twice, never more than half an hour late, and never after an edit.
+- ✅ **Reminders 30 minutes before** a slot in My Festival, sent by the server every five minutes so they arrive with the app closed, once per device. A cancelled screening reminds nobody. Without push, reminders stay local timers while the app is open.
+- ✅ **Turn notifications off by kind:** changes to your plan, reminders, festival news.
+- ✅ **Opening a notification** takes the app to the page it is about, in the window already open when there is one, and only ever inside the app.
+- ⬜ A daily digest (optional). Not built.
+- On iPhones, web push works only after the app is added to the Home Screen (iOS 16.4 and later). Me says so, and how.
+- **Done when** an urgent update reaches the phones of the attendees it affects with the app closed. ✅ Verified against the emulators (17 checks: who gets which update, scheduled updates, no repeats, reminders and their window, cancelled screenings, removing a device) and in Chrome (the service worker turns an FCM message into a notification and a tap into the right page; turning push on, choosing kinds, reminders and signing out). 🟡 Not yet tried on real phones: that needs a project with a Web Push certificate.
 
 ### 9. Live ops and offline scanning ⬜
 

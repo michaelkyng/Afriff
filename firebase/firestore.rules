@@ -116,6 +116,30 @@ service cloud.firestore {
           && incoming().savedAt == request.time
           && inProgramme(incoming().kind, incoming().refId);
       }
+
+      // Devices signed up for push: the token, which kinds it wants and which
+      // slots to remind it about. Written whole by the attendee's own app, and
+      // read by the push functions.
+      match /devices/{deviceId} {
+        allow read, delete: if isUser(uid);
+        allow create, update: if isUser(uid)
+          && deviceId.matches('^[a-z0-9-]{8,64}$')
+          && incoming().keys().hasAll(['token', 'kinds', 'reminders', 'updatedAt'])
+          && incoming().keys().hasOnly(['token', 'kinds', 'reminders', 'label', 'updatedAt'])
+          && incoming().token is string
+          && incoming().token.size() >= 20
+          && incoming().token.size() <= 4096
+          && incoming().kinds is map
+          && incoming().kinds.keys().hasAll(['changes', 'reminders', 'festival'])
+          && incoming().kinds.keys().hasOnly(['changes', 'reminders', 'festival'])
+          && incoming().kinds.changes is bool
+          && incoming().kinds.reminders is bool
+          && incoming().kinds.festival is bool
+          && incoming().reminders is list
+          && incoming().reminders.size() <= 200
+          && (!('label' in incoming()) || isText(incoming().label, 1, 120))
+          && incoming().updatedAt == request.time;
+      }
     }
 
     // ------------------------------------------------------------ buying

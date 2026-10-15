@@ -17,6 +17,7 @@
     "./orders": "./src/orders.ts",
     "./door": "./src/door.ts",
     "./ops": "./src/ops.ts",
+    "./push": "./src/push.ts",
     "./mock": "./src/mock/index.ts",
     "./mock/db": "./src/mock/db.ts",
     "./mock/door": "./src/mock/door.ts",

@@ -105,6 +105,8 @@ export type {
   CheckoutInput,
   TicketTransferInput,
   SavedInput,
+  NotificationKinds,
+  DeviceInput,
 } from '@afriff/validation'
 
 /** Nigerian (NFVCB-style) age classification. */

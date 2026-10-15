@@ -1,14 +1,15 @@
 # AFRIFF
 
 A Bun monorepo with deployable applications, shared Nuxt layers, and plain
-TypeScript packages, on a Firebase backend with Paystack payments and Brevo email.
+TypeScript packages, on a Firebase backend with Paystack payments, Brevo email and
+web push through Cloud Messaging.
 
 ```text
 apps/
   pwa/                   @afriff/pwa — attendee PWA
   scanner/               @afriff/scanner — AFRIFF Door, the ticket scanner for festival staff
   ops/                   @afriff/ops — AFRIFF Ops, the festival team's console
-  functions/             @afriff/functions — Cloud Functions: checkout, Paystack, tickets, Brevo email
+  functions/             @afriff/functions — Cloud Functions: checkout, Paystack, tickets, Brevo email, push
 layers/
   ui-kit/                @afriff/ui-kit — shared Nuxt design-system layer
     components/          Ui* controls and Brand* artwork
@@ -26,11 +27,12 @@ packages/
     src/orders.ts        order rules shared by the mock and the Cloud Functions
     src/door.ts          door rules and the DoorApi contract, shared the same way
     src/ops.ts           Ops rules and the OpsApi contract, shared the same way
+    src/push.ts          what is pushed, to whom, and what it says
     src/mock/            local adapter, fixtures and mock storage
     src/firebase/        Firebase adapter and the shared Firestore schema
     src/index.ts
     package.json
-  firebase/              @afriff/firebase — browser SDK set-up and emulator wiring
+  firebase/              @afriff/firebase — browser SDK set-up, emulator wiring and push tokens
 firebase/                Firestore rules, indexes and rules tests
 firebase.json            Firebase CLI: emulators, rules, functions, hosting
 brand/                   source artwork and asset generator

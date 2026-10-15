@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   BellIcon,
+  BellOffIcon,
   BookmarkIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-vue-next'
 import { isApiError } from '@afriff/api'
 import { mockDb } from '@afriff/api/mock/db'
+import type { NotificationKinds } from '@afriff/api'
 import type { ThemeMode } from '~/stores/prefs'
 
 useHead({ title: 'Me' })
@@ -60,6 +62,34 @@ const pwa = usePWA()
 const online = useOnline()
 const { data: festival } = useFestival()
 const { now, isSimulated } = useFestivalClock(festival)
+
+// ------------------------------------------------------------------ notifications
+
+const push = reactive(usePush())
+
+const pushSummary = computed(() => {
+  if (push.active) return 'On. They arrive here even when the app is closed.'
+  switch (push.availability) {
+    case 'unavailable':
+      return demo ? 'Not in the demo: there is no server here to send them.' : 'Not available in this version of the app.'
+    case 'unsupported':
+      return 'This browser cannot receive notifications.'
+    case 'install':
+      return 'On iPhone and iPad (iOS 16.4 or later), add AFRIFF to your Home Screen first: Share, then Add to Home Screen. Turn them on from there.'
+    case 'blocked':
+      return 'Blocked for this site. Allow notifications in your browser settings, then come back.'
+    case 'signed-out':
+      return 'Sign in to hear about changes to your tickets and plan.'
+    default:
+      return 'Changes to your tickets and plan, and reminders, even with the app closed.'
+  }
+})
+
+const kindOptions: { kind: keyof NotificationKinds; label: string; hint: string }[] = [
+  { kind: 'changes', label: 'Changes to your plan', hint: 'When something you have a ticket for or saved moves or is cancelled.' },
+  { kind: 'reminders', label: 'Reminders', hint: 'Half an hour before anything with its bell on in My festival.' },
+  { kind: 'festival', label: 'Festival news', hint: 'Urgent news for everyone, like a venue closing.' },
+]
 
 const themeOptions: { value: ThemeMode; label: string; icon: typeof SunIcon }[] = [
   { value: 'system', label: 'System', icon: MonitorIcon },
@@ -301,6 +331,43 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       <UiCard v-else class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-meta text-muted">No orders yet.</p>
         <UiButton size="sm" variant="secondary" to="/tickets">Browse tickets</UiButton>
+      </UiCard>
+    </section>
+
+    <!-- Notifications -->
+    <section aria-labelledby="notifications-title">
+      <UiSectionHeader title="Notifications" title-id="notifications-title" />
+      <UiCard :padded="false" class="divide-y divide-line">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3.5 md:px-5">
+          <div class="min-w-0 flex-1 basis-60">
+            <p class="font-semibold">On this device</p>
+            <p class="text-label text-muted">{{ pushSummary }}</p>
+          </div>
+          <UiButton v-if="push.active" size="sm" variant="secondary" :loading="push.busy" @click="push.disable()">
+            <BellOffIcon aria-hidden="true" />
+            Turn off
+          </UiButton>
+          <UiButton v-else-if="push.availability === 'ready'" size="sm" :loading="push.busy" @click="push.enable()">
+            <BellIcon aria-hidden="true" />
+            Turn on
+          </UiButton>
+          <UiButton v-else-if="push.availability === 'signed-out'" size="sm" variant="secondary" to="/signin?redirect=/me">
+            Sign in
+          </UiButton>
+        </div>
+        <fieldset v-if="push.active" class="space-y-3.5 px-4 py-4 md:px-5">
+          <legend class="sr-only">What to be notified about</legend>
+          <UiCheckbox
+            v-for="option in kindOptions"
+            :key="option.kind"
+            :model-value="push.kinds[option.kind]"
+            :label="option.label"
+            :hint="option.hint"
+            :disabled="push.busy"
+            @update:model-value="push.setKind(option.kind, $event)"
+          />
+        </fieldset>
+        <p v-if="push.error" role="alert" class="px-4 py-3 text-meta text-danger md:px-5">{{ push.error }}</p>
       </UiCard>
     </section>
 

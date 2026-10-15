@@ -44,6 +44,7 @@ export function useAuthEmail() {
 export function useAuth() {
   const api = useApi()
   const session = useSessionStore()
+  const push = usePush()
 
   const user = computed(() => session.user)
   const isSignedIn = computed(() => session.isSignedIn)
@@ -56,10 +57,11 @@ export function useAuth() {
     return next
   }
 
-  /** Signing out leaves the account's plan with the account, not on the device. */
+  /** Signing out leaves the account's plan with the account, not on the device, and its notifications too. */
   function forget() {
     session.signOut()
     usePlanStore().clear()
+    void push.forget()
   }
 
   async function signIn(input: SignInInput) {
@@ -106,6 +108,7 @@ export function useAuth() {
   }
 
   async function signOut() {
+    await push.release()
     try {
       await api.auth.signOut()
     }

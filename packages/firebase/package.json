@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Framework-independent Firebase client set-up for AFRIFF apps: Auth, Firestore and Functions, with the emulators.",
+  "description": "Framework-independent Firebase client set-up for AFRIFF apps: Auth, Firestore, Functions and Cloud Messaging, with the emulators.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./messaging": "./src/messaging.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -2,12 +2,12 @@ import { formatTime } from '@afriff/api/format'
 import type { PlanEntry } from '@afriff/api/plan'
 
 /**
- * Local reminders for the plan.
+ * Reminders for the plan.
  *
- * The browser is the only thing that can be asked, and it only answers while the
- * app is open, so this sets a timer per upcoming slot and shows a notification
- * when it comes round. Nothing is scheduled on a server, and nothing survives
- * the tab being closed — which the screen says in as many words.
+ * With push on (`usePush`), the server sends them, app open or not, and nothing
+ * runs here. Without it, the browser is the only thing that can be asked, and it
+ * only answers while the app is open: this sets a timer per upcoming slot and
+ * shows a notification when it comes round, and the screen says as much.
  */
 
 /** Anything further off than this gets its timer when the attendee comes back. */
@@ -15,6 +15,7 @@ const HORIZON_MS = 6 * 60 * 60 * 1000
 
 export function useReminders() {
   const store = useRemindersStore()
+  const push = usePush()
   const supported = import.meta.client && typeof Notification !== 'undefined'
   const permission = ref<NotificationPermission | 'unsupported'>(supported ? Notification.permission : 'unsupported')
 
@@ -30,11 +31,17 @@ export function useReminders() {
     return permission.value === 'granted'
   }
 
-  /** Turns a reminder on or off, asking for permission the first time one goes on. */
+  /**
+   * Turns a reminder on or off. The first one on asks for permission, and turns
+   * push on where it can, so reminders arrive with the app closed.
+   */
   async function toggle(key: string): Promise<boolean> {
     if (store.has(key)) return store.toggle(key)
-    await requestPermission()
-    return store.toggle(key)
+    const on = store.toggle(key)
+    if (push.availability.value === 'ready' && !push.active.value) await push.enable()
+    else await requestPermission()
+    if (supported) permission.value = Notification.permission
+    return on
   }
 
   /**
@@ -43,6 +50,8 @@ export function useReminders() {
    */
   function schedule(entries: PlanEntry[]) {
     const timers: ReturnType<typeof setTimeout>[] = []
+    // The server has them, and two of each would be one too many.
+    if (push.active.value) return () => {}
     if (!supported || Notification.permission !== 'granted') return () => {}
 
     const now = Date.now()
@@ -70,5 +79,5 @@ export function useReminders() {
     return () => timers.forEach(clearTimeout)
   }
 
-  return { supported, permission, requestPermission, toggle, schedule, store }
+  return { supported, permission, requestPermission, toggle, schedule, store, pushed: push.active }
 }
